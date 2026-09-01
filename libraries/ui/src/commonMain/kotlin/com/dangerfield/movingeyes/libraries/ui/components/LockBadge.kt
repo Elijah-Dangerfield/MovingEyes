@@ -19,6 +19,9 @@ import com.dangerfield.movingeyes.libraries.ui.components.icon.Icons
 import com.dangerfield.movingeyes.libraries.ui.components.text.Text
 import com.dangerfield.movingeyes.system.AppTheme
 import com.dangerfield.movingeyes.system.Dimension
+import movingeyes.libraries.resources.generated.resources.Res
+import movingeyes.libraries.resources.generated.resources.paid_feature
+import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 private val BadgeCornerRadius = 8.dp
@@ -40,7 +43,7 @@ private val BadgeSize = 24.dp
 @Composable
 fun LockBadge(
     modifier: Modifier = Modifier,
-    contentDescription: String? = null,
+    contentDescription: String? = stringResource(Res.string.paid_feature),
 ) {
     Box(
         modifier = modifier

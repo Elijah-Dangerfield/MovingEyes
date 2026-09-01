@@ -15,6 +15,13 @@ import com.dangerfield.movingeyes.libraries.navigation.screen
 import com.dangerfield.movingeyes.libraries.navigation.serializableType
 import com.dangerfield.movingeyes.libraries.navigation.toRouteOrNull
 import me.tatarka.inject.annotations.Inject
+import movingeyes.libraries.resources.generated.resources.Res
+import movingeyes.libraries.resources.generated.resources.error_dialog_body
+import movingeyes.libraries.resources.generated.resources.error_dialog_title
+import movingeyes.libraries.resources.generated.resources.error_dismiss
+import movingeyes.libraries.resources.generated.resources.error_generic_body
+import movingeyes.libraries.resources.generated.resources.error_generic_title
+import org.jetbrains.compose.resources.stringResource
 import software.amazon.lastmile.kotlin.inject.anvil.AppScope
 import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
@@ -29,11 +36,14 @@ class ErrorEntryPoints : FeatureEntryPoint {
         screen<BlockingErrorRoute>(
             typeMap = mapOf()
         ) { backStackEntry ->
-            val route = backStackEntry.toRouteOrNull<BlockingErrorRoute>() ?: DEFAULT_BLOCKING_ERROR
+            // Fallback copy is resolved here rather than held on a top-level
+            // constant, because a string resource can only be read from a
+            // composable.
+            val route = backStackEntry.toRouteOrNull<BlockingErrorRoute>()
             BlockingErrorScreen(
-                title = route.title,
-                subtitle = route.subtitle,
-                errorCode = route.errorCode ?: DEFAULT_BLOCKING_ERROR.errorCode,
+                title = route?.title ?: stringResource(Res.string.error_generic_title),
+                subtitle = route?.subtitle ?: stringResource(Res.string.error_generic_body),
+                errorCode = route?.errorCode ?: FallbackErrorCode,
             )
         }
 
@@ -41,7 +51,10 @@ class ErrorEntryPoints : FeatureEntryPoint {
             typeMap = mapOf(typeOf<ErrorDialogAction>() to serializableType<ErrorDialogAction>(),
             )
         ) { backStackEntry, dialogState ->
-            val route = backStackEntry.toRouteOrNull<ErrorDialogRoute>() ?: DEFAULT_ERROR_DIALOG
+            val route = backStackEntry.toRouteOrNull<ErrorDialogRoute>()
+            val title = route?.title ?: stringResource(Res.string.error_dialog_title)
+            val subtitle = route?.subtitle ?: stringResource(Res.string.error_dialog_body)
+            val actionTitle = route?.actionTitle ?: stringResource(Res.string.error_dismiss)
             var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
 
             fun dismissWithAction(action: () -> Unit) {
@@ -51,17 +64,19 @@ class ErrorEntryPoints : FeatureEntryPoint {
 
             ErrorDialog(
                 state = dialogState,
-                title = route.title,
-                subtitle = route.subtitle,
-                actionTitle = route.actionTitle,
-                errorCode = route.errorCode ?: DEFAULT_ERROR_DIALOG.errorCode,
+                title = title,
+                subtitle = subtitle,
+                actionTitle = actionTitle,
+                errorCode = route?.errorCode ?: FallbackErrorCode,
                 onDismissRequest = {
                     val action = pendingAction ?: router::goBack
                     pendingAction = null
                     action()
                 },
                 onAction = {
-                    dismissWithAction { handleDialogAction(route.action, router) }
+                    dismissWithAction {
+                        handleDialogAction(route?.action ?: ErrorDialogAction.Dismiss, router)
+                    }
                 },
             )
         }
@@ -80,17 +95,6 @@ private fun handleDialogAction(action: ErrorDialogAction, router: Router) {
     }
 }
 
-private val DEFAULT_BLOCKING_ERROR = BlockingErrorRoute(
-    title = "Something went wrong",
-    subtitle = "Please try again.",
-    errorCode = 1000,
-    contextMessage = null,
-)
-
-private val DEFAULT_ERROR_DIALOG = ErrorDialogRoute(
-    title = "Oops",
-    subtitle = "Looks like something broke. Please try again.",
-    actionTitle = "Dismiss",
-    errorCode = 1000,
-    contextMessage = null,
-)
+/** Shown when a route arrives without one — never blank, so triage always has
+ *  something to search for. */
+private const val FallbackErrorCode = 1000

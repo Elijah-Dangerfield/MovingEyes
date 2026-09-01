@@ -22,6 +22,9 @@ import com.dangerfield.movingeyes.libraries.core.Platform
 import com.dangerfield.movingeyes.libraries.ui.PreviewContent
 import com.dangerfield.movingeyes.libraries.ui.components.text.Text
 import com.dangerfield.movingeyes.system.AppTheme
+import movingeyes.libraries.resources.generated.resources.Res
+import movingeyes.libraries.resources.generated.resources.app_name
+import org.jetbrains.compose.resources.stringResource
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
@@ -65,7 +68,7 @@ private fun SplashContent(alpha: Float) {
     ) {
         Text(
             modifier = Modifier.fillMaxWidth(),
-            text = "Moving Eyes",
+            text = stringResource(Res.string.app_name),
             typography = AppTheme.typography.Brand.B1300,
             textAlign = TextAlign.Center,
         )

@@ -16,6 +16,9 @@ import com.dangerfield.movingeyes.libraries.ui.components.button.ButtonSize
 import com.dangerfield.movingeyes.libraries.ui.components.button.ButtonStyle
 import com.dangerfield.movingeyes.libraries.ui.components.button.ButtonType
 import com.dangerfield.movingeyes.libraries.ui.components.text.Text
+import movingeyes.libraries.resources.generated.resources.Res
+import movingeyes.libraries.resources.generated.resources.error_dismiss
+import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 /** One entry in the shake menu. Dev-facing, so labels are plain strings. */
@@ -90,7 +93,7 @@ fun ShakeDialog(
                     size = ButtonSize.Medium,
                     style = ButtonStyle.Text
                 ) {
-                    Text("Dismiss")
+                    Text(stringResource(Res.string.error_dismiss))
                 }
             }
         }

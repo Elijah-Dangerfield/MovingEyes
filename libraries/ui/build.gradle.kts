@@ -19,6 +19,7 @@ kotlin {
             implementation(projects.libraries.core)
             // TODO honestly the movingeyes library should expose the component that require movingeyes domain
             implementation(projects.libraries.movingeyes)
+            implementation(projects.libraries.resources)
 
             api(compose.ui)
             api(compose.uiUtil)

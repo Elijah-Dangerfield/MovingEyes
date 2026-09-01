@@ -34,6 +34,21 @@ import com.dangerfield.movingeyes.system.AppTheme
 import com.dangerfield.movingeyes.system.Dimension
 import com.dangerfield.movingeyes.system.Motion
 import com.dangerfield.movingeyes.system.Target
+import movingeyes.libraries.resources.generated.resources.Res
+import movingeyes.libraries.resources.generated.resources.editor_eye_count
+import movingeyes.libraries.resources.generated.resources.editor_lock
+import movingeyes.libraries.resources.generated.resources.editor_readout_hint
+import movingeyes.libraries.resources.generated.resources.editor_readout_ipd
+import movingeyes.libraries.resources.generated.resources.editor_readout_millimeters
+import movingeyes.libraries.resources.generated.resources.editor_readout_rotation
+import movingeyes.libraries.resources.generated.resources.editor_readout_size
+import movingeyes.libraries.resources.generated.resources.editor_readout_x
+import movingeyes.libraries.resources.generated.resources.editor_readout_y
+import movingeyes.libraries.resources.generated.resources.editor_redo
+import movingeyes.libraries.resources.generated.resources.editor_undo
+import movingeyes.libraries.resources.generated.resources.editor_unlock
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 import kotlin.math.hypot
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -177,17 +192,19 @@ private fun EditorChrome(
             // is the top rage-quit risk in this app, and the way back has to
             // be visible at the moment it happens.
             ToolbarButton(
-                label = "Undo",
+                label = stringResource(Res.string.editor_undo),
                 enabled = editor.canUndo,
                 onClick = { editor.undo() },
             )
             ToolbarButton(
-                label = "Redo",
+                label = stringResource(Res.string.editor_redo),
                 enabled = editor.canRedo,
                 onClick = { editor.redo() },
             )
             ToolbarButton(
-                label = if (editor.isLocked) "Unlock" else "Lock",
+                label = stringResource(
+                    if (editor.isLocked) Res.string.editor_unlock else Res.string.editor_lock,
+                ),
                 enabled = true,
                 isActive = editor.isLocked,
                 onClick = { editor.toggleLock() },
@@ -325,17 +342,20 @@ private fun readoutText(
     editor.transformRevision
 
     val selection = editor.selection
+    val eyeCount = pluralStringResource(Res.plurals.editor_eye_count, editor.eyes.size, editor.eyes.size)
     if (selection.isEmpty()) {
-        return "${editor.eyes.size} eyes · tap to select"
+        return stringResource(Res.string.editor_readout_hint, eyeCount)
     }
 
-    val parts = mutableListOf("${selection.size} ${if (selection.size == 1) "eye" else "eyes"}")
+    val parts = mutableListOf(
+        pluralStringResource(Res.plurals.editor_eye_count, selection.size, selection.size),
+    )
 
     if (selection.size == 1) {
         val eye = editor.eyes[selection.first()]
-        parts += "X ${(eye.centerX * canvasWidthPx).roundToInt()}"
-        parts += "Y ${(eye.centerY * canvasHeightPx).roundToInt()}"
-        parts += "${eye.sizePx.roundToInt()} px"
+        parts += stringResource(Res.string.editor_readout_x, (eye.centerX * canvasWidthPx).roundToInt())
+        parts += stringResource(Res.string.editor_readout_y, (eye.centerY * canvasHeightPx).roundToInt())
+        parts += stringResource(Res.string.editor_readout_size, eye.sizePx.roundToInt())
     } else if (selection.size == 2) {
         val a = editor.eyes[selection[0]]
         val b = editor.eyes[selection[1]]
@@ -343,14 +363,17 @@ private fun readoutText(
             (b.centerX - a.centerX) * canvasWidthPx,
             (b.centerY - a.centerY) * canvasHeightPx,
         )
-        parts += "IPD ${distance.roundToInt()} px"
+        parts += stringResource(Res.string.editor_readout_ipd, distance.roundToInt())
         screenMetrics.millimeters(distance)?.let { mm ->
-            parts += "${((mm * 10).roundToInt() / 10f)} mm"
+            parts += stringResource(
+                Res.string.editor_readout_millimeters,
+                ((mm * 10).roundToInt() / 10f).toString(),
+            )
         }
     }
 
     val rotation = editor.eyes[selection.first()].rotationDegrees
-    parts += "${rotation.roundToInt()}°"
+    parts += stringResource(Res.string.editor_readout_rotation, rotation.roundToInt())
 
     return parts.joinToString(" · ")
 }

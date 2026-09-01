@@ -9,10 +9,15 @@ movingeyes:
   VerifyStrings:
     active: true
     # Developer-facing surfaces that never ship to a user: the design-system
-    # catalog (spec copy) and the QA menu (both debug-build only, reachable
-    # solely by shaking the device). Their labels are plain constants.
+    # catalog and colour reference (spec copy), and the QA menu — all debug-build
+    # only, reachable solely by shaking the device. Their labels are plain
+    # constants. Tests are excluded because their literals are fixtures, and a
+    # fixture asserting on "fallback" must not move when the copy does.
     excludes: [
       '**/libraries/ui/src/commonMain/kotlin/**/catalog/**',
+      '**/libraries/ui/src/commonMain/kotlin/**/system/color/Colors.kt',
       '**/apps/compose/src/commonMain/kotlin/**/QaConfig*.kt',
       '**/apps/compose/src/commonMain/kotlin/**/EyeGalleryScreen.kt',
+      '**/apps/compose/src/commonMain/kotlin/**/ShakeDialogEntryPoint.kt',
+      '**/src/*[Tt]est*/**',
     ]

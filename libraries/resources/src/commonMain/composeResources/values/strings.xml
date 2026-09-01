@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Every user-facing string in the app.
+
+  Naming is `area_thing`, grouped by the surface it appears on, so a
+  translator reading top to bottom walks the app in order rather than
+  alphabetically through fragments.
+
+  What does NOT belong here: developer-facing copy on debug-only surfaces
+  (the design-system catalog, the QA menu, the eye gallery, the shake menu).
+  Those are reachable only by shaking a debug build, are never localised, and
+  are excluded in config/detekt/detekt.yml. See AGENTS.md.
+-->
+<resources>
+
+    <!-- Brand -->
+    <string name="app_name">Moving Eyes</string>
+
+    <!-- Editor toolbar -->
+    <string name="editor_undo">Undo</string>
+    <string name="editor_redo">Redo</string>
+    <string name="editor_lock">Lock</string>
+    <string name="editor_unlock">Unlock</string>
+
+    <!--
+      The live measurement readout. Assembled from these fragments rather than
+      one template because which fields appear depends on what's selected, and
+      a translator needs to be able to reorder or re-space each one.
+
+      Numbers are deliberately left as-is: the readout is monospaced precisely
+      so a changing value doesn't reflow, and locale digit grouping would
+      break that.
+    -->
+    <string name="editor_readout_hint">%1$s · tap to select</string>
+    <string name="editor_readout_x">X %1$d</string>
+    <string name="editor_readout_y">Y %1$d</string>
+    <string name="editor_readout_size">%1$d px</string>
+    <string name="editor_readout_ipd">IPD %1$d px</string>
+    <string name="editor_readout_millimeters">%1$s mm</string>
+    <string name="editor_readout_rotation">%1$d°</string>
+
+    <plurals name="editor_eye_count">
+        <item quantity="one">%1$d eye</item>
+        <item quantity="other">%1$d eyes</item>
+    </plurals>
+
+    <!-- Errors -->
+    <string name="error_generic_title">Something went wrong</string>
+    <string name="error_generic_body">Please try again.</string>
+    <string name="error_dialog_title">Oops</string>
+    <string name="error_dialog_body">Looks like something broke. Please try again.</string>
+    <string name="error_dismiss">Dismiss</string>
+    <string name="error_code">Error code: %1$d</string>
+    <string name="error_report">Report to developers</string>
+    <string name="error_report_aside">(which is me cause I wrote myself)</string>
+
+    <!-- Paywall and entitlement -->
+    <string name="paid_feature">Paid feature</string>
+
+</resources>

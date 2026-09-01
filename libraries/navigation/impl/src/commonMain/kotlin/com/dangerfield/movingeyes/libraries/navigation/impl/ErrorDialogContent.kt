@@ -16,6 +16,11 @@ import com.dangerfield.movingeyes.libraries.ui.components.dialog.DialogState
 import com.dangerfield.movingeyes.libraries.ui.components.dialog.rememberDialogState
 import com.dangerfield.movingeyes.libraries.ui.components.text.Text
 import com.dangerfield.movingeyes.system.AppTheme
+import movingeyes.libraries.resources.generated.resources.Res
+import movingeyes.libraries.resources.generated.resources.error_code
+import movingeyes.libraries.resources.generated.resources.error_report
+import movingeyes.libraries.resources.generated.resources.error_report_aside
+import org.jetbrains.compose.resources.stringResource
 import com.dangerfield.movingeyes.system.Dimension
 import com.dangerfield.movingeyes.system.VerticalSpacerD1000
 import com.dangerfield.movingeyes.system.VerticalSpacerD500
@@ -31,7 +36,7 @@ internal fun ErrorDialog(
     onDismissRequest: () -> Unit,
     onAction: () -> Unit,
     onReportToDeveloper: (() -> Unit)? = null,
-    reportActionTitle: String = "Report to developers",
+    reportActionTitle: String = stringResource(Res.string.error_report),
 ) {
     val showReportButton = onReportToDeveloper != null
 
@@ -50,7 +55,7 @@ internal fun ErrorDialog(
                 errorCode?.let {
                     VerticalSpacerD1000()
                     Text(
-                        text = "Error code: $it",
+                        text = stringResource(Res.string.error_code, it),
                         typography = AppTheme.typography.Body.B500.Bold,
                         color = AppTheme.colors.textSecondary,
                     )
@@ -80,7 +85,7 @@ internal fun ErrorDialog(
 
                     VerticalSpacerD500()
 
-                    Text("(which is me cause I wrote myself)")
+                    Text(stringResource(Res.string.error_report_aside))
                 }
             }
         }

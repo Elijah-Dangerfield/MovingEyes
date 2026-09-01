@@ -28,6 +28,29 @@ Every flag is an injectable `ConfiguredValue` subclass contributed into `Set<QaC
 
 `debugOverride` is the important one for anything store-backed: a sideloaded debug build has no provisioned Play/StoreKit catalog, so a real billing client returns nothing. Default those flags to the fake on debug and the real path on shippable builds. Full reference in [`libraries/config/README.md`](libraries/config/README.md).
 
+## User-facing strings (`:libraries:resources`)
+
+**Every string a user can read comes from `stringResource(...)`, never from a literal at the call site.** The catalogue is [`libraries/resources/src/commonMain/composeResources/values/strings.xml`](libraries/resources/src/commonMain/composeResources/values/strings.xml); Compose generates `Res.string.*` into `movingeyes.libraries.resources.generated.resources`. Depend on `projects.libraries.resources` and import the specific key alongside `Res`.
+
+```kotlin
+Text(stringResource(Res.string.editor_undo))
+Text(stringResource(Res.string.editor_readout_size, sizePx))          // %1$d
+Text(pluralStringResource(Res.plurals.editor_eye_count, count, count)) // count twice: selector, then arg
+```
+
+Rules that follow from that:
+
+- **Interpolate through the catalogue, not through Kotlin.** `"$count eyes"` hardcodes English word order and pluralisation. Use `%1$s` / `%1$d` placeholders, and `<plurals>` for anything counted.
+- **A string resource can only be read inside a composable**, so copy cannot live on a top-level `const`. Where a default was a constant, resolve it in the composable instead — see the fallbacks in [`ErrorEntryPoints.kt`](libraries/navigation/impl/src/commonMain/kotlin/com/dangerfield/movingeyes/libraries/navigation/impl/ErrorEntryPoints.kt).
+- **`contentDescription` is user-facing.** A screen reader reads it aloud; it belongs in the catalogue like any other copy.
+- **Debug-only surfaces stay as literals.** The design-system catalog, the QA menu, the eye gallery and the shake menu are reachable only by shaking a debug build. Translating them is waste, and their labels double as identifiers. These are excluded by path in `config/detekt/detekt.yml`.
+- **Animation labels are not copy.** `animateFloatAsState(label = "panelTravel")` is an Animation Inspector identifier.
+- **Previews keep their literals.** Sample copy inside an `@Preview`, or inside a `private` helper named `…Sample` shared between previews (`PanelSample`, `StyleSample`), is exempt. If a `…Sample` stops being preview-only, drop `private` and it comes back under the rule.
+
+`VerifyStrings` in `:detekt-rules` enforces this and runs on `./gradlew detekt` (and `check`). It flags a bare literal passed either to a `Text`-family composable or to an argument named like copy (`label`, `title`, `message`, `contentDescription`, …), which is what catches `ToolbarButton(label = "Undo")` one hop from the `Text` that draws it. **The baseline is empty and must stay empty** — fix the finding, or add a path exclusion with a reason if the surface really is developer-facing. Never re-baseline.
+
+One gotcha when changing the rule itself: the Gradle daemon caches detekt's worker classloader, so an edited rule silently keeps running the old jar. Run `./gradlew --stop` before re-running `detekt` after touching `:detekt-rules`.
+
 ## Build Commands
 
 ```shell

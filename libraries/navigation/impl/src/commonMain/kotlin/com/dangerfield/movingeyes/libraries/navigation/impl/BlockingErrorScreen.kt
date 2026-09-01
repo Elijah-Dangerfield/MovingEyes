@@ -20,6 +20,11 @@ import com.dangerfield.movingeyes.libraries.ui.components.button.ButtonSize
 import com.dangerfield.movingeyes.libraries.ui.components.text.Text
 import com.dangerfield.movingeyes.libraries.core.doNothing
 import com.dangerfield.movingeyes.system.AppTheme
+import movingeyes.libraries.resources.generated.resources.Res
+import movingeyes.libraries.resources.generated.resources.error_code
+import movingeyes.libraries.resources.generated.resources.error_report
+import movingeyes.libraries.resources.generated.resources.error_report_aside
+import org.jetbrains.compose.resources.stringResource
 import com.dangerfield.movingeyes.system.Dimension
 import com.dangerfield.movingeyes.system.VerticalSpacerD1000
 import com.dangerfield.movingeyes.system.VerticalSpacerD1200
@@ -61,7 +66,7 @@ internal fun BlockingErrorScreen(
             errorCode?.let {
                 Spacer(modifier = Modifier.height(Dimension.D400))
                 Text(
-                    text = "Error code: $it",
+                    text = stringResource(Res.string.error_code, it),
                     typography = AppTheme.typography.Body.B500,
                     color = AppTheme.colors.textSecondary,
                     textAlign = TextAlign.Center,
@@ -75,12 +80,12 @@ internal fun BlockingErrorScreen(
                     onClick = onReportToDevelopers,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(text = "Report to developers")
+                    Text(text = stringResource(Res.string.error_report))
                 }
 
                 VerticalSpacerD500()
 
-                Text("(which is me cause I wrote myself)")
+                Text(stringResource(Res.string.error_report_aside))
 
                 VerticalSpacerD1600()
             }
