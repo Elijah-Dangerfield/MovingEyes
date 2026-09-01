@@ -41,12 +41,16 @@ data class AppData(
     /** Epoch-ms of the purchase or first successful restore. 0 = never. */
     val unlockedAtEpochMs: Long = 0L,
 
-    /**
-     * The one-time "taps do nothing now" card has been dismissed. Per install
-     * rather than per scene: it explains how the app works, not how this
-     * particular composition works.
-     */
+    /** The one-time "taps do nothing now" card has been dismissed. */
     val hasSeenDisplayModeHint: Boolean = false,
+
+    /** Caps rapid movement and blinking in every mood. */
+    val reduceFlashing: Boolean = false,
+
+    val muteAllSound: Boolean = false,
+
+    /** Moods whose photosensitivity warning has already been shown. */
+    val flashingWarningsSeen: Set<String> = emptySet(),
 
     // User actions
     val feedbacksGiven: Int = 0,

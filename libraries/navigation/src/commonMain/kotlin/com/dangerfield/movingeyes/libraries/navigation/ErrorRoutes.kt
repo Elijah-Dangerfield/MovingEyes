@@ -4,8 +4,9 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class BlockingErrorRoute(
-    val title: String,
-    val subtitle: String,
+    /** Null falls back to the catalogue copy resolved by `ErrorEntryPoints`. */
+    val title: String? = null,
+    val subtitle: String? = null,
     val errorCode: Int? = null,
     val logId: String? = null,
     val contextMessage: String? = null,
@@ -17,9 +18,10 @@ data class BlockingErrorRoute(
 
 @Serializable
 data class ErrorDialogRoute(
-    val title: String,
-    val subtitle: String,
-    val actionTitle: String,
+    /** Null falls back to the catalogue copy resolved by `ErrorEntryPoints`. */
+    val title: String? = null,
+    val subtitle: String? = null,
+    val actionTitle: String? = null,
     val action: ErrorDialogAction = ErrorDialogAction.Dismiss,
     val errorCode: Int? = null,
     val logId: String? = null,

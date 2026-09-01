@@ -29,6 +29,7 @@ class EditorFeatureEntryPoint(
             EditorScreen(
                 viewModel = viewModel { viewModelFactory() },
                 screenMetrics = screenMetrics,
+                router = router,
             )
         }
     }

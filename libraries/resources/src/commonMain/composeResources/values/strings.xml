@@ -51,7 +51,6 @@
     <string name="panel_scene">Scene</string>
 
     <!-- Place tab -->
-    <string name="place_nudge">Nudge</string>
     <string name="place_horizontal">Horizontal</string>
     <string name="place_vertical">Vertical</string>
     <string name="place_rotate">Rotate</string>
@@ -89,7 +88,6 @@
     <string name="scene_canvas_color">Canvas colour</string>
     <string name="scene_brightness">Brightness</string>
     <string name="scene_save">Save scene</string>
-    <string name="scene_saved">Saved</string>
 
     <!--
       Display mode. The hint is shown exactly once, on first entry, because v2
@@ -161,11 +159,51 @@
       The thirty-second demo. The countdown is mono and never localises its
       digits, for the same reason the readout doesn't.
     -->
-    <string name="demo_try">Try it for 30 seconds</string>
     <string name="demo_countdown">%1$d s</string>
     <string name="demo_ended">Demo ended</string>
     <string name="demo_keep">Keep %1$s</string>
-    <string name="demo_already_used">Already demoed this one</string>
+
+    <!--
+      Paywall. No countdown, no scarcity, no "limited time" — this gets bought
+      on impulse by someone who already likes the app, and pressure tactics
+      only produce refunds and one-star reviews.
+    -->
+    <string name="paywall_title">Unlock everything</string>
+    <string name="paywall_live_label">Running at Frantic, right now</string>
+    <string name="paywall_value_motion">Every mood, and the sliders behind them</string>
+    <string name="paywall_value_styles">Ten more eye styles</string>
+    <string name="paywall_value_reactivity">Eyes that react to sound</string>
+    <string name="paywall_once">Paid once. No subscription, no ads.</string>
+    <string name="paywall_buy">Unlock for %1$s</string>
+    <string name="paywall_buy_no_price">Unlock everything</string>
+    <string name="paywall_restore">Restore purchase</string>
+    <string name="paywall_close">Not now</string>
+    <string name="paywall_store_unavailable">Couldn’t reach the store. Try again in a moment.</string>
+    <string name="paywall_nothing_to_restore">No purchase found on this store account.</string>
+    <string name="paywall_restored">Restored. Everything is unlocked.</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_open">Settings</string>
+    <string name="settings_plan_free">Free</string>
+    <string name="settings_plan_unlocked">Unlocked</string>
+    <string name="settings_unlock">Unlock everything</string>
+    <string name="settings_restore">Restore purchase</string>
+    <string name="settings_reduce_flashing">Reduce flashing</string>
+    <string name="settings_reduce_flashing_detail">Caps rapid movement and blinking in every mood.</string>
+    <string name="settings_mute">Mute all sound</string>
+    <string name="settings_privacy">Privacy policy</string>
+    <string name="settings_support">Support</string>
+    <string name="settings_version">Version %1$s</string>
+
+    <!--
+      Photosensitivity warning, shown once per mood. Named moods appear in the
+      body because "this one flashes" is more use than a generic caution.
+    -->
+    <string name="flashing_title">This mood flashes</string>
+    <string name="flashing_body">%1$s moves fast and blinks rapidly. If you are sensitive to flashing light, turn on Reduce flashing in Settings.</string>
+    <string name="flashing_continue">Continue</string>
+    <string name="flashing_reduce">Reduce flashing</string>
 
     <!-- Errors -->
     <string name="error_generic_title">Something went wrong</string>

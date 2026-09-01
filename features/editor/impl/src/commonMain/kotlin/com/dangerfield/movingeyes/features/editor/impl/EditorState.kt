@@ -11,6 +11,7 @@ import com.dangerfield.movingeyes.libraries.eyes.BehaviorConfig
 import com.dangerfield.movingeyes.libraries.eyes.EyeStyle
 import com.dangerfield.movingeyes.libraries.eyes.Mood
 import com.dangerfield.movingeyes.libraries.eyes.Moods
+import com.dangerfield.movingeyes.libraries.eyes.reducedFlashing
 import com.dangerfield.movingeyes.libraries.render.RenderedEye
 import com.dangerfield.movingeyes.libraries.render.toSceneEyes
 import com.dangerfield.movingeyes.libraries.scene.CanvasRotation
@@ -82,6 +83,23 @@ class EditorState(
 
     var canvas by mutableStateOf(canvas)
         private set
+
+    /**
+     * Applied on the way to the runtime rather than baked into the scene, so
+     * turning the setting off restores the mood the user actually chose.
+     */
+    var reduceFlashing: Boolean = false
+        set(value) {
+            if (field == value) return
+            field = value
+            _eyes.forEachIndexed { index, eye ->
+                eye.runtime.behavior = behaviorFor(_moods.getOrElse(index) { Mood.IdleScan })
+            }
+            transformChanged()
+        }
+
+    private fun behaviorFor(mood: Mood): BehaviorConfig =
+        Moods.forMood(mood).let { if (reduceFlashing) it.reducedFlashing() else it }
 
     private val _selection = mutableStateListOf<Int>()
 
@@ -294,7 +312,7 @@ class EditorState(
         if (!beginEdit()) return
         activeIndices().forEach { index ->
             _moods[index] = mood
-            _eyes[index].runtime.behavior = Moods.forMood(mood)
+            _eyes[index].runtime.behavior = behaviorFor(mood)
         }
         transformChanged()
     }
@@ -305,26 +323,40 @@ class EditorState(
         if (!beginEdit()) return
         activeIndices().forEach { index ->
             _moods[index] = Mood.Custom
-            _eyes[index].runtime.behavior = behavior
+            _eyes[index].runtime.behavior =
+                if (reduceFlashing) behavior.reducedFlashing() else behavior
         }
         transformChanged()
     }
 
-    /** The config the panels should show: the first active eye's. */
-    fun activeBehavior(): BehaviorConfig =
-        activeIndices().firstOrNull()?.let { _eyes[it].runtime.behavior } ?: Moods.FreeDefault
+    /**
+     * The first active eye, for panels that display its values.
+     *
+     * Reads [transformRevision] so a caller composing against it re-runs when
+     * those values change. Without that, a panel showing a colour or a blink
+     * rate would go stale after an undo, a demo revert, or a settings change,
+     * because none of it is Compose state.
+     */
+    fun activeEye(): RenderedEye? {
+        @Suppress("UNUSED_EXPRESSION")
+        transformRevision
+        return activeIndices().firstOrNull()?.let { _eyes[it] }
+    }
 
-    /** The mood the panels should show, or null when the selection disagrees. */
+    fun activeBehavior(): BehaviorConfig = activeEye()?.runtime?.behavior ?: Moods.FreeDefault
+
+    /** Null when the selection disagrees. */
     fun activeMood(): Mood? = activeIndices()
         .map { _moods.getOrElse(it) { Mood.IdleScan } }
         .distinct()
         .singleOrNull()
 
-    /** The style the panels should show, or null when the selection disagrees. */
-    fun activeStyle(): EyeStyle? = activeIndices()
-        .map { _eyes[it].style }
-        .distinct()
-        .singleOrNull()
+    /** Null when the selection disagrees. */
+    fun activeStyle(): EyeStyle? {
+        @Suppress("UNUSED_EXPRESSION")
+        transformRevision
+        return activeIndices().map { _eyes[it].style }.distinct().singleOrNull()
+    }
 
     // ---- Place ----------------------------------------------------------
 

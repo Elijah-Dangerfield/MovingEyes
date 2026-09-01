@@ -41,7 +41,14 @@ import com.dangerfield.movingeyes.features.editor.impl.panels.MotionPanel
 import com.dangerfield.movingeyes.features.editor.impl.panels.PanelTab
 import com.dangerfield.movingeyes.features.editor.impl.panels.PlacePanel
 import com.dangerfield.movingeyes.features.editor.impl.panels.ScenePanel
+import com.dangerfield.movingeyes.features.paywall.PaywallRoute
+import com.dangerfield.movingeyes.features.paywall.PaywallTrigger
+import com.dangerfield.movingeyes.features.settings.SettingsRoute
 import com.dangerfield.movingeyes.libraries.billing.DemoControl
+import com.dangerfield.movingeyes.libraries.eyes.Mood
+import com.dangerfield.movingeyes.libraries.eyes.Moods
+import com.dangerfield.movingeyes.libraries.eyes.isStrobing
+import com.dangerfield.movingeyes.libraries.navigation.Router
 import com.dangerfield.movingeyes.libraries.device.ScreenMetrics
 import com.dangerfield.movingeyes.libraries.device.dimLevelsFor
 import com.dangerfield.movingeyes.libraries.device.millimeters
@@ -108,6 +115,7 @@ import kotlin.math.roundToInt
 fun EditorScreen(
     viewModel: EditorViewModel,
     screenMetrics: ScreenMetrics,
+    router: Router,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.stateFlow.collectAsStateWithLifecycle()
@@ -172,6 +180,7 @@ fun EditorScreen(
             brightness = editor.canvas.brightness,
             displayController = viewModel.displayController,
             batteryStatus = viewModel.batteryStatus,
+            onSessionEnded = { viewModel.takeAction(EditorAction.DisplaySessionEnded(it)) },
         )
 
         BackHandler(enabled = display.isActive) { display.exit() }
@@ -179,6 +188,33 @@ fun EditorScreen(
         // Read here rather than in the save handler: a string resource can only
         // be read from a composable, and the handler isn't one.
         val fallbackSceneName = stringResource(Res.string.scenes_default_name)
+
+        editor.reduceFlashing = state.reduceFlashing
+
+        // A strobing mood waits behind its warning until the user has chosen.
+        var pendingStrobingMood by remember { mutableStateOf<Mood?>(null) }
+
+        // Every route to a mood ends here, so neither the paywall gate nor the
+        // photosensitivity warning can be stepped around.
+        fun applyMood(mood: Mood, warned: Boolean = false) {
+            if (!warned && mood.isStrobing && mood.name !in state.moodsWarnedAbout &&
+                !state.reduceFlashing
+            ) {
+                pendingStrobingMood = mood
+                return
+            }
+            // Picking the free default is never a paid action: a free user must
+            // be able to get back to where they started.
+            if (isUnlocked || mood in Moods.Free) {
+                editor.setMood(mood)
+            } else {
+                gate(viewModel, router, DemoControl.Mood) {
+                    val before = editor.snapshot()
+                    editor.setMood(mood)
+                    return@gate { editor.restore(before) }
+                }
+            }
+        }
 
         fun autosave() {
             viewModel.takeAction(
@@ -338,10 +374,10 @@ fun EditorScreen(
                         editor = editor,
                         isUnlocked = isUnlocked,
                         onLockedStyleTapped = { style ->
-                            demo(viewModel, DemoControl.EyeStyle) {
+                            gate(viewModel, router, DemoControl.EyeStyle) {
                                 val before = editor.snapshot()
                                 editor.setStyle(style)
-                                return@demo { editor.restore(before) }
+                                return@gate { editor.restore(before) }
                             }
                         },
                         shortEdgePx = shortEdgePx,
@@ -350,11 +386,12 @@ fun EditorScreen(
                     PanelTab.Motion -> MotionPanel(
                         editor = editor,
                         isUnlocked = isUnlocked,
+                        onMoodPicked = { applyMood(it) },
                         onLockedControl = { control, apply ->
-                            demo(viewModel, control) {
+                            gate(viewModel, router, control) {
                                 val before = editor.snapshot()
                                 apply()
-                                return@demo { editor.restore(before) }
+                                return@gate { editor.restore(before) }
                             }
                         },
                     )
@@ -399,7 +436,7 @@ fun EditorScreen(
                 listOf(
                     ToastAction(
                         label = stringResource(Res.string.demo_keep, stringResource(control.label)),
-                        onSelect = { /* Paywall lands in Phase 7. */ },
+                        onSelect = { router.navigate(PaywallRoute(control.paywallTrigger)) },
                     ),
                 )
             }.orEmpty(),
@@ -420,6 +457,23 @@ fun EditorScreen(
         // Last, so it covers the overlay too.
         SleepFade(display.sleepFade)
 
+        pendingStrobingMood?.let { mood ->
+            FlashingWarningDialog(
+                mood = mood,
+                onContinue = {
+                    viewModel.takeAction(EditorAction.FlashingWarningSeen(mood))
+                    pendingStrobingMood = null
+                    applyMood(mood, warned = true)
+                },
+                onReduceFlashing = {
+                    viewModel.takeAction(EditorAction.ReduceFlashing)
+                    pendingStrobingMood = null
+                    applyMood(mood, warned = true)
+                },
+                onDismiss = { pendingStrobingMood = null },
+            )
+        }
+
         if (drawerOpen) {
             ScenesDrawer(
                 saved = state.savedScenes,
@@ -438,6 +492,10 @@ fun EditorScreen(
                     viewModel.takeAction(EditorAction.Open(blankScene()))
                     drawerOpen = false
                 },
+                onOpenSettings = {
+                    drawerOpen = false
+                    router.navigate(SettingsRoute())
+                },
                 onDismiss = { drawerOpen = false },
                 isUnlocked = isUnlocked,
             )
@@ -446,18 +504,30 @@ fun EditorScreen(
 }
 
 /**
+ * A locked control runs its demo, or opens the paywall once that demo is spent.
  * [apply] performs the change and returns its undo, so a change and its
  * reversal are stated in one place and can't drift.
  */
-private fun demo(
+private fun gate(
     viewModel: EditorViewModel,
+    router: Router,
     control: DemoControl,
     apply: () -> (() -> Unit),
 ) {
-    if (!viewModel.featureTrial.isAvailable(control)) return
+    if (!viewModel.featureTrial.isAvailable(control)) {
+        router.navigate(PaywallRoute(control.paywallTrigger))
+        return
+    }
     val revert = apply()
     viewModel.featureTrial.start(control, revert)
 }
+
+private val DemoControl.paywallTrigger: PaywallTrigger
+    get() = when (this) {
+        DemoControl.EyeStyle -> PaywallTrigger.EyeStyle
+        DemoControl.Reactivity -> PaywallTrigger.Reactivity
+        else -> PaywallTrigger.Motion
+    }
 
 @Composable
 private fun EditorChrome(

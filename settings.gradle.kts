@@ -39,6 +39,10 @@ include(":apps:compose")
 
 // Features
 include(":features:editor")
+include(":features:paywall")
+include(":features:paywall:impl")
+include(":features:settings")
+include(":features:settings:impl")
 include(":features:editor:impl")
 
 // Libraries

@@ -13,7 +13,6 @@ import com.dangerfield.movingeyes.features.editor.impl.label
 import com.dangerfield.movingeyes.libraries.billing.DemoControl
 import com.dangerfield.movingeyes.libraries.eyes.BehaviorConfig
 import com.dangerfield.movingeyes.libraries.eyes.Mood
-import com.dangerfield.movingeyes.libraries.eyes.Moods
 import com.dangerfield.movingeyes.libraries.ui.components.chip.SelectChip
 import com.dangerfield.movingeyes.libraries.ui.components.text.Text
 import com.dangerfield.movingeyes.system.AppTheme
@@ -36,6 +35,7 @@ import kotlin.math.roundToInt
 fun MotionPanel(
     editor: EditorState,
     isUnlocked: Boolean,
+    onMoodPicked: (Mood) -> Unit,
     onLockedControl: (DemoControl, apply: () -> Unit) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -60,15 +60,7 @@ fun MotionPanel(
                     SelectChip(
                         label = stringResource(mood.label),
                         selected = mood == activeMood,
-                        onClick = {
-                            // Picking the free default is never a paid action:
-                            // a free user must be able to get back.
-                            if (mood in Moods.Free) {
-                                editor.setMood(mood)
-                            } else {
-                                gated(DemoControl.Mood) { editor.setMood(mood) }
-                            }
-                        },
+                        onClick = { onMoodPicked(mood) },
                     )
                 }
             }

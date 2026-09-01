@@ -15,6 +15,7 @@ import com.dangerfield.movingeyes.libraries.device.dimLevelsFor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlin.time.Duration
+import kotlin.time.TimeSource
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
@@ -61,8 +62,18 @@ fun DisplayModeEffects(
     brightness: Float,
     displayController: DisplayController,
     batteryStatus: BatteryStatus,
+    onSessionEnded: (Duration) -> Unit,
 ) {
     val active = state.isActive
+
+    // How long a display session lasted is the metric that decides whether this
+    // product works: people entering and leaving after thirty seconds is not a
+    // problem more eye styles would fix.
+    DisposableEffect(active) {
+        if (!active) return@DisposableEffect onDispose { }
+        val startedAt = TimeSource.Monotonic.markNow()
+        onDispose { onSessionEnded(startedAt.elapsedNow()) }
+    }
 
     DisposableEffect(active) {
         displayController.setKeepAwake(active)

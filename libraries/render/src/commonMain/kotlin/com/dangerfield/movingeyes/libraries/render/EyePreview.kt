@@ -4,6 +4,7 @@ package com.dangerfield.movingeyes.libraries.render
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -33,6 +34,7 @@ import kotlin.random.Random
 fun EyePreview(
     style: EyeStyle,
     modifier: Modifier = Modifier,
+    /** The composable's footprint. The eye is drawn inside it with room for glow. */
     sizeDp: Dp = 56.dp,
     behavior: BehaviorConfig = Moods.FreeDefault,
     canvasColor: Color = Color.Black,
@@ -41,7 +43,9 @@ fun EyePreview(
     pupilColor: Color? = null,
     seed: Int = style.id.ordinal,
 ) {
-    val sizePx = with(LocalDensity.current) { sizeDp.toPx() }
+    // The eye is drawn smaller than the composable so glow, which extends past
+    // the iris, has somewhere to go instead of being clipped at the edge.
+    val sizePx = with(LocalDensity.current) { sizeDp.toPx() } * EyeFillFraction
 
     val state = remember(style, behavior, sizePx, scleraColor, irisColor, pupilColor) {
         EyeSceneState(
@@ -62,7 +66,7 @@ fun EyePreview(
         )
     }
 
-    Box(modifier = modifier) {
+    Box(modifier = modifier.size(sizeDp)) {
         EyeCanvas(
             state = state,
             modifier = Modifier.fillMaxSize(),
@@ -70,3 +74,5 @@ fun EyePreview(
         )
     }
 }
+
+private const val EyeFillFraction = 0.72f

@@ -45,6 +45,7 @@ import movingeyes.libraries.resources.generated.resources.scenes_new_blank
 import movingeyes.libraries.resources.generated.resources.scenes_none_saved
 import movingeyes.libraries.resources.generated.resources.scenes_presets
 import movingeyes.libraries.resources.generated.resources.scenes_title
+import movingeyes.libraries.resources.generated.resources.settings_open
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -62,6 +63,7 @@ fun ScenesDrawer(
     onOpenPreset: (ScenePreset) -> Unit,
     onDeleteScene: (Scene) -> Unit,
     onNewBlank: () -> Unit,
+    onOpenSettings: () -> Unit,
     onDismiss: () -> Unit,
     isUnlocked: Boolean,
     modifier: Modifier = Modifier,
@@ -86,10 +88,25 @@ fun ScenesDrawer(
                 .padding(Dimension.D700),
             verticalArrangement = Arrangement.spacedBy(Dimension.D500),
         ) {
-            Text(
-                text = stringResource(Res.string.scenes_title),
-                typography = AppTheme.typography.Heading.H600,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(Res.string.scenes_title),
+                    typography = AppTheme.typography.Heading.H600,
+                )
+                // App-level, so it lives here rather than in the canvas
+                // toolbar, which holds only canvas actions.
+                Button(
+                    onClick = onOpenSettings,
+                    size = ButtonSize.Small,
+                    style = ButtonStyle.Text,
+                ) {
+                    Text(stringResource(Res.string.settings_open))
+                }
+            }
 
             Button(
                 onClick = onNewBlank,

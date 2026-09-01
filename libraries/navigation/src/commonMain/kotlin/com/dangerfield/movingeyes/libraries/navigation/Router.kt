@@ -23,8 +23,8 @@ interface Router {
 
 fun <T> Catching<T>.blockingScreenOnError(
     router: Router,
-    title: String = "This is super embarrassing",
-    subtitle: String = "Our intern Ryan seems to have left a bug in the app. Sorry, you'll need to kill and restart the app.",
+    title: String? = null,
+    subtitle: String? = null,
     logId: String? = null,
     includeErrorMessage: Boolean = false,
 ): Catching<T> = this.onFailure {
@@ -43,9 +43,9 @@ fun <T> Catching<T>.blockingScreenOnError(
 
 fun <T> Catching<T>.dialogOnError(
     router: Router,
-    title: String = "Oops something went wrong",
-    subtitle: String = "Please try again",
-    actionTitle: String = "Okay",
+    title: String? = null,
+    subtitle: String? = null,
+    actionTitle: String? = null,
     action: ErrorDialogAction = ErrorDialogAction.Dismiss,
     logId: String? = null,
     includeErrorMessage: Boolean = false,

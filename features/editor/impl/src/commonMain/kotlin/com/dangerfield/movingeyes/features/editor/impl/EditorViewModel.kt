@@ -5,7 +5,13 @@ import com.dangerfield.movingeyes.libraries.billing.FeatureTrial
 import com.dangerfield.movingeyes.libraries.core.logging.KLog
 import com.dangerfield.movingeyes.libraries.device.BatteryStatus
 import com.dangerfield.movingeyes.libraries.device.DisplayController
+import com.dangerfield.movingeyes.libraries.eyes.Mood
+import com.dangerfield.movingeyes.libraries.core.logging.logEvent
 import com.dangerfield.movingeyes.libraries.movingeyes.AppCache
+import com.dangerfield.movingeyes.libraries.review.ReviewPromptCoordinator
+import com.dangerfield.movingeyes.libraries.review.ReviewTrigger
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 import androidx.lifecycle.viewModelScope
 import com.dangerfield.movingeyes.libraries.flowroutines.SEAViewModel
 import com.dangerfield.movingeyes.libraries.scene.Scene
@@ -31,6 +37,7 @@ class EditorViewModel(
     private val appCache: AppCache,
     val entitlements: Entitlements,
     val featureTrial: FeatureTrial,
+    private val reviewPrompts: ReviewPromptCoordinator,
     val displayController: DisplayController,
     val batteryStatus: BatteryStatus,
 ) : SEAViewModel<EditorViewState, EditorEvent, EditorAction>(
@@ -48,7 +55,15 @@ class EditorViewModel(
             .launchIn(viewModelScope)
 
         appCache.updates
-            .onEach { data -> takeAction(EditorAction.HintSeenChanged(data.hasSeenDisplayModeHint)) }
+            .onEach { data ->
+                takeAction(
+                    EditorAction.SettingsChanged(
+                        seenHint = data.hasSeenDisplayModeHint,
+                        reduceFlashing = data.reduceFlashing,
+                        moodsWarnedAbout = data.flashingWarningsSeen,
+                    ),
+                )
+            }
             .launchIn(viewModelScope)
 
         takeAction(EditorAction.LoadAutosave)
@@ -92,8 +107,36 @@ class EditorViewModel(
                 sendEvent(EditorEvent.SceneSaved)
             }
 
-            is EditorAction.HintSeenChanged -> {
-                action.updateState { it.copy(hasSeenDisplayModeHint = action.seen) }
+            is EditorAction.SettingsChanged -> {
+                action.updateState {
+                    it.copy(
+                        hasSeenDisplayModeHint = action.seenHint,
+                        reduceFlashing = action.reduceFlashing,
+                        moodsWarnedAbout = action.moodsWarnedAbout,
+                    )
+                }
+            }
+
+            is EditorAction.DisplaySessionEnded -> {
+                logger.logEvent(
+                    "display_session_ended",
+                    "durationSeconds" to action.duration.inWholeSeconds.toString(),
+                )
+                // Only after a session long enough to mean the thing actually
+                // worked — a thirty-second look is not a positive moment.
+                if (action.duration >= ReviewWorthySession) {
+                    reviewPrompts.requestPrompt(ReviewTrigger.MilestoneReached)
+                }
+            }
+
+            EditorAction.ReduceFlashing -> {
+                appCache.update { it.copy(reduceFlashing = true) }
+            }
+
+            is EditorAction.FlashingWarningSeen -> {
+                appCache.update {
+                    it.copy(flashingWarningsSeen = it.flashingWarningsSeen + action.mood.name)
+                }
             }
 
             EditorAction.DisplayHintSeen -> {
@@ -120,7 +163,14 @@ data class EditorViewState(
 
     /** The one-time "taps do nothing now" card has been dismissed. */
     val hasSeenDisplayModeHint: Boolean = false,
+
+    val reduceFlashing: Boolean = false,
+
+    /** Mood names whose photosensitivity warning has already been shown. */
+    val moodsWarnedAbout: Set<String> = emptySet(),
 )
+
+private val ReviewWorthySession = 10.minutes
 
 sealed interface EditorEvent {
     data class SceneOpened(val scene: Scene) : EditorEvent
@@ -134,6 +184,14 @@ sealed interface EditorAction {
     data class Autosave(val scene: Scene) : EditorAction
     data class Save(val scene: Scene) : EditorAction
     data class Delete(val scene: Scene) : EditorAction
-    data class HintSeenChanged(val seen: Boolean) : EditorAction
+    data class SettingsChanged(
+        val seenHint: Boolean,
+        val reduceFlashing: Boolean,
+        val moodsWarnedAbout: Set<String>,
+    ) : EditorAction
+
+    data class FlashingWarningSeen(val mood: Mood) : EditorAction
+    data object ReduceFlashing : EditorAction
+    data class DisplaySessionEnded(val duration: Duration) : EditorAction
     data object DisplayHintSeen : EditorAction
 }

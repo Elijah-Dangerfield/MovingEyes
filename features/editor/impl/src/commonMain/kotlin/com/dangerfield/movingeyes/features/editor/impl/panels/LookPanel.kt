@@ -43,7 +43,7 @@ fun LookPanel(
     modifier: Modifier = Modifier,
 ) {
     val activeStyle = editor.activeStyle()
-    val first = editor.activeIndices().firstOrNull()?.let { editor.eyes[it] }
+    val first = editor.activeEye()
 
     Column(
         modifier = modifier.fillMaxWidth(),
