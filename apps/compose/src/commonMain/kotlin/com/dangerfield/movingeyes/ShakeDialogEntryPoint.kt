@@ -10,6 +10,7 @@ import com.dangerfield.movingeyes.libraries.core.BuildInfo
 import com.dangerfield.movingeyes.libraries.navigation.DesignSystemRoute
 import com.dangerfield.movingeyes.libraries.navigation.FeatureEntryPoint
 import com.dangerfield.movingeyes.libraries.navigation.Router
+import com.dangerfield.movingeyes.libraries.navigation.EyeGalleryRoute
 import com.dangerfield.movingeyes.libraries.navigation.QaConfigRoute
 import com.dangerfield.movingeyes.libraries.navigation.ShakeDialogRoute
 import com.dangerfield.movingeyes.libraries.navigation.dialog
@@ -63,6 +64,13 @@ class ShakeDialogEntryPoint(
                                 router.navigate(QaConfigRoute())
                             },
                         ),
+                        ShakeAction(
+                            label = "Eyes",
+                            onSelect = {
+                                router.goBack()
+                                router.navigate(EyeGalleryRoute())
+                            },
+                        ),
                     )
                 } else {
                     emptyList()
@@ -77,6 +85,13 @@ class ShakeDialogEntryPoint(
             deepLinks = listOf(routeDeepLink<DesignSystemRoute>("movingeyes://design-system")),
         ) {
             Screen { padding -> CatalogScreen(modifier = Modifier.padding(padding)) }
+        }
+
+        //   adb shell am start -d "movingeyes://eyes"
+        screen<EyeGalleryRoute>(
+            deepLinks = listOf(routeDeepLink<EyeGalleryRoute>("movingeyes://eyes")),
+        ) {
+            Screen { padding -> EyeGalleryScreen(modifier = Modifier.padding(padding)) }
         }
 
         //   adb shell am start -d "movingeyes://qa-config"

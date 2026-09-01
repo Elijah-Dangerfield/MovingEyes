@@ -14,4 +14,5 @@ movingeyes:
     excludes: [
       '**/libraries/ui/src/commonMain/kotlin/**/catalog/**',
       '**/apps/compose/src/commonMain/kotlin/**/QaConfig*.kt',
+      '**/apps/compose/src/commonMain/kotlin/**/EyeGalleryScreen.kt',
     ]

@@ -34,6 +34,8 @@ kotlin {
             implementation(projects.libraries.storage)
             implementation(projects.libraries.storage.impl)
             implementation(projects.libraries.movingeyes.storage)
+            implementation(projects.libraries.eyes)
+            implementation(projects.libraries.render)
             implementation(projects.libraries.billing)
             implementation(projects.libraries.billing.impl)
             implementation(projects.libraries.config)

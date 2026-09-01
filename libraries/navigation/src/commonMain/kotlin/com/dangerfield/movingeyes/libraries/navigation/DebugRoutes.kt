@@ -23,3 +23,11 @@ class QaConfigRoute : Route(
     exit = AnimationType.SlideDown,
     popExit = AnimationType.SlideDown,
 )
+
+/** All twelve eye styles, animating, for judging them on a real screen. */
+@Serializable
+class EyeGalleryRoute : Route(
+    enter = AnimationType.SlideUp,
+    exit = AnimationType.SlideDown,
+    popExit = AnimationType.SlideDown,
+)
