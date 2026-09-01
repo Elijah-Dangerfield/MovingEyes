@@ -23,7 +23,6 @@ abstract class ConfigurationExtension {
     }
 
     fun storage() {
-        serialization()
         project.pluginManager.apply(project.libs.plugins.androidxRoom.get().pluginId)
         project.extensions.configure(RoomExtension::class.java) {
             schemaDirectory("${project.projectDir}/schemas")
@@ -46,19 +45,5 @@ abstract class ConfigurationExtension {
     fun ksp(configure: KspExtension.() -> Unit = {}) {
         project.pluginManager.apply("com.google.devtools.ksp")
         project.extensions.configure(configure)
-    }
-
-    fun compose() {
-
-    }
-
-
-    fun serialization() {
-        project.dependencies {
-            add("implementation", project.libs.kotlinx.serialization.json)
-        }
-    }
-
-    fun networking() {
     }
 }

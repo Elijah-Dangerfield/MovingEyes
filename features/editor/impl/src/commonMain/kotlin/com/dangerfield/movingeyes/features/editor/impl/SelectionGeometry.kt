@@ -81,8 +81,8 @@ fun distributeEvenly(points: List<CanvasPoint>): List<CanvasPoint> {
     val spanY = points.maxOf { it.y } - points.minOf { it.y }
     val alongX = spanX >= spanY
 
-    // Sorted for spacing, then put back in the caller's order — the caller's
-    // list is indexed against the selection and must not be reshuffled.
+    // Sorted for spacing, then restored: the caller's list is indexed against
+    // the selection and must not be reshuffled.
     val order = points.indices.sortedBy { if (alongX) points[it].x else points[it].y }
     val first = points[order.first()]
     val last = points[order.last()]

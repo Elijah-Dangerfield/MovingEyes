@@ -9,20 +9,11 @@ import com.dangerfield.movingeyes.libraries.scene.storage.db.SceneDao
 import com.dangerfield.movingeyes.libraries.scene.storage.db.SceneEntity
 
 /**
- * ## A note on migrations, now that this database holds real work
- *
- * The provider is still on `fallbackToDestructiveMigration`, which is fine
- * while nothing has shipped and would be data loss the moment it has: `scenes`
- * is where twenty minutes of lining eyes up with holes in cardboard ends up.
- *
- * What keeps that from being a live grenade is the shape of the table. A scene
- * is stored as one versioned payload column, so changing what a scene *is*
- * goes through `SceneCodec` and never touches this schema — see [SceneEntity].
- * The columns here exist only to sort and filter, and they aren't expected to
- * change again.
- *
- * If they ever do, write a real migration before release rather than bumping
- * the version.
+ * The provider still falls back to destructive migration, which is data loss
+ * once this has shipped. What keeps that survivable is [SceneEntity]'s shape:
+ * a scene is one versioned payload column, so changing what a scene *is* goes
+ * through `SceneCodec` and never touches this schema. If these columns ever do
+ * need to change, write a real migration rather than bumping the version.
  */
 @Database(
     entities = [

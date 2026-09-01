@@ -13,11 +13,8 @@ import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
 /**
- * Window flags on the foreground Activity.
- *
- * Every call is a no-op when there is no Activity — the app is backgrounded,
- * which is precisely when none of this matters. Silently doing nothing is
- * correct here and is why the interface promises best-effort.
+ * Window flags on the foreground Activity. A no-op when there isn't one, which
+ * is when the app is backgrounded and none of this matters.
  */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
@@ -38,10 +35,8 @@ class AndroidDisplayController(
         val controller = WindowInsetsControllerCompat(activity.window, activity.window.decorView)
         if (immersive) {
             controller.hide(WindowInsetsCompat.Type.systemBars())
-            // BY_SWIPE, not the default: the bars must come back when someone
-            // swipes for them, because the swipe-from-edge back gesture is the
-            // only documented way out of display mode. A sticky-immersive mode
-            // that swallowed the first swipe would trap the user.
+            // BY_SWIPE, not sticky: the swipe-from-edge back gesture is the
+            // only way out of display mode, so it must not be swallowed.
             controller.systemBarsBehavior =
                 WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         } else {
@@ -58,10 +53,8 @@ class AndroidDisplayController(
 
     override fun setOrientationLocked(locked: Boolean) = onActivity { activity ->
         activity.requestedOrientation = if (locked) {
-            // LOCKED rather than a specific orientation constant: it freezes
-            // whatever the device is showing right now, which is the whole
-            // point. Naming an orientation would spin a tablet that had been
-            // taped up sideways.
+            // LOCKED freezes what's on screen; naming an orientation would spin
+            // a tablet that had been taped up sideways.
             ActivityInfo.SCREEN_ORIENTATION_LOCKED
         } else {
             ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED

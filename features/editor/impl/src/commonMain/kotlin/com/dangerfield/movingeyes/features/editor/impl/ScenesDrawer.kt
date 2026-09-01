@@ -48,16 +48,12 @@ import movingeyes.libraries.resources.generated.resources.scenes_title
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * Saved scenes and the eight launch presets, behind the top-left button.
+ * Saved scenes and the launch presets. A drawer rather than a home screen: the
+ * canvas is the product, and a grid of thumbnails in front of it makes the app
+ * look like a content library.
  *
- * v2 demoted the gallery from being the home screen to being a drawer, and that
- * is the right call: the canvas is the product, and a grid of thumbnails in
- * front of it makes the app look like a content library rather than a tool.
- *
- * Every row renders a **live miniature**, never a static thumbnail. A still
- * image of two eyes is indistinguishable from a still image of two other eyes;
- * the motion is the only thing that tells them apart, and it's also the thing
- * being sold.
+ * Rows render live miniatures. A still image of two eyes is indistinguishable
+ * from a still image of two other eyes.
  */
 @Composable
 fun ScenesDrawer(
@@ -71,9 +67,6 @@ fun ScenesDrawer(
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
-        // A scrim that closes on tap. The drawer covers the canvas, and the
-        // canvas is what the user actually wants to look at, so getting back to
-        // it must not require finding a button.
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -85,8 +78,7 @@ fun ScenesDrawer(
             modifier = Modifier
                 .fillMaxHeight()
                 // A fraction as well as a cap, so a phone always leaves a strip
-                // of scrim to tap. At a flat 360dp the drawer covers the whole
-                // width of a phone and the only way out is the back gesture.
+                // of scrim to tap.
                 .fillMaxWidth(DrawerWidthFraction)
                 .widthIn(max = DrawerMaxWidth)
                 .background(AppTheme.colors.surfacePrimary.color)
@@ -240,6 +232,4 @@ private val RowCornerRadius = 14.dp
 private val MiniatureSize = 48.dp
 private val MiniatureEyeSize = 34.dp
 
-/** Dark enough to push the canvas back, light enough that the scene stays
- *  visible behind — you're picking a replacement for what you can still see. */
 private val ScrimColor = Color.Black.copy(alpha = 0.6f)

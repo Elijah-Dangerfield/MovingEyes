@@ -42,16 +42,12 @@ import movingeyes.libraries.resources.generated.resources.style_spider
 import org.jetbrains.compose.resources.StringResource
 
 /**
- * Names for things identified by an id in a pure-Kotlin module.
+ * `:libraries:eyes` and `:libraries:scene` are pure Kotlin with no access to
+ * string resources, so they carry ids and this turns each into copy.
+ * `EyeStyle.displayName` is a developer-facing fallback and is never rendered.
  *
- * `:libraries:eyes` and `:libraries:scene` have no Compose dependency and
- * therefore no access to string resources, so they carry ids and this file
- * turns each into copy. `EyeStyle.displayName` still exists but is a
- * developer-facing fallback for logs — it is deliberately never rendered.
- *
- * The `when`s are exhaustive on purpose: adding a style or a mood should fail
- * to compile here until it has a name, rather than shipping an enum constant to
- * a user.
+ * The `when`s are exhaustive so a new style or mood fails to compile here
+ * rather than shipping an enum constant to a user.
  */
 val EyeStyleId.label: StringResource
     get() = when (this) {
@@ -92,7 +88,7 @@ val ScenePresetId.label: StringResource
         ScenePresetId.DollsRoom -> Res.string.preset_dolls_room
     }
 
-/** Used in the "Keep Frantic" bar, so it has to name the thing that just left. */
+/** Names the control in the "keep it" bar. */
 val DemoControl.label: StringResource
     get() = when (this) {
         DemoControl.Mood -> Res.string.motion_mood

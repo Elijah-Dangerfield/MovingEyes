@@ -6,7 +6,6 @@ plugins {
 
 moduleConfig {
     di()
-    serialization()
 }
 
 android {

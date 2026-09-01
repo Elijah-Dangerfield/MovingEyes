@@ -9,11 +9,7 @@ import software.amazon.lastmile.kotlin.inject.anvil.AppScope
 import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
-/**
- * Split between Kotlin and Swift along the line UIKit draws: the two plain
- * properties are set here, the two view-controller overrides go through
- * [DisplayHost]. See its docs for why.
- */
+/** Plain properties here, view-controller overrides through [DisplayHost]. */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
 @Inject
@@ -22,13 +18,8 @@ class IosDisplayController(
 ) : DisplayController {
 
     /**
-     * The system brightness this app found on entry, so leaving display mode
-     * puts it back.
-     *
-     * iOS has no per-window brightness — `UIScreen.brightness` is the device's
-     * real backlight and the change outlives the app. Failing to restore it
-     * would leave someone's phone at 10% brightness after they closed a
-     * Halloween decoration, with no clue why.
+     * iOS has no per-window brightness: `UIScreen.brightness` is the real
+     * backlight and the change outlives the app, so it has to be put back.
      */
     private var brightnessOnEntry: Double? = null
 

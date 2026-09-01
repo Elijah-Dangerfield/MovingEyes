@@ -6,11 +6,8 @@ import software.amazon.lastmile.kotlin.inject.anvil.AppScope
 import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
-/**
- * A no-op, because [AndroidDisplayController] already does both of these
- * itself with window flags. The binding exists only so the graph resolves the
- * same shape on both platforms.
- */
+/** A no-op: [AndroidDisplayController] does both with window flags. The
+ *  binding exists so the graph resolves the same shape on both platforms. */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
 @Inject

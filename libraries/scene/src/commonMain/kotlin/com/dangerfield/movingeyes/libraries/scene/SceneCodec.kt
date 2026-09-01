@@ -9,35 +9,21 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
 /**
- * Turns a [Scene] into the string that gets stored, and back.
+ * A scene as stored, in a `{"v": <int>, "d": {...}}` envelope matching
+ * `VersionedCacheJsonSerializer`.
  *
- * ## Why this is versioned on day one
+ * Versioned from the first commit that has it, not the first release: a scene
+ * is the one artifact this app exists to produce, and payloads already written
+ * unlabelled can't be migrated later.
  *
- * A scene is the only thing in this app the user actually *makes*. Someone
- * spends twenty minutes lining eyes up with holes they cut in cardboard; if a
- * later release can't read that back, the app has destroyed the only artifact
- * it exists to produce. Adding versioning after the first release is too late,
- * because v1's payloads are already on disk unlabelled.
- *
- * The envelope is `{"v": <int>, "d": {...}}`, deliberately the same shape as
- * `VersionedCacheJsonSerializer` uses, so there is one thing to learn.
- *
- * ## Adding a version
- *
- * Append a [Migration] to [migrations] that rewrites the previous version's
- * JSON into the next one's. [CurrentVersion] is derived from the list length,
- * so it can't drift out of step with the migrations that are actually present.
- * Never edit an existing migration — it runs against payloads already written.
- *
- * Unknown keys are ignored on read, so a *newer* build adding an optional field
- * doesn't need a migration at all; a migration is for renames, removals and
- * changes of meaning.
+ * To add a version, append a [Migration] rewriting the previous version's JSON
+ * into the next. [CurrentVersion] follows the list length so the two can't
+ * drift. Never edit a migration that has shipped. Adding an optional field
+ * needs no migration — unknown keys are ignored on read.
  */
 object SceneCodec {
 
     private val json = Json {
-        // A field added in a later version must not make an older reader throw;
-        // it should read what it understands and drop the rest.
         ignoreUnknownKeys = true
         encodeDefaults = true
         explicitNulls = false
@@ -67,10 +53,6 @@ object SceneCodec {
         val version = root["v"]?.jsonPrimitive?.intOrNull
             ?: return SceneDecodeResult.Unreadable("missing version")
 
-        // A scene written by a newer build than this one. Refusing is the only
-        // honest answer: guessing would show the user a composition that isn't
-        // the one they saved, and re-saving it would overwrite the good copy
-        // with a lossy one.
         if (version > CurrentVersion) {
             return SceneDecodeResult.FromTheFuture(version = version, supported = CurrentVersion)
         }
@@ -97,10 +79,10 @@ sealed interface SceneDecodeResult {
     data class Success(val scene: Scene) : SceneDecodeResult
 
     /**
-     * Written by a newer version of the app — most likely restored from a
-     * backup onto an older build. Distinct from [Unreadable] because the scene
-     * is probably fine and the user should be told to update rather than told
-     * their work is corrupt.
+     * Written by a newer build, most likely restored from a backup. Refused
+     * rather than half-read: showing a partly-understood composition invites
+     * the user to re-save it over the good copy. Distinct from [Unreadable]
+     * because the scene is probably fine.
      */
     data class FromTheFuture(val version: Int, val supported: Int) : SceneDecodeResult
 

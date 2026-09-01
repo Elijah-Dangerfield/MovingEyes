@@ -30,12 +30,8 @@ import kotlin.math.roundToInt
 import kotlin.time.Duration
 
 /**
- * Scene-wide settings and the way out to saving.
- *
- * Brightness lives here rather than in the OS because the app needs to go
- * *below* the system minimum — a tablet at its dimmest is still far too bright
- * behind a painting in a dark hallway. It's applied as a black overlay on top
- * of the canvas, which is also why it can never quite reach zero.
+ * Scene-wide settings. Brightness is here rather than left to the OS because
+ * the app needs to go *below* the system minimum — see `dimLevelsFor`.
  */
 @Composable
 fun ScenePanel(
@@ -61,9 +57,7 @@ fun ScenePanel(
             valueRange = MinBrightness..1f,
         )
 
-        // Options rather than a slider: nobody wants "forty-seven minutes", and
-        // a scene that runs all night is a legitimate choice rather than a
-        // missing value.
+        // Options, not a slider: nobody wants "forty-seven minutes".
         PanelRow(label = stringResource(Res.string.scene_sleep_timer)) {
             val labels = SleepTimerOptions.associateWith { sleepTimerLabel(it) }
             SegmentedControl(
@@ -94,8 +88,7 @@ private fun sleepTimerLabel(timer: Duration?): String = when {
     else -> stringResource(Res.string.scene_sleep_hours, timer.inWholeHours.toInt())
 }
 
-/** Matches EditorState's floor. A brightness slider that reaches zero looks
- *  exactly like a crash, and the way back is invisible. */
+/** Matches EditorState's floor. */
 private const val MinBrightness = 0.05f
 
 private const val MinutesPerHour = 60

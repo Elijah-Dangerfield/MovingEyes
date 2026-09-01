@@ -7,11 +7,7 @@ import com.dangerfield.movingeyes.libraries.eyes.EyeStyles
 import com.dangerfield.movingeyes.libraries.eyes.EyeTier
 import com.dangerfield.movingeyes.libraries.eyes.Mood
 
-/**
- * Identifies a preset. The **name is not here** — it's copy, and this module is
- * pure Kotlin with no access to string resources, so the UI resolves the name
- * from this id. Same reason `EyeStyle.displayName` isn't what gets rendered.
- */
+/** Names live in the string catalogue; this module is pure Kotlin. */
 enum class ScenePresetId {
     PortraitHaunt,
     PumpkinPals,
@@ -24,24 +20,17 @@ enum class ScenePresetId {
 }
 
 /**
- * A starting arrangement, not a precision layout.
- *
- * Positions are hand-placed in normalised canvas coordinates and are meant to
- * be dragged: nobody's cardboard has holes where a preset guessed they'd be.
- * What a preset is actually for is picking the style, mood and colour
- * combination, which is the part that takes taste rather than a minute of
- * dragging.
+ * A starting arrangement, not a precision layout — nobody's cardboard has holes
+ * where a preset guessed. What it's for is the style, mood and colour
+ * combination, which is the part that takes taste.
  */
 data class ScenePreset(
     val id: ScenePresetId,
     val eyes: List<SceneEye>,
     val canvasColor: Long = Scene.OpaqueBlack,
 ) {
-    /**
-     * True when the preset can't be used without the unlock, because it leans
-     * on a paid style or a paid mood. Shown anyway, animating — a locked preset
-     * that renders live is an advert; a greyed-out one is a nag.
-     */
+    /** Shown anyway, animating: a live locked preset is an advert, a greyed
+     *  one is a nag. */
     val isPaid: Boolean = eyes.any { eye ->
         EyeStyles.byId(eye.styleId).tier == EyeTier.Paid || eye.mood !in FreeMoods
     }
@@ -60,7 +49,7 @@ data class ScenePreset(
 
 object ScenePresets {
 
-    /** The flagship. It's first because it's the one that explains the product. */
+    /** First because it's the one that explains the product. */
     val PortraitHaunt = ScenePreset(
         id = ScenePresetId.PortraitHaunt,
         eyes = pair(
@@ -86,10 +75,7 @@ object ScenePresets {
         ),
     )
 
-    /**
-     * Eight eyes, and the reason the renderer was profiled at a count nobody
-     * would place by hand. Deliberately uneven — a spider's eyes are not a grid.
-     */
+    /** Deliberately uneven: a spider's eyes are not a grid. */
     val SpiderNest = ScenePreset(
         id = ScenePresetId.SpiderNest,
         eyes = listOf(
@@ -104,7 +90,7 @@ object ScenePresets {
         ),
     )
 
-    /** Three pairs at different sizes, which reads as depth in a dark attic. */
+    /** Three pairs at different sizes, which reads as depth. */
     val AtticBats = ScenePreset(
         id = ScenePresetId.AtticBats,
         eyes = pair(EyeStyles.Bat, 0.28f, 0.30f, 0.20f, 0.15f, Mood.Suspicious) +
@@ -112,7 +98,7 @@ object ScenePresets {
             pair(EyeStyles.Bat, 0.40f, 0.76f, 0.15f, 0.11f, Mood.Suspicious),
     )
 
-    /** Low and wide, because it's meant to sit in a planter and look up at a path. */
+    /** Low and wide: it sits in a planter and looks up at a path. */
     val CatInTheBushes = ScenePreset(
         id = ScenePresetId.CatInTheBushes,
         eyes = pair(
@@ -125,7 +111,7 @@ object ScenePresets {
         ),
     )
 
-    /** Dormant on purpose. The whole effect is the contrast when it finally opens. */
+    /** Dormant on purpose: the effect is the contrast when it opens. */
     val DemonAwakens = ScenePreset(
         id = ScenePresetId.DemonAwakens,
         eyes = pair(
@@ -138,11 +124,7 @@ object ScenePresets {
         ),
     )
 
-    /**
-     * Five pairs, staggered and varied. Glow Orb because this is the scene
-     * meant to be seen from the street, and it's the style that survives the
-     * trip through a window at night.
-     */
+    /** Glow Orb because this one is meant to be seen from the street. */
     val WindowWatchers = ScenePreset(
         id = ScenePresetId.WindowWatchers,
         eyes = pair(EyeStyles.GlowOrb, 0.20f, 0.24f, 0.10f, 0.07f, Mood.IdleScan) +
@@ -178,35 +160,24 @@ object ScenePresets {
     fun byId(id: ScenePresetId): ScenePreset = All.first { it.id == id }
 
     /**
-     * What the app opens on before anything is saved: two Human eyes on the
-     * free motion default.
-     *
-     * The plainest thing the app can show, deliberately. The first frame should
-     * look like a real pair of eyes rather than a demo of the spookiest style
-     * available — the product sells itself by working, not by showing off.
+     * The plainest thing the app can show. The first frame should look like a
+     * real pair of eyes, not a demo of the spookiest style available.
      */
     fun blank(): List<SceneEye> = pair(
         style = EyeStyles.HumanBasic,
         centerX = 0.5f,
         y = 0.5f,
-        // 0.30 of the short edge, 1.35 eye widths apart. Anatomically a face is
-        // nearer 2.6 eye widths, but that only reads right when the eyes are
-        // small relative to the screen; at a size visible across a room a
-        // tighter pair looks like a face and an anatomical one looks like two
-        // separate things.
+        // 1.35 eye widths apart. A face is anatomically nearer 2.6, but at a
+        // size visible across a room a tighter pair reads as a face and an
+        // anatomical one reads as two separate things.
         separation = 0.405f,
         size = 0.30f,
         mood = Mood.IdleScan,
     )
 }
 
-/**
- * Two eyes either side of [centerX], [separation] apart in canvas widths.
- *
- * Pairs are their own helper because almost every scene is made of them, and
- * because a pair placed by hand tends to end up subtly asymmetric — which
- * reads, immediately and unmistakably, as wrong.
- */
+/** [separation] is in canvas widths. A hand-placed pair ends up subtly
+ *  asymmetric, which reads immediately as wrong. */
 private fun pair(
     style: EyeStyle,
     centerX: Float,
@@ -235,8 +206,7 @@ private fun eye(
     scleraColor = style.defaultSclera,
     irisColor = iris ?: style.defaultIris,
     pupilColor = style.defaultPupil,
-    // The style's default glow is quoted at a 100px eye; as a fraction of the
-    // eye's own diameter that's simply /100, and it then holds at any size.
+    // defaultGlow is quoted at a 100px eye.
     glowFraction = style.defaultGlow / 100f,
     mood = mood,
 )

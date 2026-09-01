@@ -25,14 +25,8 @@ class RealSceneRepository(
 
     private val logger = KLog.withTag("Scenes")
 
-    /**
-     * A row that won't decode is skipped, not thrown on.
-     *
-     * One scene the app can't read must not take the whole drawer down with
-     * it. The user still has the other eleven, and a list that renders eleven
-     * of twelve is recoverable in a way that a crash on opening the drawer
-     * isn't.
-     */
+    /** A row that won't decode is skipped: one bad scene must not take the
+     *  whole drawer down with it. */
     override fun observeSaved(): Flow<List<Scene>> =
         dao.observeSaved().map { rows -> rows.mapNotNull { it.toSceneOrNull() } }
 
@@ -77,7 +71,6 @@ class RealSceneRepository(
         }
 
     private companion object {
-        /** The single reserved row for the working copy. */
         const val AutosaveId = "autosave"
     }
 }

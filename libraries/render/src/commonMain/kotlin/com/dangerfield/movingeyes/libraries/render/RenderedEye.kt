@@ -55,12 +55,8 @@ class RenderedEye(
      */
     private var brushes: EyeBrushes? = null
 
-    /**
-     * Mutable so the Look panel can restyle a selection in place. Swapping the
-     * style keeps the eye's position, size and running motion — turning two
-     * Human eyes into two Demon eyes must not scatter an alignment the user
-     * already got right.
-     */
+    /** Mutable so restyling keeps position, size and running motion — changing
+     *  style must not scatter an alignment. */
     var style: EyeStyle = style
         set(value) {
             if (field != value) { field = value; brushes = null }
@@ -81,15 +77,8 @@ class RenderedEye(
             if (field != value) { field = value; brushes = null }
         }
 
-    /**
-     * Bloom radius as a fraction of the eye's own diameter, not an absolute
-     * pixel count.
-     *
-     * Absolute would mean a glow set on a small eye vanishes the moment you
-     * pinch it larger, and swamps it when you pinch it smaller — the glow would
-     * silently stop matching the eye it belongs to every time anyone resized
-     * anything.
-     */
+    /** A fraction of the eye's diameter, not a pixel count, so glow keeps
+     *  matching its eye through a pinch. */
     var glowFraction: Float = glowFraction
         set(value) {
             if (field != value) { field = value; brushes = null }

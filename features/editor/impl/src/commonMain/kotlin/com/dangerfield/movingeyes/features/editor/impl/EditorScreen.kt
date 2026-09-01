@@ -94,23 +94,15 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.math.roundToInt
 
 /**
- * The canvas is the screen at 1:1 — no zoom, no pan, no insets. Black bleeds
- * to every edge, including under the notch, so on OLED the lit pixels are the
- * eyes and nothing else.
+ * The canvas is the screen at 1:1 — no zoom, no pan, no insets — and the app
+ * opens straight onto it with eyes already blinking, which is what replaced
+ * onboarding.
  *
- * The app opens straight onto this with eyes already blinking. That replaced
- * onboarding entirely: nobody reads three cards before they've seen the thing
- * work, and the product explains itself in a second if it's already moving when
- * you arrive.
- *
- * Chrome floats *over* the canvas rather than laying it out, so the canvas
- * bounds never change when the toolbar, readout or panel appears. If chrome
- * ever starts resizing the canvas, every alignment the user has done is
- * silently wrong — that is the failure this screen exists to avoid.
+ * Chrome floats *over* the canvas rather than laying it out. If chrome ever
+ * starts resizing it, every alignment the user has done is silently wrong.
  */
-// BackHandler is still marked experimental in Compose Multiplatform, and it is
-// the only supported way to intercept the system back gesture — which v2 made
-// the sole exit from display mode.
+// BackHandler is the only supported way to intercept the system back gesture,
+// which is the sole exit from display mode.
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun EditorScreen(
@@ -123,9 +115,7 @@ fun EditorScreen(
     val activeTrial by viewModel.featureTrial.active.collectAsStateWithLifecycle()
     val justEnded by viewModel.featureTrial.justEnded.collectAsStateWithLifecycle()
 
-    // Nothing is drawn until the autosave lookup answers. Showing a default
-    // pair first and swapping it a frame later would flash two eyes the user
-    // never placed, over the top of the scene they left.
+    // Drawing a default pair first would flash two eyes the user never placed.
     if (!state.isLoaded) return
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
@@ -137,14 +127,9 @@ fun EditorScreen(
         val snapThresholdPx = with(density) { Motion.Snap.ThresholdDp.toPx() }
         val minimumTouchPx = with(density) { Target.Minimum.toPx() }
 
-        // Re-keyed on the open scene as well as the display size, so opening a
-        // scene from the drawer rebuilds the eyes rather than mutating the ones
-        // already on screen.
-        //
-        // Keyed on the *display* size rather than the scene size on purpose: a
-        // canvas turn changes the scene's dimensions, and re-keying on those
-        // would rebuild the editor and throw away everything unsaved every time
-        // someone tried a different mounting orientation.
+        // Keyed on the *display* size, not the scene size: a canvas turn
+        // changes the scene's dimensions, and re-keying on those would discard
+        // everything unsaved each time someone tried a mounting orientation.
         val openScene = state.openScene
         val editor = remember(openScene, displayWidthPx, displayHeightPx) {
             val scene = openScene ?: blankScene()
@@ -161,11 +146,9 @@ fun EditorScreen(
         }
         val sceneState = remember(editor) { EyeSceneState(eyes = editor.eyes) }
 
-        // A quarter turn swaps what "across" and "down" mean. Everything that
-        // works in scene coordinates — gestures, snapping, the readout — has to
-        // use these rather than the display's own dimensions. Eye *sizes* are a
-        // fraction of the short edge, which is the same number either way, so
-        // they're deliberately untouched by a turn.
+        // A quarter turn swaps what "across" and "down" mean, so gestures,
+        // snapping and the readout all work in these rather than the display's
+        // own dimensions. Sizes are a short-edge fraction and so unaffected.
         val turned = editor.canvas.rotation.swapsAxes
         val canvasWidthPx = if (turned) displayHeightPx else displayWidthPx
         val canvasHeightPx = if (turned) displayWidthPx else displayHeightPx
@@ -191,9 +174,6 @@ fun EditorScreen(
             batteryStatus = viewModel.batteryStatus,
         )
 
-        // The system back gesture is the only way out, which is exactly why the
-        // one-time hint exists. Enabled only while display mode runs, so back
-        // still leaves the app normally while editing.
         BackHandler(enabled = display.isActive) { display.exit() }
 
         // Read here rather than in the save handler: a string resource can only
@@ -213,23 +193,14 @@ fun EditorScreen(
             )
         }
 
-        // The canvas turn is a mounting decision, so it rotates the whole
-        // composition — eyes and selection overlay together — rather than being
-        // baked into every stored coordinate. Gestures land inside this layer,
-        // so Compose hands them back already in scene space.
-        //
-        // At 90° and 270° the layer takes the *swapped* dimensions before
-        // rotating, so the turned scene still fills the screen exactly. Rotating
-        // a portrait-sized layer instead would crop the sides and letterbox the
-        // ends, which on a device taped behind cardboard means eyes off the edge
-        // of the visible area.
+        // Rotates eyes and overlay together rather than baking degrees into
+        // stored coordinates. Gestures land inside this layer, so Compose hands
+        // them back already in scene space.
         Box(
             modifier = Modifier
                 .align(Alignment.Center)
                 // `requiredSize`, not `size`: a turned canvas is wider than the
-                // screen, and `size` is coerced into the parent's constraints,
-                // which silently clamps it back to the display width and lays
-                // the scene out at the wrong scale.
+                // screen, and `size` is coerced into the parent's constraints.
                 .requiredSize(
                     width = if (turned) maxHeight else maxWidth,
                     height = if (turned) maxWidth else maxHeight,
@@ -264,9 +235,8 @@ fun EditorScreen(
                                 snapThresholdPx = if (snappingEnabled) snapThresholdPx else 0f,
                                 onGuides = { guides = it },
                             )
-                            // One light tick on capture and nothing on release.
-                            // A tick in both directions turns a careful nudge
-                            // into a buzzing mess.
+                            // On capture only: a tick in both directions turns
+                            // a careful nudge into a buzzing mess.
                             if (snappedNow && !wasSnapped) {
                                 haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             }
@@ -276,9 +246,6 @@ fun EditorScreen(
                             transformSelection(editor, zoom, rotation)
                         },
                         onGestureEnd = {
-                            // Guides never persist past touch-up. A guide left
-                            // on screen stops being a hint and starts being
-                            // clutter.
                             guides = emptyList()
                             wasSnapped = false
                             dragSession = null
@@ -300,10 +267,8 @@ fun EditorScreen(
             )
         }
 
-        // Software dim, layered over the canvas and under the chrome. The
-        // backlight handles the top of the range and this overlay handles the
-        // bottom, which is what lets the scene go below the OS brightness floor
-        // — the single trick that makes it look right in a dark hallway.
+        // Under the chrome, over the canvas: the backlight handles the top of
+        // the range and this the bottom, letting the scene go below the OS floor.
         val overlayAlpha = dimLevelsFor(editor.canvas.brightness).overlayAlpha
         if (overlayAlpha > 0f) {
             Box(
@@ -313,10 +278,7 @@ fun EditorScreen(
             )
         }
 
-        // Chrome *dissolves*; it does not slide, and the canvas does not move.
-        // v2 is explicit that entering display mode must not shift the eyes by
-        // a pixel — a transform on the canvas would invalidate an alignment
-        // someone measured against holes they had already cut.
+        // Chrome dissolves; it does not slide, and the canvas does not move.
         AnimatedVisibility(
             visible = !display.isActive,
             enter = fadeIn(Motion.Chrome.restore()),
@@ -339,8 +301,6 @@ fun EditorScreen(
             )
         }
 
-        // Staggered behind the toolbar, outside-in, per the design's 40ms
-        // chromeStagger.
         AnimatedVisibility(
             visible = !display.isActive,
             enter = fadeIn(Motion.Chrome.restore()),
@@ -356,8 +316,7 @@ fun EditorScreen(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(Dimension.D600),
             ) {
-                // Resolved up front: SegmentedControl's label is a plain
-                // function, not a composable one.
+                // SegmentedControl's label is a plain function, not composable.
                 val tabLabels = PanelTab.entries.associateWith { stringResource(it.label) }
                 SegmentedControl(
                     options = PanelTab.entries,
@@ -421,9 +380,7 @@ fun EditorScreen(
         }
         }
 
-        // Sits below the toolbar rather than beside it. Centred at the same
-        // height it would collide with Undo on a phone, and Undo is the one
-        // control that must never be obscured.
+        // Below the toolbar, not beside it: centred it collides with Undo.
         DemoCountdown(
             remainingSeconds = activeTrial?.remaining?.inWholeSeconds?.toInt(),
             isUrgent = activeTrial?.isUrgent == true,
@@ -433,8 +390,6 @@ fun EditorScreen(
                 .padding(top = ToolbarClearance),
         )
 
-        // No dimming and no modal on expiry. The bar can be ignored, and it
-        // goes away on its own — see FeatureTrial.
         val ended = justEnded
         ToastBar(
             visible = ended != null,
@@ -454,8 +409,6 @@ fun EditorScreen(
                 .padding(Dimension.D700),
         )
 
-        // Only while display mode runs. Everything here is non-blocking and
-        // never sits over the eyes — see DisplayOverlay.
         if (display.isActive) {
             DisplayOverlay(
                 state = display,
@@ -464,8 +417,7 @@ fun EditorScreen(
             )
         }
 
-        // Drawn last so it covers the overlay too: when the scene sleeps,
-        // everything sleeps.
+        // Last, so it covers the overlay too.
         SleepFade(display.sleepFade)
 
         if (drawerOpen) {
@@ -494,21 +446,15 @@ fun EditorScreen(
 }
 
 /**
- * Start a demo, or fall through to the paywall once this control's demo is
- * spent. [apply] performs the change and returns the undo for it, so the
- * caller states the change and its reversal in one place and they can't drift.
+ * [apply] performs the change and returns its undo, so a change and its
+ * reversal are stated in one place and can't drift.
  */
 private fun demo(
     viewModel: EditorViewModel,
     control: DemoControl,
     apply: () -> (() -> Unit),
 ) {
-    if (!viewModel.featureTrial.isAvailable(control)) {
-        // Phase 7 opens the paywall here. Until then a spent demo simply does
-        // nothing, which is the correct *gating* behaviour — it just doesn't
-        // yet offer the way to buy.
-        return
-    }
+    if (!viewModel.featureTrial.isAvailable(control)) return
     val revert = apply()
     viewModel.featureTrial.start(control, revert)
 }
@@ -534,9 +480,8 @@ private fun EditorChrome(
         }
 
 
-        // Lifted clear of the panel's collapsed grab edge. The readout is the
-        // number someone cuts cardboard from, so it must never be half-hidden
-        // behind a handle.
+        // Clear of the panel's collapsed grab edge: this is the number someone
+        // cuts cardboard from.
         ReadoutPill(
             text = readout,
             emphasized = editor.selection.isNotEmpty(),
@@ -552,10 +497,8 @@ private fun EditorChrome(
                 .padding(Dimension.D700),
             horizontalArrangement = Arrangement.spacedBy(Dimension.D400),
         ) {
-            // Undo and redo live in the floating toolbar and never inside a
-            // collapsible panel. Fat-finger destruction of a careful alignment
-            // is the top rage-quit risk in this app, and the way back has to
-            // be visible at the moment it happens.
+            // Never inside a collapsible panel: the way back from a fat-finger
+            // must be visible at the moment it happens.
             ToolbarButton(
                 label = stringResource(Res.string.editor_undo),
                 enabled = editor.canUndo,
@@ -575,10 +518,8 @@ private fun EditorChrome(
                 onClick = { editor.toggleLock() },
             )
 
-            // In the toolbar rather than floating at the bottom of the canvas,
-            // where the panel would cover it whenever it was open — leaving the
-            // app's whole point undiscoverable while someone was editing.
-            // Filled, because it is the only primary action on this screen.
+            // In the toolbar, not floating at the bottom, where the panel
+            // would cover it and hide the app's whole point while editing.
             Button(
                 onClick = onPlay,
                 size = ButtonSize.Small,
@@ -589,8 +530,7 @@ private fun EditorChrome(
     }
 }
 
-/** The amber pill. Mono, because it's a number that changes every second and
- *  a proportional face would make it jitter. */
+/** Mono, so a number changing every second doesn't jitter. */
 @Composable
 private fun DemoCountdown(
     remainingSeconds: Int?,
@@ -637,10 +577,7 @@ private val PanelTab.label
         PanelTab.Scene -> Res.string.panel_scene
     }
 
-/**
- * What the app opens on before anything is saved. See `ScenePresets.blank` for
- * why it's the plainest thing the app can show rather than the spookiest.
- */
+/** What the app opens on before anything is saved. */
 private fun blankScene() = Scene(
     id = "autosave",
     name = "",
@@ -648,12 +585,8 @@ private fun blankScene() = Scene(
 )
 
 /**
- * Moves the active eyes, snapping the *first* of them and carrying the rest
- * along rigidly.
- *
- * Snapping one member of a multi-selection rather than each independently is
- * what keeps a pair a pair: eyes that each snapped to their own nearest guide
- * would drift apart mid-drag, destroying a spacing the user had already set.
+ * Snaps the *first* active eye and carries the rest rigidly. Snapping each
+ * independently would drift a pair apart mid-drag.
  */
 private fun dragSelection(
     editor: EditorState,
@@ -669,8 +602,8 @@ private fun dragSelection(
 
     session.accumulate(pan.x / canvasWidthPx, pan.y / canvasHeightPx)
 
-    // Every eye is placed from its own start plus the raw finger travel, so a
-    // snap applied last frame can't feed back into this one.
+    // From each eye's own start plus raw finger travel, so last frame's snap
+    // can't feed back into this one.
     active.forEach { index ->
         val raw = session.rawPosition(index) ?: return@forEach
         editor.eyes[index].apply {
@@ -716,11 +649,8 @@ private fun dragSelection(
     return result.snapped
 }
 
-/**
- * Pinch scales, twist rotates. Rotation snaps to 15° detents but holds any
- * angle if you keep turning past one, because a picture rail is sometimes at
- * 7°.
- */
+/** Rotation detents to 15° but holds any angle past one: a picture rail is
+ *  sometimes at 7°. */
 private fun transformSelection(editor: EditorState, zoom: Float, rotation: Float) {
     val active = editor.activeIndices()
     if (active.isEmpty()) return
@@ -735,12 +665,9 @@ private fun transformSelection(editor: EditorState, zoom: Float, rotation: Float
 }
 
 /**
- * The live measurement, in the mono readout.
- *
  * Millimetres appear only when the platform actually knows the screen's
- * physical size. Someone is going to hold a ruler against cardboard and cut
- * from this number, so a figure the app can't stand behind is worse than no
- * figure at all.
+ * physical size: a figure the app can't stand behind is worse than none when
+ * someone is about to cut a hole from it.
  */
 @Composable
 private fun readoutText(
@@ -749,8 +676,7 @@ private fun readoutText(
     canvasHeightPx: Float,
     screenMetrics: ScreenMetrics,
 ): String {
-    // Read so the readout recomposes as a drag moves eyes that aren't Compose
-    // state.
+    // Read so the readout recomposes as a drag moves non-Compose state.
     @Suppress("UNUSED_EXPRESSION")
     editor.transformRevision
 
@@ -787,7 +713,6 @@ private fun readoutText(
     return parts.joinToString(" · ")
 }
 
-/** Clears the floating toolbar row so the countdown can't sit on top of it. */
 private val ToolbarClearance = 88.dp
 
 private const val MinEyeSizePx = 24f

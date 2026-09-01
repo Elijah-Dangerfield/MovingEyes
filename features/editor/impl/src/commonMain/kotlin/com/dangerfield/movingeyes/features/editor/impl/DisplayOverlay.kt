@@ -36,11 +36,8 @@ import movingeyes.libraries.resources.generated.resources.display_hint_title
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * Everything that may appear over a running scene.
- *
- * The shared rule for all of it: **never over the eyes, never blocking, never
- * demanding a tap.** Someone is looking at this from across a room, or nobody
- * is looking at it at all. Anything that waits for acknowledgement is a bright
+ * Everything that may appear over a running scene. Shared rule: never over the
+ * eyes, never blocking, never waiting for a tap — anything that waits is a lit
  * rectangle sitting in a cardboard cut-out until the owner comes home.
  */
 @Composable
@@ -68,11 +65,7 @@ fun BoxScope.DisplayOverlay(
     }
 }
 
-/**
- * Charge level, top-right, out of the way of a face in the middle of the
- * canvas. Amber once it's low, because at that point it has stopped being
- * information and started being a warning.
- */
+/** Top-right, clear of a face in the middle of the canvas. Amber once low. */
 @Composable
 private fun BatteryPill(battery: BatteryState?, modifier: Modifier = Modifier) {
     AnimatedVisibility(
@@ -102,12 +95,9 @@ private fun BatteryPill(battery: BatteryState?, modifier: Modifier = Modifier) {
 }
 
 /**
- * Shown once, ever, on the first entry into display mode.
- *
- * It exists because v2 cut the long-press-corner exit: a glowing ring can land
- * inside a cut hole, and hunting for an invisible corner in the dark is worse
- * than being told once. The system back gesture is the way out, and nobody
- * guesses that on their own when the screen has stopped responding to taps.
+ * Shown once ever. v2 cut the long-press-corner exit — a glowing ring can land
+ * inside a cut hole — so the system back gesture is the only way out, and
+ * nobody guesses that when the screen has stopped responding to taps.
  */
 @Composable
 private fun DisplayHintCard(onAcknowledged: () -> Unit, modifier: Modifier = Modifier) {
@@ -138,13 +128,7 @@ private fun DisplayHintCard(onAcknowledged: () -> Unit, modifier: Modifier = Mod
     }
 }
 
-/**
- * The sleep-timer fade, drawn over everything including the overlay.
- *
- * Black rather than a brightness change, so it works identically on both
- * platforms and reaches genuine zero — the OS backlight floor is still visible
- * in a dark hallway, which is the whole reason software dimming exists here.
- */
+/** Black rather than a brightness change, so it reaches genuine zero. */
 @Composable
 fun BoxScope.SleepFade(fade: Float) {
     if (fade >= 1f) return

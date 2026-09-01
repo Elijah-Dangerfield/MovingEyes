@@ -10,21 +10,14 @@ import kotlin.math.min
 import kotlin.random.Random
 
 /**
- * The boundary between a scene as *stored* and a scene as *drawn*.
- *
- * A [SceneEye] is portable and resolution-independent; a [RenderedEye] is
- * pixels on this canvas with a running state machine attached. Everything that
- * knows about that difference lives here, so nothing else has to.
+ * The boundary between a scene as stored and a scene as drawn. A [SceneEye] is
+ * portable; a [RenderedEye] is pixels on this canvas with a running state
+ * machine attached.
  */
 
 /**
- * Resolve a stored scene onto a canvas of this size.
- *
- * Each eye gets a distinct [Random], because two eyes sharing a source would
- * blink in lockstep and read as a screensaver — the one thing the behaviour
- * engine exists to avoid. The seed is the eye's index rather than a fresh
- * random, so reopening a scene gives back the composition you saved instead of
- * a subtly different one every time.
+ * Seeded by index, not randomly: distinct per eye so a pair never blinks in
+ * lockstep, but stable so reopening a scene gives back what you saved.
  */
 fun Scene.toRenderedEyes(canvasWidthPx: Float, canvasHeightPx: Float): List<RenderedEye> {
     val shortEdge = min(canvasWidthPx, canvasHeightPx)
@@ -47,13 +40,9 @@ fun Scene.toRenderedEyes(canvasWidthPx: Float, canvasHeightPx: Float): List<Rend
 }
 
 /**
- * Capture the live eyes back into storable form.
- *
- * [moods] carries each eye's mood alongside it, because a [RenderedEye] holds
- * only the resolved [com.dangerfield.movingeyes.libraries.eyes.BehaviorConfig]
- * and can't say which named mood it came from — and a scene that stored the
- * config instead would lose the fact that the user picked "Frantic" and would
- * stop tracking any later change to what Frantic means.
+ * [moods] comes in separately because a [RenderedEye] holds only the resolved
+ * config and can't say which named mood produced it. Storing the config
+ * instead would freeze today's numbers for Frantic into every saved scene.
  */
 fun List<RenderedEye>.toSceneEyes(
     canvasWidthPx: Float,
@@ -80,9 +69,6 @@ fun List<RenderedEye>.toSceneEyes(
     }
 }
 
-/**
- * Back to the plain 0xAARRGGBB a scene stores. Masked because `toArgb` returns a
- * signed Int, and a colour with alpha set has its top bit on — widening that to
- * Long without the mask sign-extends into a value no colour parser will accept.
- */
+/** Masked because `toArgb` returns a signed Int and an opaque colour has its
+ *  top bit set, which would sign-extend. */
 private fun Color.toArgbLong(): Long = toArgb().toLong() and 0xFFFFFFFFL

@@ -27,12 +27,8 @@ class FeatureTrialImpl(
 ) : FeatureTrial by RealFeatureTrial(appScope)
 
 /**
- * The demo controller. See [FeatureTrial] for the rules and why they're the
- * rules.
- *
- * Split from [FeatureTrialImpl] so the logic takes a plain [CoroutineScope] and
- * a test can drive thirty seconds of countdown through virtual time without
- * standing up the DI graph.
+ * Split from [FeatureTrialImpl] so it takes a plain [CoroutineScope] and a test
+ * can drive thirty seconds through virtual time without the DI graph.
  */
 class RealFeatureTrial(private val scope: CoroutineScope) : FeatureTrial {
 
@@ -44,11 +40,8 @@ class RealFeatureTrial(private val scope: CoroutineScope) : FeatureTrial {
     private val _justEnded = MutableStateFlow<DemoControl?>(null)
     override val justEnded: StateFlow<DemoControl?> = _justEnded.asStateFlow()
 
-    /**
-     * Per *session*, not per install — this is deliberately in memory and
-     * deliberately not persisted. Someone who comes back a week later to
-     * decorate a different window gets to see the thing work again.
-     */
+    /** Per session, not persisted: someone decorating a different window a
+     *  week later gets to see it work again. */
     private val used = mutableSetOf<DemoControl>()
 
     private var countdown: Job? = null
@@ -82,8 +75,8 @@ class RealFeatureTrial(private val scope: CoroutineScope) : FeatureTrial {
     }
 
     override fun keep() {
-        // Drop the revert *before* cancelling, so the cancellation path can't
-        // race it and take away something the user has now paid for.
+        // Dropped before cancelling, so cancellation can't race it and take
+        // away something the user has now paid for.
         pendingRevert = null
         countdown?.cancel()
         countdown = null
@@ -106,9 +99,6 @@ class RealFeatureTrial(private val scope: CoroutineScope) : FeatureTrial {
         _justEnded.value = control
         logger.logEvent("demo_expired", "control" to control.name)
 
-        // The bar clears itself. It is not important enough to need dismissing,
-        // and a banner that waits for a tap is a banner in the way of the
-        // canvas the user is trying to look at.
         scope.launch {
             delay(FeatureTrial.EndedBannerDuration)
             if (_justEnded.value == control) _justEnded.value = null
@@ -122,10 +112,7 @@ class RealFeatureTrial(private val scope: CoroutineScope) : FeatureTrial {
     }
 
     private companion object {
-        /**
-         * Ten ticks a second. The countdown displays whole seconds, but the
-         * last five are shown ticking, and a 1s cadence there looks stalled.
-         */
+        /** Ten a second: at a 1s cadence the final countdown looks stalled. */
         val TickInterval = 100.milliseconds
     }
 }

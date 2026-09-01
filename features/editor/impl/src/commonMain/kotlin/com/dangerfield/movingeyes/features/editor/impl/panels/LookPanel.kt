@@ -31,12 +31,8 @@ import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 
 /**
- * Style and colour. Free except for the nine locked styles, and even those
- * animate in the picker the whole time.
- *
- * A locked style renders live rather than as a greyed thumbnail because that is
- * the entire sales pitch: you cannot tell what Demon looks like from a static
- * image, and a picker full of dead rectangles advertises nothing.
+ * Style and colour. Locked styles animate in the picker rather than showing a
+ * greyed thumbnail — you can't tell what Demon looks like from a still image.
  */
 @Composable
 fun LookPanel(
@@ -66,13 +62,11 @@ fun LookPanel(
                             if (locked) onLockedStyleTapped(style) else editor.setStyle(style)
                         },
                         preview = {
+                            // The style's own palette, not the scene's: twelve
+                            // recoloured to match would be indistinguishable.
                             EyePreview(
                                 style = style,
                                 sizeDp = StylePreviewSize,
-                                // The preview shows the style, not the scene's
-                                // colours — someone comparing twelve styles
-                                // needs them all in their own default palette
-                                // to tell them apart at a glance.
                                 behavior = editor.activeBehavior(),
                             )
                         },
@@ -114,8 +108,6 @@ fun LookPanel(
                 valueRange = 0f..MaxGlowFraction,
             )
 
-            // Only styles that draw veins get the control. A slider that does
-            // nothing is worse than a missing one.
             if (activeStyle?.hasVeins == true) {
                 PanelSlider(
                     label = stringResource(Res.string.look_veins),
@@ -130,11 +122,10 @@ fun LookPanel(
 
 private val StylePreviewSize = 52.dp
 
-/** Bounds for the size slider, as a fraction of the canvas's short edge.
- *  Below the minimum an eye stops reading from across a room; above the
- *  maximum a pair no longer fits on the canvas together. */
+/** Fractions of the canvas's short edge. Below the minimum an eye stops
+ *  reading from across a room; above the maximum a pair won't fit. */
 private const val MinSizeFraction = 0.03f
 private const val MaxSizeFraction = 0.45f
 
-/** Matches EditorState's own cap. Beyond this glow reads as fog. */
+/** Matches EditorState's cap. */
 private const val MaxGlowFraction = 0.35f

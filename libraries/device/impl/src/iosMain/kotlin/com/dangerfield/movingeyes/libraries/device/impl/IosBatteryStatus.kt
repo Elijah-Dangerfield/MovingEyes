@@ -17,11 +17,8 @@ import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 import kotlin.math.roundToInt
 
-/**
- * `UIDevice` battery reporting, which is **off by default** and returns -1
- * until it's switched on — the single easiest way to get this wrong and end up
- * silently reporting a device at minus one percent forever.
- */
+/** `UIDevice` battery reporting is off by default and returns -1 until it's
+ *  switched on. */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
 @Inject
@@ -49,7 +46,7 @@ class IosBatteryStatus : BatteryStatus {
         val device = UIDevice.currentDevice
         val level = device.batteryLevel
         _state.value = BatteryState(
-            // -1 means "not known yet", which is not the same as empty.
+            // -1 is "not known yet", not empty.
             percent = if (level < 0f) null else (level * 100f).roundToInt(),
             isCharging = device.batteryState == UIDeviceBatteryState.UIDeviceBatteryStateCharging ||
                 device.batteryState == UIDeviceBatteryState.UIDeviceBatteryStateFull,

@@ -15,15 +15,8 @@ import software.amazon.lastmile.kotlin.inject.anvil.AppScope
 import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
-/**
- * Reads the sticky `ACTION_BATTERY_CHANGED` broadcast.
- *
- * Registered for the life of the process rather than only while display mode
- * runs. The broadcast is sticky, so registering returns the current state
- * immediately — but it fires often enough on some hardware that a subscribe on
- * entry could miss the first tick, and a display session that opens with an
- * empty battery reading has to redraw its pill a second later.
- */
+/** The sticky `ACTION_BATTERY_CHANGED` broadcast, registered for the life of
+ *  the process so the first value is available before display mode starts. */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
 @Inject
@@ -51,9 +44,7 @@ class AndroidBatteryStatus(context: Context) : BatteryStatus {
         val status = getIntExtra(BatteryManager.EXTRA_STATUS, -1)
 
         return BatteryState(
-            // Scale is nearly always 100 but is not guaranteed to be, and a
-            // device that reports out of 255 would otherwise read as 40% when
-            // it's full.
+            // Scale is nearly always 100 but isn't guaranteed to be.
             percent = if (level >= 0 && scale > 0) level * 100 / scale else null,
             isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
                 status == BatteryManager.BATTERY_STATUS_FULL,

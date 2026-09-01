@@ -42,15 +42,9 @@ import movingeyes.libraries.resources.generated.resources.place_vertical
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * Alignment, and the reason this app is worth paying for at all.
- *
- * Everything here exists because fingers are too fat for the job: the user is
- * matching eyes to holes they cut in cardboard, at arm's length, in a dim room.
- * Snapping does most of the work and the stepper does the last two pixels.
- *
- * All of it is free. The paywall in this app runs along *motion*, and someone
- * who can't align their eyes can't complete the trick they downloaded the app
- * for.
+ * Alignment. Fingers are too fat for matching eyes to holes cut in cardboard at
+ * arm's length, so snapping does most of the work and the stepper the last two
+ * pixels. All of it is free — the paywall runs along motion.
  */
 @Composable
 fun PlacePanel(
@@ -97,12 +91,9 @@ fun PlacePanel(
         PanelRow(
             label = stringResource(Res.string.place_rotate),
             trailing = {
-                // Group vs Each is only a question when there's more than one
-                // eye; with a single selection the two are identical and the
-                // choice would be noise.
+                // Identical with a single selection, so the choice would be noise.
                 if (hasMultiple) {
-                    // Resolved outside the label lambda: SegmentedControl's
-                    // label is a plain function, not a composable one.
+                    // SegmentedControl's label is a plain function, not composable.
                     val groupLabel = stringResource(Res.string.place_rotate_group)
                     val eachLabel = stringResource(Res.string.place_rotate_each)
                     SegmentedControl(
@@ -172,11 +163,6 @@ fun PlacePanel(
             },
         ) {}
 
-        /**
-         * Not a rotation control — a mounting decision. Which way up the scene
-         * draws depends on where the charge cable has to leave the cardboard,
-         * so it only ever takes four values.
-         */
         PanelRow(label = stringResource(Res.string.place_canvas_turn)) {
             SegmentedControl(
                 options = CanvasRotation.entries,
@@ -221,10 +207,6 @@ fun PlacePanel(
     }
 }
 
-/**
- * The rotation stepper's units. Not in the string catalogue: a degree sign is
- * a symbol rather than copy, and the mono readout is deliberately not
- * localised — see the readout strings' own note.
- */
+/** Symbols rather than copy, so not in the string catalogue. */
 private const val RotationUnitLabel = "1°"
 private const val RotationHoldLabel = "hold 10°"

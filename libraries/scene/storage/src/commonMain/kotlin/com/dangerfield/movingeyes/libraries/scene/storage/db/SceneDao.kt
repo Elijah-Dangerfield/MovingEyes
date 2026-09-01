@@ -8,38 +8,27 @@ import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
 /**
- * A scene row.
+ * Eyes are deliberately not normalised into their own table. A scene is also
+ * what gets exported as a shareable code, where no database exists, so
+ * `SceneCodec` already versions its shape; normalising would mean expressing
+ * every change twice and eventually having the two disagree.
  *
- * ## Why the whole scene is one opaque column
- *
- * Eyes are *not* normalised into their own table, and that's deliberate.
- * `SceneCodec` already has to version the scene's shape, because a scene is
- * also what gets exported as a shareable code and imported on another device
- * where no database is involved. Normalising would mean the same shape change
- * had to be expressed twice — once as a codec migration and once as a Room
- * migration — and the two would eventually disagree.
- *
- * With a payload column, the table's shape is fixed: adding a field to a scene
- * touches the codec and nothing here. The columns that *are* broken out are
- * only the ones the database needs to sort and filter on without decoding
- * every row.
- *
- * The cost is that scenes can't be queried by their contents. Nothing wants to.
+ * The broken-out columns are only what the drawer needs to sort and filter on
+ * without decoding every row. The cost is that scenes can't be queried by
+ * their contents, and nothing wants to.
  */
 @Entity(tableName = "scenes")
 data class SceneEntity(
     @PrimaryKey val id: String,
 
-    /** Duplicated out of the payload so the drawer can list names without
-     *  decoding every scene it might show. */
     val name: String,
 
-    /** `SceneCodec.encode` output. Versioned independently of this table. */
+    /** `SceneCodec.encode` output, versioned independently of this table. */
     val payload: String,
 
     val updatedAtMillis: Long,
 
-    /** The working copy. Exactly one row has this set — see [SceneRepository]. */
+    /** The working copy. Exactly one row has this set. */
     val isAutosave: Boolean,
 )
 

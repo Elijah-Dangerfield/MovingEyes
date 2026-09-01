@@ -28,15 +28,9 @@ import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 
 /**
- * The whole paywall, in one tab.
- *
- * v2 moved the paid line from "how many eyes and which styles" to "how they
- * move", and this panel is that decision made concrete. It is also why the
- * thirty-second demo exists: motion is the one thing a store screenshot cannot
- * convey, so every control here applies for real when a locked user taps it.
- *
- * Nothing is disabled. A locked tap runs a demo, or opens the paywall once the
- * demo for that control has been spent.
+ * The whole paywall, in one tab: the paid line runs along *how eyes move*, not
+ * how many there are. Nothing is disabled — a locked tap runs a demo, or opens
+ * the paywall once that control's demo is spent.
  */
 @Composable
 fun MotionPanel(
@@ -48,7 +42,6 @@ fun MotionPanel(
     val behavior = editor.activeBehavior()
     val activeMood = editor.activeMood()
 
-    /** Runs [apply] directly when unlocked, otherwise through the demo. */
     fun gated(control: DemoControl, apply: () -> Unit) {
         if (isUnlocked) apply() else onLockedControl(control, apply)
     }
@@ -68,9 +61,8 @@ fun MotionPanel(
                         label = stringResource(mood.label),
                         selected = mood == activeMood,
                         onClick = {
-                            // Idle Scan is the free default, so picking it is
-                            // never a paid action — a free user has to be able
-                            // to get back to where they started.
+                            // Picking the free default is never a paid action:
+                            // a free user must be able to get back.
                             if (mood in Moods.Free) {
                                 editor.setMood(mood)
                             } else {
@@ -138,11 +130,8 @@ private fun blinksPerMinute(intervalSeconds: Float): Float =
     if (intervalSeconds <= 0f) MaxBlinksPerMinute else SecondsPerMinute / intervalSeconds
 
 /**
- * Blink rate is exposed as a rate because that's how a person thinks about it,
- * but the engine needs an interval *range* — a fixed interval reads as a
- * screensaver within about ten seconds, which is the whole argument in
- * `BehaviorConfig`. So the slider sets a midpoint and the spread is rebuilt
- * around it.
+ * The engine needs an interval *range* — a fixed interval reads as a
+ * screensaver — so the slider sets a midpoint and the spread is rebuilt.
  */
 private fun BehaviorConfig.withBlinksPerMinute(rate: Float) = copy(
     blinkIntervalSeconds = (SecondsPerMinute / rate.coerceAtLeast(0.1f)).let { midpoint ->
@@ -150,11 +139,8 @@ private fun BehaviorConfig.withBlinksPerMinute(rate: Float) = copy(
     },
 )
 
-/**
- * One slider standing in for three parameters, because nobody adjusts nine
- * sliders at 6pm on the 31st. Restlessness drives saccade speed, how often a
- * look-around happens, and the micro-tremor together.
- */
+/** One slider driving saccade speed, interval and jitter together: nobody
+ *  adjusts nine sliders at 6pm on the 31st. */
 private fun BehaviorConfig.withRestlessness(amount: Float): BehaviorConfig {
     val level = amount.coerceIn(0f, 1f)
     val midpoint = MaxSaccadeIntervalSeconds - (MaxSaccadeIntervalSeconds - MinSaccadeIntervalSeconds) * level
@@ -169,8 +155,8 @@ private const val SecondsPerMinute = 60f
 private const val MinBlinksPerMinute = 2f
 private const val MaxBlinksPerMinute = 60f
 
-/** Fraction either side of the midpoint. Wide enough that two eyes drift apart
- *  rather than marching, which is the entire point of the range. */
+/** Fraction either side of the midpoint, wide enough that two eyes drift
+ *  apart rather than marching. */
 private const val BlinkSpread = 0.45f
 private const val SaccadeSpread = 0.55f
 

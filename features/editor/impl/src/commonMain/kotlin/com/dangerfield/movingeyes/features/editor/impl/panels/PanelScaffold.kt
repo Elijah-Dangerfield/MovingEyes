@@ -13,16 +13,11 @@ import com.dangerfield.movingeyes.libraries.ui.components.text.Text
 import com.dangerfield.movingeyes.system.AppTheme
 import com.dangerfield.movingeyes.system.Dimension
 
-/** Which of the four tabs is showing. */
 enum class PanelTab { Place, Look, Motion, Scene }
 
 /**
- * A labelled row inside a panel.
- *
- * [isLocked] shows the badge but does **not** disable anything. Every paid
- * control in this app stays live, because tapping it is what starts the
- * thirty-second demo — a disabled control would make the demo unreachable and
- * turn the paywall back into the nag it was designed not to be.
+ * [isLocked] shows the badge but disables nothing: tapping a paid control is
+ * what starts the demo, so disabling it would make the demo unreachable.
  */
 @Composable
 fun PanelRow(
@@ -59,7 +54,7 @@ fun PanelRow(
     }
 }
 
-/** A labelled slider with its value shown in the mono readout face. */
+/** Value shown in the mono readout face. */
 @Composable
 fun PanelSlider(
     label: String,
