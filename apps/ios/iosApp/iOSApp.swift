@@ -8,13 +8,16 @@ struct iOSApp: App {
     let permissionManager = IOSPermissionManager()
     let reviewLauncher = IOSReviewLauncher()
     let storeKitCoordinator = IOSStoreKitCoordinator()
+    @ObservedObject private var displayHost = IOSDisplayHost()
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     private let iOSAppComponent: IosAppComponent
 
     init() {
         self.iOSAppComponent = create(
             permissionManager: permissionManager,
             reviewLauncher: reviewLauncher,
-            storeKitCoordinator: storeKitCoordinator
+            storeKitCoordinator: storeKitCoordinator,
+            displayHost: displayHost
         )
         iOSAppComponent.telemetry.initialize()
         // Construct every @AutoInit singleton up front — resolving the set is
@@ -26,6 +29,11 @@ struct iOSApp: App {
         WindowGroup {
             ComposeView(appComponent: iOSAppComponent)
                 .ignoresSafeArea()
+                // Display mode hides both. Driven from Kotlin through
+                // `IOSDisplayHost` — see `DisplayHost` for why these two can't
+                // be set from Kotlin/Native directly.
+                .statusBarHidden(displayHost.chromeHidden)
+                .persistentSystemOverlays(displayHost.chromeHidden ? .hidden : .automatic)
                 .onOpenURL { url in
                     // Forward URLs from custom-scheme links and Universal Links
                     // into the Kotlin DeepLinkBridge — App.kt collects from it

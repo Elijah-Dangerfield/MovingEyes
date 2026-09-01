@@ -3,6 +3,9 @@ package com.dangerfield.movingeyes.features.editor.impl
 import com.dangerfield.movingeyes.libraries.billing.Entitlements
 import com.dangerfield.movingeyes.libraries.billing.FeatureTrial
 import com.dangerfield.movingeyes.libraries.core.logging.KLog
+import com.dangerfield.movingeyes.libraries.device.BatteryStatus
+import com.dangerfield.movingeyes.libraries.device.DisplayController
+import com.dangerfield.movingeyes.libraries.movingeyes.AppCache
 import androidx.lifecycle.viewModelScope
 import com.dangerfield.movingeyes.libraries.flowroutines.SEAViewModel
 import com.dangerfield.movingeyes.libraries.scene.Scene
@@ -25,8 +28,11 @@ import kotlin.time.Clock
 class EditorViewModel(
     private val sceneRepository: SceneRepository,
     private val clock: Clock,
+    private val appCache: AppCache,
     val entitlements: Entitlements,
     val featureTrial: FeatureTrial,
+    val displayController: DisplayController,
+    val batteryStatus: BatteryStatus,
 ) : SEAViewModel<EditorViewState, EditorEvent, EditorAction>(
     initialStateArg = EditorViewState(),
 ) {
@@ -39,6 +45,10 @@ class EditorViewModel(
         // is no exception even though nobody taps to cause it.
         sceneRepository.observeSaved()
             .onEach { scenes -> takeAction(EditorAction.ScenesChanged(scenes)) }
+            .launchIn(viewModelScope)
+
+        appCache.updates
+            .onEach { data -> takeAction(EditorAction.HintSeenChanged(data.hasSeenDisplayModeHint)) }
             .launchIn(viewModelScope)
 
         takeAction(EditorAction.LoadAutosave)
@@ -82,6 +92,14 @@ class EditorViewModel(
                 sendEvent(EditorEvent.SceneSaved)
             }
 
+            is EditorAction.HintSeenChanged -> {
+                action.updateState { it.copy(hasSeenDisplayModeHint = action.seen) }
+            }
+
+            EditorAction.DisplayHintSeen -> {
+                appCache.update { it.copy(hasSeenDisplayModeHint = true) }
+            }
+
             is EditorAction.Delete -> sceneRepository.delete(action.scene.id)
         }
     }
@@ -99,6 +117,9 @@ data class EditorViewState(
      * replacing it would flash two eyes the user didn't place.
      */
     val isLoaded: Boolean = false,
+
+    /** The one-time "taps do nothing now" card has been dismissed. */
+    val hasSeenDisplayModeHint: Boolean = false,
 )
 
 sealed interface EditorEvent {
@@ -113,4 +134,6 @@ sealed interface EditorAction {
     data class Autosave(val scene: Scene) : EditorAction
     data class Save(val scene: Scene) : EditorAction
     data class Delete(val scene: Scene) : EditorAction
+    data class HintSeenChanged(val seen: Boolean) : EditorAction
+    data object DisplayHintSeen : EditorAction
 }

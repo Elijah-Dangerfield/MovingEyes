@@ -16,6 +16,7 @@ import com.dangerfield.movingeyes.libraries.render.toSceneEyes
 import com.dangerfield.movingeyes.libraries.scene.CanvasRotation
 import com.dangerfield.movingeyes.libraries.scene.Scene
 import kotlin.math.hypot
+import kotlin.time.Duration
 import kotlin.random.Random
 
 /** Everything about the canvas that isn't an eye. */
@@ -23,6 +24,9 @@ data class CanvasSettings(
     val rotation: CanvasRotation = CanvasRotation.None,
     val color: Long = Scene.OpaqueBlack,
     val brightness: Float = 1f,
+
+    /** Null runs all night. */
+    val sleepTimer: Duration? = null,
 )
 
 /** One eye's full mutable state, as much of it as undo needs to restore. */
@@ -480,6 +484,11 @@ class EditorState(
         canvas = canvas.copy(color = color)
     }
 
+    fun setSleepTimer(timer: Duration?) {
+        if (!beginEdit()) return
+        canvas = canvas.copy(sleepTimer = timer)
+    }
+
     /** Not undoable, and shouldn't be: brightness is a live comfort control
      *  someone drags while looking at the room, not an edit to the scene. */
     fun setBrightness(brightness: Float) {
@@ -493,6 +502,7 @@ class EditorState(
         canvasRotation = canvas.rotation,
         canvasColor = canvas.color,
         brightness = canvas.brightness,
+        sleepTimerMinutes = canvas.sleepTimer?.inWholeMinutes?.toInt(),
     )
 
     /** Distance between the two selected eyes in canvas pixels, for the IPD

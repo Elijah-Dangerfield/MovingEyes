@@ -2,6 +2,9 @@
 
 package com.dangerfield.movingeyes.features.editor.impl
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
@@ -28,6 +31,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -38,6 +43,7 @@ import com.dangerfield.movingeyes.features.editor.impl.panels.PlacePanel
 import com.dangerfield.movingeyes.features.editor.impl.panels.ScenePanel
 import com.dangerfield.movingeyes.libraries.billing.DemoControl
 import com.dangerfield.movingeyes.libraries.device.ScreenMetrics
+import com.dangerfield.movingeyes.libraries.device.dimLevelsFor
 import com.dangerfield.movingeyes.libraries.device.millimeters
 import com.dangerfield.movingeyes.libraries.render.EyeCanvas
 import com.dangerfield.movingeyes.libraries.render.EyeSceneState
@@ -60,6 +66,7 @@ import com.dangerfield.movingeyes.system.Motion
 import com.dangerfield.movingeyes.system.Target
 import movingeyes.libraries.resources.generated.resources.Res
 import movingeyes.libraries.resources.generated.resources.demo_countdown
+import movingeyes.libraries.resources.generated.resources.display_play
 import movingeyes.libraries.resources.generated.resources.demo_ended
 import movingeyes.libraries.resources.generated.resources.demo_keep
 import movingeyes.libraries.resources.generated.resources.editor_eye_count
@@ -83,6 +90,7 @@ import movingeyes.libraries.resources.generated.resources.scenes_open
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.min
+import kotlin.time.Duration.Companion.minutes
 import kotlin.math.roundToInt
 
 /**
@@ -100,6 +108,10 @@ import kotlin.math.roundToInt
  * ever starts resizing the canvas, every alignment the user has done is
  * silently wrong — that is the failure this screen exists to avoid.
  */
+// BackHandler is still marked experimental in Compose Multiplatform, and it is
+// the only supported way to intercept the system back gesture — which v2 made
+// the sole exit from display mode.
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun EditorScreen(
     viewModel: EditorViewModel,
@@ -143,6 +155,7 @@ fun EditorScreen(
                     rotation = scene.canvasRotation,
                     color = scene.canvasColor,
                     brightness = scene.brightness,
+                    sleepTimer = scene.sleepTimerMinutes?.minutes,
                 ),
             )
         }
@@ -165,6 +178,23 @@ fun EditorScreen(
         var panelExpanded by remember { mutableStateOf(true) }
         var tab by remember { mutableStateOf(PanelTab.Place) }
         var drawerOpen by remember { mutableStateOf(false) }
+
+        val display = remember(editor) {
+            DisplayModeState(sleepTimer = editor.canvas.sleepTimer)
+        }
+        display.sleepTimer = editor.canvas.sleepTimer
+
+        DisplayModeEffects(
+            state = display,
+            brightness = editor.canvas.brightness,
+            displayController = viewModel.displayController,
+            batteryStatus = viewModel.batteryStatus,
+        )
+
+        // The system back gesture is the only way out, which is exactly why the
+        // one-time hint exists. Enabled only while display mode runs, so back
+        // still leaves the app normally while editing.
+        BackHandler(enabled = display.isActive) { display.exit() }
 
         // Read here rather than in the save handler: a string resource can only
         // be read from a composable, and the handler isn't one.
@@ -270,29 +300,52 @@ fun EditorScreen(
             )
         }
 
-        // Software dim, layered over the canvas and under the chrome. This is
-        // what lets the scene go below the OS brightness floor, which is the
-        // single trick that makes it look right in a dark hallway.
-        if (editor.canvas.brightness < 1f) {
+        // Software dim, layered over the canvas and under the chrome. The
+        // backlight handles the top of the range and this overlay handles the
+        // bottom, which is what lets the scene go below the OS brightness floor
+        // — the single trick that makes it look right in a dark hallway.
+        val overlayAlpha = dimLevelsFor(editor.canvas.brightness).overlayAlpha
+        if (overlayAlpha > 0f) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 1f - editor.canvas.brightness)),
+                    .background(Color.Black.copy(alpha = overlayAlpha)),
             )
         }
 
-        EditorChrome(
-            editor = editor,
-            readout = readoutText(
+        // Chrome *dissolves*; it does not slide, and the canvas does not move.
+        // v2 is explicit that entering display mode must not shift the eyes by
+        // a pixel — a transform on the canvas would invalidate an alignment
+        // someone measured against holes they had already cut.
+        AnimatedVisibility(
+            visible = !display.isActive,
+            enter = fadeIn(Motion.Chrome.restore()),
+            exit = fadeOut(Motion.Chrome.dissolve()),
+        ) {
+            EditorChrome(
                 editor = editor,
-                canvasWidthPx = canvasWidthPx,
-                canvasHeightPx = canvasHeightPx,
-                screenMetrics = screenMetrics,
-            ),
-            onOpenScenes = { drawerOpen = true },
-            modifier = Modifier.fillMaxSize().safeDrawingPadding(),
-        )
+                readout = readoutText(
+                    editor = editor,
+                    canvasWidthPx = canvasWidthPx,
+                    canvasHeightPx = canvasHeightPx,
+                    screenMetrics = screenMetrics,
+                ),
+                onOpenScenes = { drawerOpen = true },
+                onPlay = {
+                    editor.clearSelection()
+                    display.enter()
+                },
+                modifier = Modifier.fillMaxSize().safeDrawingPadding(),
+            )
+        }
 
+        // Staggered behind the toolbar, outside-in, per the design's 40ms
+        // chromeStagger.
+        AnimatedVisibility(
+            visible = !display.isActive,
+            enter = fadeIn(Motion.Chrome.restore()),
+            exit = fadeOut(Motion.Chrome.dissolve()),
+        ) {
         AdaptivePanel(
             expanded = panelExpanded,
             onExpandedChange = { panelExpanded = it },
@@ -366,6 +419,7 @@ fun EditorScreen(
                 }
             }
         }
+        }
 
         // Sits below the toolbar rather than beside it. Centred at the same
         // height it would collide with Undo on a phone, and Undo is the one
@@ -399,6 +453,20 @@ fun EditorScreen(
                 .safeDrawingPadding()
                 .padding(Dimension.D700),
         )
+
+        // Only while display mode runs. Everything here is non-blocking and
+        // never sits over the eyes — see DisplayOverlay.
+        if (display.isActive) {
+            DisplayOverlay(
+                state = display,
+                showHint = !state.hasSeenDisplayModeHint,
+                onHintAcknowledged = { viewModel.takeAction(EditorAction.DisplayHintSeen) },
+            )
+        }
+
+        // Drawn last so it covers the overlay too: when the scene sleeps,
+        // everything sleeps.
+        SleepFade(display.sleepFade)
 
         if (drawerOpen) {
             ScenesDrawer(
@@ -450,6 +518,7 @@ private fun EditorChrome(
     editor: EditorState,
     readout: String,
     onOpenScenes: () -> Unit,
+    onPlay: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
@@ -463,6 +532,7 @@ private fun EditorChrome(
         ) {
             Text(stringResource(Res.string.scenes_open))
         }
+
 
         // Lifted clear of the panel's collapsed grab edge. The readout is the
         // number someone cuts cardboard from, so it must never be half-hidden
@@ -504,6 +574,17 @@ private fun EditorChrome(
                 isActive = editor.isLocked,
                 onClick = { editor.toggleLock() },
             )
+
+            // In the toolbar rather than floating at the bottom of the canvas,
+            // where the panel would cover it whenever it was open — leaving the
+            // app's whole point undiscoverable while someone was editing.
+            // Filled, because it is the only primary action on this screen.
+            Button(
+                onClick = onPlay,
+                size = ButtonSize.Small,
+            ) {
+                Text(stringResource(Res.string.display_play))
+            }
         }
     }
 }

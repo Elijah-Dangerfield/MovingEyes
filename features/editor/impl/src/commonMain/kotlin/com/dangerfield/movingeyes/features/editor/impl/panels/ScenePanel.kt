@@ -10,6 +10,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.dangerfield.movingeyes.features.editor.impl.EditorState
+import com.dangerfield.movingeyes.features.editor.impl.SleepTimerOptions
+import com.dangerfield.movingeyes.libraries.ui.components.SegmentedControl
 import com.dangerfield.movingeyes.libraries.ui.components.ColorField
 import com.dangerfield.movingeyes.libraries.ui.components.button.Button
 import com.dangerfield.movingeyes.libraries.ui.components.button.ButtonSize
@@ -19,8 +21,13 @@ import movingeyes.libraries.resources.generated.resources.Res
 import movingeyes.libraries.resources.generated.resources.scene_brightness
 import movingeyes.libraries.resources.generated.resources.scene_canvas_color
 import movingeyes.libraries.resources.generated.resources.scene_save
+import movingeyes.libraries.resources.generated.resources.scene_sleep_hours
+import movingeyes.libraries.resources.generated.resources.scene_sleep_minutes
+import movingeyes.libraries.resources.generated.resources.scene_sleep_never
+import movingeyes.libraries.resources.generated.resources.scene_sleep_timer
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
+import kotlin.time.Duration
 
 /**
  * Scene-wide settings and the way out to saving.
@@ -54,6 +61,19 @@ fun ScenePanel(
             valueRange = MinBrightness..1f,
         )
 
+        // Options rather than a slider: nobody wants "forty-seven minutes", and
+        // a scene that runs all night is a legitimate choice rather than a
+        // missing value.
+        PanelRow(label = stringResource(Res.string.scene_sleep_timer)) {
+            val labels = SleepTimerOptions.associateWith { sleepTimerLabel(it) }
+            SegmentedControl(
+                options = SleepTimerOptions,
+                selected = editor.canvas.sleepTimer,
+                onSelect = { editor.setSleepTimer(it) },
+                label = { labels.getValue(it) },
+            )
+        }
+
         Button(
             onClick = onSave,
             size = ButtonSize.Medium,
@@ -64,6 +84,18 @@ fun ScenePanel(
     }
 }
 
+@Composable
+private fun sleepTimerLabel(timer: Duration?): String = when {
+    timer == null -> stringResource(Res.string.scene_sleep_never)
+    timer.inWholeMinutes < MinutesPerHour -> stringResource(
+        Res.string.scene_sleep_minutes,
+        timer.inWholeMinutes.toInt(),
+    )
+    else -> stringResource(Res.string.scene_sleep_hours, timer.inWholeHours.toInt())
+}
+
 /** Matches EditorState's floor. A brightness slider that reaches zero looks
  *  exactly like a crash, and the way back is invisible. */
 private const val MinBrightness = 0.05f
+
+private const val MinutesPerHour = 60

@@ -41,6 +41,13 @@ data class AppData(
     /** Epoch-ms of the purchase or first successful restore. 0 = never. */
     val unlockedAtEpochMs: Long = 0L,
 
+    /**
+     * The one-time "taps do nothing now" card has been dismissed. Per install
+     * rather than per scene: it explains how the app works, not how this
+     * particular composition works.
+     */
+    val hasSeenDisplayModeHint: Boolean = false,
+
     // User actions
     val feedbacksGiven: Int = 0,
     val bugsReported: Int = 0,

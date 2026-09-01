@@ -38,6 +38,15 @@ data class Scene(
      * and "eyes in the dark".
      */
     val brightness: Float = 1f,
+
+    /**
+     * Minutes before the scene fades to black, or null to run all night.
+     *
+     * Added after v1 of the payload and deliberately given a default: an older
+     * scene decodes with no timer, which is the behaviour it had. A new
+     * optional field never needs a codec migration — see `SceneCodec`.
+     */
+    val sleepTimerMinutes: Int? = null,
 ) {
     companion object {
         const val OpaqueBlack: Long = 0xFF000000

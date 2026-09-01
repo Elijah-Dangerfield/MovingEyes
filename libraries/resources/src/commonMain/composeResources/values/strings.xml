@@ -91,9 +91,32 @@
     <string name="scene_save">Save scene</string>
     <string name="scene_saved">Saved</string>
 
+    <!--
+      Display mode. The hint is shown exactly once, on first entry, because v2
+      cut the long-press-corner exit and nobody guesses the back gesture when
+      the screen has stopped responding to taps.
+    -->
+    <string name="display_play">Play</string>
+    <string name="display_exit">Exit display</string>
+    <!--
+      A single percent sign, not the Android-style `%%` escape: Compose
+      Resources leaves `%%` alone rather than collapsing it, so escaping here
+      renders "100%%" on screen.
+    -->
+    <string name="display_battery">%1$d%</string>
+    <string name="display_hint_title">Taps do nothing now</string>
+    <string name="display_hint_body">Swipe in from the edge of the screen to get back to editing.</string>
+    <string name="display_hint_got_it">Got it</string>
+
+    <!-- Sleep timer, on the Scene tab -->
+    <string name="scene_sleep_timer">Sleep timer</string>
+    <string name="scene_sleep_never">Never</string>
+    <string name="scene_sleep_minutes">%1$d min</string>
+    <string name="scene_sleep_hours">%1$d h</string>
+
     <!-- Scenes drawer -->
     <string name="scenes_title">Scenes</string>
-    <string name="scenes_open">Open scenes</string>
+    <string name="scenes_open">Scenes</string>
     <string name="scenes_mine">My scenes</string>
     <string name="scenes_presets">Presets</string>
     <string name="scenes_new_blank">New blank scene</string>
