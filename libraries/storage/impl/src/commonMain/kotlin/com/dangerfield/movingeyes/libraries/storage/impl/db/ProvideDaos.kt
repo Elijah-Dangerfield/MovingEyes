@@ -1,6 +1,6 @@
 package com.dangerfield.movingeyes.libraries.storage.impl.db
 
-import com.dangerfield.movingeyes.libraries.movingeyes.storage.db.ExampleUserDataDao
+import com.dangerfield.movingeyes.libraries.scene.storage.db.SceneDao
 import me.tatarka.inject.annotations.Inject
 import software.amazon.lastmile.kotlin.inject.anvil.AppScope
 import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
@@ -11,7 +11,7 @@ import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
  * provider. Copy this for every DAO added to [AppDatabase].
  */
 @SingleIn(AppScope::class)
-@ContributesBinding(AppScope::class, boundType = ExampleUserDataDao::class)
-class ProvideExampleUserDataDao @Inject constructor(
+@ContributesBinding(AppScope::class, boundType = SceneDao::class)
+class ProvideSceneDao @Inject constructor(
     provider: AppDatabaseProvider
-) : ExampleUserDataDao by provider.database.exampleUserDataDao()
+) : SceneDao by provider.database.sceneDao()

@@ -57,6 +57,8 @@ include(":libraries:flowroutines:testing")
 include(":libraries:navigation")
 include(":libraries:navigation:impl")
 include(":libraries:render")
+include(":libraries:scene")
+include(":libraries:scene:storage")
 include(":libraries:resources")
 include(":libraries:review")
 include(":libraries:review:impl")
@@ -64,7 +66,6 @@ include(":libraries:storage")
 include(":libraries:storage:impl")
 include(":libraries:movingeyes")
 include(":libraries:movingeyes:impl")
-include(":libraries:movingeyes:storage")
 // No api sibling on purpose: the public surface is the `logEvent` extension in
 // :libraries:core; this impl only hosts the OTel dependency + the Grafana
 // log-tree wiring.

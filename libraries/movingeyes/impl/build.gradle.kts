@@ -21,7 +21,6 @@ kotlin {
             implementation(projects.libraries.core)
             implementation(libs.kermit)
             implementation(projects.libraries.flowroutines)
-            implementation(projects.libraries.movingeyes.storage)
             implementation(libs.kotlinx.datetime)
             implementation(libs.kotlinx.serialization.json)
         }

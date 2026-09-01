@@ -26,12 +26,14 @@ data class BehaviorConfig(
     val gazeRange: Float = 0.55f,
 
     /** Seconds between look-arounds. Sampled fresh every time. */
+    @Serializable(with = FloatRangeSerializer::class)
     val saccadeIntervalSeconds: ClosedFloatingPointRange<Float> = 1.4f..6.0f,
 
     /** Multiplier on the base saccade duration. Above 1 is a snap, below is a glide. */
     val saccadeSpeed: Float = 1f,
 
     /** Seconds between blinks. Sampled fresh every time. */
+    @Serializable(with = FloatRangeSerializer::class)
     val blinkIntervalSeconds: ClosedFloatingPointRange<Float> = 2.5f..7.0f,
 
     /** How long a blink takes, in seconds. */

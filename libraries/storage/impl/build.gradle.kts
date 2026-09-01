@@ -16,7 +16,7 @@ kotlin {
             implementation(projects.libraries.core)
             implementation(projects.libraries.flowroutines)
             implementation(projects.libraries.movingeyes)
-            implementation(projects.libraries.movingeyes.storage)
+            implementation(projects.libraries.scene.storage)
             implementation(libs.kotlinx.serialization.json)
         }
     }

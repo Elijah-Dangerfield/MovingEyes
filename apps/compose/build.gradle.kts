@@ -33,7 +33,7 @@ kotlin {
 
             implementation(projects.libraries.storage)
             implementation(projects.libraries.storage.impl)
-            implementation(projects.libraries.movingeyes.storage)
+            implementation(projects.libraries.scene.storage)
             implementation(projects.libraries.device)
             implementation(projects.libraries.device.impl)
             implementation(projects.libraries.eyes)
