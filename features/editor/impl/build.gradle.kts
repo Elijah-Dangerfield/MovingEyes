@@ -19,6 +19,8 @@ kotlin {
             implementation(projects.libraries.device)
             implementation(projects.libraries.eyes)
             implementation(projects.libraries.render)
+            implementation(projects.libraries.scene)
+            implementation(projects.libraries.billing)
             implementation(projects.libraries.movingeyes)
 
             implementation(compose.runtime)

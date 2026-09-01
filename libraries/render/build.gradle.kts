@@ -11,6 +11,7 @@ kotlin {
         commonMain.dependencies {
             implementation(projects.libraries.core)
             implementation(projects.libraries.eyes)
+            api(projects.libraries.scene)
 
             implementation(compose.runtime)
             implementation(compose.foundation)

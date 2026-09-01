@@ -67,8 +67,8 @@ object ScenePresets {
             style = EyeStyles.HumanRealistic,
             centerX = 0.5f,
             y = 0.46f,
-            separation = 0.22f,
-            size = 0.17f,
+            separation = 0.34f,
+            size = 0.26f,
             mood = Mood.Suspicious,
         ),
     )
@@ -79,8 +79,8 @@ object ScenePresets {
             style = EyeStyles.CartoonRound,
             centerX = 0.5f,
             y = 0.5f,
-            separation = 0.26f,
-            size = 0.22f,
+            separation = 0.40f,
+            size = 0.30f,
             mood = Mood.IdleScan,
             iris = 0xFFF07A1E,
         ),
@@ -107,9 +107,9 @@ object ScenePresets {
     /** Three pairs at different sizes, which reads as depth in a dark attic. */
     val AtticBats = ScenePreset(
         id = ScenePresetId.AtticBats,
-        eyes = pair(EyeStyles.Bat, 0.28f, 0.32f, 0.13f, 0.11f, Mood.Suspicious) +
-            pair(EyeStyles.Bat, 0.62f, 0.48f, 0.17f, 0.14f, Mood.Suspicious) +
-            pair(EyeStyles.Bat, 0.42f, 0.72f, 0.10f, 0.08f, Mood.Suspicious),
+        eyes = pair(EyeStyles.Bat, 0.28f, 0.30f, 0.20f, 0.15f, Mood.Suspicious) +
+            pair(EyeStyles.Bat, 0.66f, 0.50f, 0.26f, 0.20f, Mood.Suspicious) +
+            pair(EyeStyles.Bat, 0.40f, 0.76f, 0.15f, 0.11f, Mood.Suspicious),
     )
 
     /** Low and wide, because it's meant to sit in a planter and look up at a path. */
@@ -119,8 +119,8 @@ object ScenePresets {
             style = EyeStyles.Feline,
             centerX = 0.5f,
             y = 0.68f,
-            separation = 0.30f,
-            size = 0.18f,
+            separation = 0.42f,
+            size = 0.27f,
             mood = Mood.Suspicious,
         ),
     )
@@ -132,8 +132,8 @@ object ScenePresets {
             style = EyeStyles.Demon,
             centerX = 0.5f,
             y = 0.5f,
-            separation = 0.28f,
-            size = 0.21f,
+            separation = 0.38f,
+            size = 0.29f,
             mood = Mood.Dormant,
         ),
     )
@@ -158,8 +158,8 @@ object ScenePresets {
             style = EyeStyles.Doll,
             centerX = 0.5f,
             y = 0.48f,
-            separation = 0.24f,
-            size = 0.19f,
+            separation = 0.34f,
+            size = 0.27f,
             mood = Mood.Dormant,
         ),
     )
@@ -189,8 +189,13 @@ object ScenePresets {
         style = EyeStyles.HumanBasic,
         centerX = 0.5f,
         y = 0.5f,
-        separation = 0.21f,
-        size = 0.16f,
+        // 0.30 of the short edge, 1.35 eye widths apart. Anatomically a face is
+        // nearer 2.6 eye widths, but that only reads right when the eyes are
+        // small relative to the screen; at a size visible across a room a
+        // tighter pair looks like a face and an anatomical one looks like two
+        // separate things.
+        separation = 0.405f,
+        size = 0.30f,
         mood = Mood.IdleScan,
     )
 }

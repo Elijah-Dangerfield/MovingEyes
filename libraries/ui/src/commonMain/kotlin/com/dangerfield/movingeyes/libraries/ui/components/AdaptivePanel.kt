@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -28,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.dangerfield.movingeyes.libraries.ui.PreviewContent
@@ -47,6 +49,13 @@ import kotlin.math.roundToInt
  * A bottom sheet eats height. A rail eats width, of which there is plenty.
  */
 private val RailBreakpoint = 720.dp
+
+/**
+ * How much of the screen a bottom sheet may take. The canvas above it is the
+ * product, and a control surface that hides what it controls is a settings
+ * screen wearing a sheet's clothes.
+ */
+private const val SheetMaxHeightFraction = 0.55f
 
 private val PanelCornerRadius = 16.dp
 private val GrabHandleWidth = 44.dp
@@ -108,6 +117,11 @@ fun AdaptivePanel(
             expanded = expanded,
             onToggle = { onExpandedChange(!expanded) },
             contentAlpha = contentAlpha,
+            // A sheet is capped so the canvas is always visible above it. Left
+            // uncapped, a long tab grows to fill the screen and hides the thing
+            // being edited — which defeats the point of editing live, and is
+            // exactly what a modal settings screen would have done.
+            maxSheetHeight = maxHeight * SheetMaxHeightFraction,
         ) {
             content(layout)
         }
@@ -122,6 +136,7 @@ private fun BoxScope.Panel(
     expanded: Boolean,
     onToggle: () -> Unit,
     contentAlpha: Float,
+    maxSheetHeight: Dp,
     content: @Composable () -> Unit,
 ) {
     val shape = when (layout) {
@@ -140,6 +155,7 @@ private fun BoxScope.Panel(
         PanelLayout.Sheet -> Modifier
             .align(Alignment.BottomCenter)
             .fillMaxWidth()
+            .heightIn(max = maxSheetHeight)
             .offset { IntOffset(x = 0, y = offsetPx) }
             .onSizeChanged { onExtentMeasured(it.height) }
 

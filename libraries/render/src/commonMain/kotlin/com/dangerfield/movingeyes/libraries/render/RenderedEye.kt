@@ -23,7 +23,7 @@ import kotlin.random.Random
  * the whole reason a scene is portable at all.
  */
 class RenderedEye(
-    val style: EyeStyle,
+    style: EyeStyle,
     /** 0..1 of canvas width. */
     var centerX: Float,
     /** 0..1 of canvas height. */
@@ -34,7 +34,7 @@ class RenderedEye(
     irisColor: Color = Color(style.defaultIris),
     var pupilColor: Color = Color(style.defaultPupil),
     var veinIntensity: Float = 0.5f,
-    glowPx: Float = style.defaultGlow * (sizePx / 100f),
+    glowFraction: Float = style.defaultGlow / 100f,
     behavior: BehaviorConfig = Moods.FreeDefault,
     random: Random = Random.Default,
 ) {
@@ -55,6 +55,17 @@ class RenderedEye(
      */
     private var brushes: EyeBrushes? = null
 
+    /**
+     * Mutable so the Look panel can restyle a selection in place. Swapping the
+     * style keeps the eye's position, size and running motion — turning two
+     * Human eyes into two Demon eyes must not scatter an alignment the user
+     * already got right.
+     */
+    var style: EyeStyle = style
+        set(value) {
+            if (field != value) { field = value; brushes = null }
+        }
+
     var sizePx: Float = sizePx
         set(value) {
             if (field != value) { field = value; brushes = null }
@@ -70,10 +81,21 @@ class RenderedEye(
             if (field != value) { field = value; brushes = null }
         }
 
-    var glowPx: Float = glowPx
+    /**
+     * Bloom radius as a fraction of the eye's own diameter, not an absolute
+     * pixel count.
+     *
+     * Absolute would mean a glow set on a small eye vanishes the moment you
+     * pinch it larger, and swamps it when you pinch it smaller — the glow would
+     * silently stop matching the eye it belongs to every time anyone resized
+     * anything.
+     */
+    var glowFraction: Float = glowFraction
         set(value) {
             if (field != value) { field = value; brushes = null }
         }
+
+    val glowPx: Float get() = glowFraction * sizePx
 
     internal fun brushes(): EyeBrushes = brushes ?: buildBrushes().also { brushes = it }
 

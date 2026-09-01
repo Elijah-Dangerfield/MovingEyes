@@ -44,6 +44,106 @@
         <item quantity="other">%1$d eyes</item>
     </plurals>
 
+    <!-- Editor panels -->
+    <string name="panel_place">Place</string>
+    <string name="panel_look">Look</string>
+    <string name="panel_motion">Motion</string>
+    <string name="panel_scene">Scene</string>
+
+    <!-- Place tab -->
+    <string name="place_nudge">Nudge</string>
+    <string name="place_horizontal">Horizontal</string>
+    <string name="place_vertical">Vertical</string>
+    <string name="place_rotate">Rotate</string>
+    <string name="place_rotate_group">Group</string>
+    <string name="place_rotate_each">Each</string>
+    <string name="place_align_evenly">Space evenly</string>
+    <string name="place_mirror">Mirror</string>
+    <string name="place_snapping">Snapping</string>
+    <string name="place_canvas_turn">Canvas turn</string>
+    <string name="place_add_eye">Add eye</string>
+    <string name="place_delete">Delete</string>
+    <string name="place_select_all">Select all</string>
+    <!-- Shown when a control needs a selection it doesn't have. -->
+    <string name="place_needs_two">Select two or more eyes</string>
+
+    <!-- Look tab -->
+    <string name="look_style">Style</string>
+    <string name="look_sclera">Sclera</string>
+    <string name="look_iris">Iris</string>
+    <string name="look_pupil">Pupil</string>
+    <string name="look_size">Size</string>
+    <string name="look_glow">Glow</string>
+    <string name="look_veins">Veins</string>
+
+    <!-- Motion tab. Entirely paid; see the free caption below. -->
+    <string name="motion_mood">Mood</string>
+    <string name="motion_blink_rate">Blink rate</string>
+    <string name="motion_wander">Wander</string>
+    <string name="motion_restlessness">Restlessness</string>
+    <string name="motion_gaze_center">Gaze centre</string>
+    <string name="motion_reactivity">Sound reactivity</string>
+    <string name="motion_free_caption">Free scenes blink and wander on a fixed default.</string>
+
+    <!-- Scene tab -->
+    <string name="scene_canvas_color">Canvas colour</string>
+    <string name="scene_brightness">Brightness</string>
+    <string name="scene_save">Save scene</string>
+    <string name="scene_saved">Saved</string>
+
+    <!-- Scenes drawer -->
+    <string name="scenes_title">Scenes</string>
+    <string name="scenes_open">Open scenes</string>
+    <string name="scenes_mine">My scenes</string>
+    <string name="scenes_presets">Presets</string>
+    <string name="scenes_new_blank">New blank scene</string>
+    <string name="scenes_none_saved">Nothing saved yet. Build something and hit Save.</string>
+    <string name="scenes_delete">Delete</string>
+    <string name="scenes_default_name">Untitled scene</string>
+
+    <!-- Eye styles -->
+    <string name="style_cartoon">Cartoon</string>
+    <string name="style_human">Human</string>
+    <string name="style_glow_orb">Glow Orb</string>
+    <string name="style_realistic">Realistic</string>
+    <string name="style_bloodshot">Bloodshot</string>
+    <string name="style_bat">Bat</string>
+    <string name="style_feline">Feline</string>
+    <string name="style_demon">Demon</string>
+    <string name="style_spider">Spider</string>
+    <string name="style_reptile">Reptile</string>
+    <string name="style_ghoul">Ghoul</string>
+    <string name="style_doll">Doll</string>
+
+    <!-- Moods -->
+    <string name="mood_idle_scan">Idle Scan</string>
+    <string name="mood_suspicious">Suspicious</string>
+    <string name="mood_frantic">Frantic</string>
+    <string name="mood_sleepy">Sleepy</string>
+    <string name="mood_dormant">Dormant</string>
+    <string name="mood_possessed">Possessed</string>
+    <string name="mood_custom">Custom</string>
+
+    <!-- Scene presets -->
+    <string name="preset_portrait_haunt">Portrait Haunt</string>
+    <string name="preset_pumpkin_pals">Pumpkin Pals</string>
+    <string name="preset_spider_nest">Spider Nest</string>
+    <string name="preset_attic_bats">Attic Bats</string>
+    <string name="preset_cat_in_the_bushes">Cat in the Bushes</string>
+    <string name="preset_demon_awakens">Demon Awakens</string>
+    <string name="preset_window_watchers">Window Watchers</string>
+    <string name="preset_dolls_room">The Doll’s Room</string>
+
+    <!--
+      The thirty-second demo. The countdown is mono and never localises its
+      digits, for the same reason the readout doesn't.
+    -->
+    <string name="demo_try">Try it for 30 seconds</string>
+    <string name="demo_countdown">%1$d s</string>
+    <string name="demo_ended">Demo ended</string>
+    <string name="demo_keep">Keep %1$s</string>
+    <string name="demo_already_used">Already demoed this one</string>
+
     <!-- Errors -->
     <string name="error_generic_title">Something went wrong</string>
     <string name="error_generic_body">Please try again.</string>

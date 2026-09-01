@@ -14,12 +14,22 @@ class RealAppDatabaseProvider @Inject constructor(
     private val dispatcherProvider: DispatcherProvider
 ) : AppDatabaseProvider {
 
-    private val converters = CoreTypeConverters()
-
+    /**
+     * `CoreTypeConverters` is deliberately **not** passed to the builder.
+     *
+     * Room rejects a provided converter it doesn't need — "Unexpected type
+     * converter … remove this converter from the builder" — and no entity
+     * currently has a column that needs one. `SceneEntity` stores its timestamp
+     * as a Long precisely so it doesn't.
+     *
+     * Add `.addTypeConverter(CoreTypeConverters())` back at the moment an
+     * entity takes an `Instant`, a `List<String>` or a `Map` column, and not
+     * before. This crashed on first launch for exactly this reason once the
+     * database started actually being opened.
+     */
     override val database: AppDatabase by lazy {
         builderFactory
             .create()
-            .addTypeConverter(converters)
             .setDriver(BundledSQLiteDriver())
             .setQueryCoroutineContext(dispatcherProvider.io)
             .fallbackToDestructiveMigration(dropAllTables = true)
