@@ -4,6 +4,7 @@ import androidx.navigation.NavGraphBuilder
 import com.dangerfield.movingeyes.features.editor.EditorRoute
 import com.dangerfield.movingeyes.libraries.navigation.FeatureEntryPoint
 import com.dangerfield.movingeyes.libraries.navigation.Router
+import com.dangerfield.movingeyes.libraries.device.ScreenMetrics
 import com.dangerfield.movingeyes.libraries.navigation.screen
 import me.tatarka.inject.annotations.Inject
 import software.amazon.lastmile.kotlin.inject.anvil.AppScope
@@ -13,11 +14,13 @@ import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class, multibinding = true)
 @Inject
-class EditorFeatureEntryPoint : FeatureEntryPoint {
+class EditorFeatureEntryPoint(
+    private val screenMetrics: ScreenMetrics,
+) : FeatureEntryPoint {
 
     override fun NavGraphBuilder.buildNavGraph(router: Router) {
         screen<EditorRoute> {
-            EditorScreen()
+            EditorScreen(screenMetrics = screenMetrics)
         }
     }
 }

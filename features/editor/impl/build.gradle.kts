@@ -15,6 +15,7 @@ kotlin {
             implementation(projects.libraries.core)
             implementation(projects.libraries.flowroutines)
             implementation(projects.libraries.ui)
+            implementation(projects.libraries.device)
             implementation(projects.libraries.eyes)
             implementation(projects.libraries.render)
             implementation(projects.libraries.movingeyes)

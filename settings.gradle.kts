@@ -49,6 +49,8 @@ include(":libraries:config:impl")
 include(":libraries:core")
 // Pure Kotlin, no Compose: the behaviour engine is driven by an injected clock
 // so a synthetic one can assert timing without rendering anything.
+include(":libraries:device")
+include(":libraries:device:impl")
 include(":libraries:eyes")
 include(":libraries:flowroutines")
 include(":libraries:flowroutines:testing")
