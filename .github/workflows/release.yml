@@ -130,6 +130,9 @@ jobs:
       BUILD_NUMBER_OVERRIDE: ${{ needs.build-number.outputs.value }}
       RELEASE_CHANNEL_OVERRIDE: store
       SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+      GRAFANA_OTLP_BASE_URL: ${{ secrets.GRAFANA_OTLP_BASE_URL }}
+      GRAFANA_OTLP_INSTANCE_ID: ${{ secrets.GRAFANA_OTLP_INSTANCE_ID }}
+      GRAFANA_LOGS_WRITE_TOKEN: ${{ secrets.GRAFANA_LOGS_WRITE_TOKEN }}
 
     steps:
       - name: Checkout
@@ -371,6 +374,9 @@ jobs:
       BUILD_NUMBER_OVERRIDE: ${{ needs.build-number.outputs.value }}
       RELEASE_CHANNEL_OVERRIDE: store
       SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+      GRAFANA_OTLP_BASE_URL: ${{ secrets.GRAFANA_OTLP_BASE_URL }}
+      GRAFANA_OTLP_INSTANCE_ID: ${{ secrets.GRAFANA_OTLP_INSTANCE_ID }}
+      GRAFANA_LOGS_WRITE_TOKEN: ${{ secrets.GRAFANA_LOGS_WRITE_TOKEN }}
 
     steps:
       - name: Checkout

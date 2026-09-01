@@ -42,6 +42,8 @@ include(":features:editor")
 include(":features:editor:impl")
 
 // Libraries
+include(":libraries:config")
+include(":libraries:config:impl")
 include(":libraries:core")
 include(":libraries:flowroutines")
 include(":libraries:flowroutines:testing")
@@ -55,6 +57,10 @@ include(":libraries:storage:impl")
 include(":libraries:movingeyes")
 include(":libraries:movingeyes:impl")
 include(":libraries:movingeyes:storage")
+// No api sibling on purpose: the public surface is the `logEvent` extension in
+// :libraries:core; this impl only hosts the OTel dependency + the Grafana
+// log-tree wiring.
+include(":libraries:telemetry:impl")
 include(":libraries:ui")
 
 // Custom detekt rules — a standalone JVM jar detekt loads via `detektPlugins`.

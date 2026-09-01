@@ -9,11 +9,14 @@ the decision, alternatives considered, and *why*. Newest first.
 ## 2026-09-01 — No accounts, no backend, no sync
 
 **Decision:** deleted `:apps:server`, `:apps:admin`, `:apps:integration`,
-`:libraries:identity`, `:libraries:networking`, `:libraries:config`,
-`:libraries:telemetry:impl`, `:features:onboarding` and `:features:home`, plus the
-triggered-sync engine, the user-scoped data-reset dump, and the Supabase build
-plumbing. This supersedes every server-side decision below, which is kept only as
-history.
+`:libraries:identity`, `:libraries:networking`, `:features:onboarding` and
+`:features:home`, plus the triggered-sync engine, the user-scoped data-reset dump,
+and the Supabase build plumbing. This supersedes every server-side decision below,
+which is kept only as history.
+
+`:libraries:config` and `:libraries:telemetry:impl` went in this same pass and were
+brought back within the day — see the reversal entry above for why that was a
+mistake.
 
 **Why:** Moving Eyes is a local display appliance. Purchases restore through the
 store account, scenes live in Room on the device, and roughly 90% of a year's
@@ -28,25 +31,58 @@ run of the app, `logEvent` for analytics that currently have no sink, and all of
 CI / release-please / TestFlight / Play automation — that automation is the reason
 to start from the template at all.
 
-**Cost accepted:** `logEvent` calls are emitted with nowhere to go until an
-analytics sink lands; `docs/practices/app-events.md` says so explicitly rather than
-implying a pipeline exists.
+**Cost accepted:** nothing observes the app in production except Sentry and the
+Grafana pipe, both of which are best-effort and kill-switchable. There is no
+server-side view of anything, by design.
 
-## 2026-09-01 — Grafana/OTel client pipeline cut with the server
+## 2026-09-01 — Grafana client observability and remote config kept (reversal)
 
-**Decision:** deleted `:libraries:telemetry:impl` (the OTLP exporter, disk-backed
-durable log buffer, and Grafana log tree) rather than untangling it.
+**Decision:** `:libraries:telemetry:impl` and `:libraries:config` are back, after
+being deleted earlier the same day. `RemoteConfigRemoteDataSource` now GETs a
+static `pages/app-config.json` from GitHub Pages instead of the deleted server's
+`/v1/app-config`; everything else in both modules is unchanged.
 
-**Alternatives:** keep it and keep `:libraries:networking` + `:libraries:config`
-alive purely to feed it, or rewrite its `InstallIdProvider` / `SessionIdProvider` /
-HTTP-engine dependencies against new seams.
+**Why the deletion was wrong:** the stated reason was that the Grafana pipe
+existed to correlate client logs with server traces, so it had no purpose without
+a server. `GrafanaLogTree`'s own header says the opposite — it is deliberately
+direct-to-Grafana precisely so it survives a backend being down. It is a *client*
+observability sink, and it answers a question Sentry cannot: not "did it crash"
+but "did the product work". `display_session_ended` is the example that matters.
+A user who enters display mode and leaves after thirty seconds has not crashed,
+has not complained, and has not left a review; without this pipe they are
+invisible, and the spec names that metric as the most important one in the app.
 
-**Why cut:** the module existed to correlate client logs with *server* traces, and
-there is no server. What it uniquely provided — off-device visibility into
-non-crashing errors — is worth real money in a networked product and worth very
-little in a decoration that makes no requests. Sentry already carries errors, and
-the in-memory ring buffer attached to user feedback covers the "what led up to
-this" question. Untangling would have kept two modules alive to serve one consumer.
+Deleting it also silently took the `ConfiguredValue` / QA-override system with it,
+which is what makes a `debugOverride`-style billing flag possible on a device with
+no provisioned store catalog. That dependency wasn't noticed at deletion time.
+
+**What it cost to bring back:** four references. `SessionIdProvider` became
+`SessionTracker.current.uuid`, `InstallIdProvider` had already moved to
+`:libraries:movingeyes`, the ktor engine now resolves from the classpath instead of
+a `platformHttpEngineFactory` in the deleted networking module, and `is_offline`
+was dropped (below). Roughly an hour, against a rebuild-from-scratch that had been
+scheduled for the paywall phase.
+
+**Cost accepted:** two small outbound network dependencies in an app that
+otherwise makes none — a config GET at foreground and an OTLP export. Both are
+off the critical path, both fail closed to cached or bundled values, and both are
+kill-switchable.
+
+## 2026-09-01 — No `is_offline` attribute on telemetry records
+
+**Decision:** dropped the `is_offline` attribute that used to ride every OTLP
+record, rather than reintroducing a connectivity observer to feed it.
+
+**Why:** it was read from `AppState.isOffline`, which was backed by the networking
+module's connectivity watcher combined with witnessed request reachability. This
+app makes no requests of its own, so there is nothing to witness, and a hardcoded
+`false` in a telemetry field is worse than an absent field — it reads as data.
+
+What the attribute was actually for is already covered: the durable disk buffer
+means a record emitted with no network survives process death and ships later, and
+`OfflineDurabilityTest` still pins that behaviour. If per-record connectivity ever
+matters again, a platform connectivity shim belongs with the other device shims,
+not resurrected from the networking module.
 
 ## 2026-06-21 — Server mirrors client conventions
 

@@ -4,9 +4,10 @@ import com.dangerfield.movingeyes.buildinfo.MovingEyesBuildConfig
 
 /**
  * Build-time-injected telemetry credentials. CI reads repo secrets, local
- * builds read `local.properties` (`sentry.dsn` — see `loadTelemetryMetadata`
- * in build-logic). A blank value leaves crash reporting dormant rather than
- * failing, so a fresh clone builds and runs with zero setup.
+ * builds read `local.properties` (`sentry.dsn`, `grafana.*` — see
+ * `loadTelemetryMetadata` in build-logic). Blank values leave the
+ * corresponding pipe dormant rather than failing, so a fresh clone builds and
+ * runs with zero setup.
  */
 object TelemetryInfo {
     /** Single Sentry DSN for all platforms and build types. The `environment`
@@ -14,4 +15,13 @@ object TelemetryInfo {
      *  project. Blank → crash reporting disabled. */
     val sentryDsn: String
         get() = MovingEyesBuildConfig.SENTRY_DSN
+
+    val grafanaOtlpBaseUrl: String
+        get() = MovingEyesBuildConfig.GRAFANA_OTLP_BASE_URL
+
+    val grafanaOtlpInstanceId: String
+        get() = MovingEyesBuildConfig.GRAFANA_OTLP_INSTANCE_ID
+
+    val grafanaLogsWriteToken: String
+        get() = MovingEyesBuildConfig.GRAFANA_LOGS_WRITE_TOKEN
 }

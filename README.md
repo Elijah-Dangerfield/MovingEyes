@@ -14,7 +14,7 @@ This is a **display appliance**, not a drawing app. The user configures it once,
 - The screen sits behind cardboard, so aligning eyes to physical holes is the single most important interaction. The canvas is the screen at 1:1 — no zoom, no pan — because a pixel here is a millimetre of cardboard.
 - Pure black is the default canvas. On OLED those pixels are off, and the illusion becomes eyes floating in a void rather than a glowing rectangle behind a painting.
 
-There are **no accounts and no backend**. The only network traffic is crash reporting and one in-app purchase.
+There are **no accounts and no backend**. The only outbound traffic is crash reporting, anonymous product events, a static remote-config file, and one in-app purchase.
 
 ## Build & run
 
@@ -60,7 +60,8 @@ Architecture rules (enforced at Gradle configuration time), the ViewModel/DI/nav
 | [SETUP.md](SETUP.md) | Init → running app → first release, step by step |
 | [AGENTS.md](AGENTS.md) | Architecture, conventions, testing rules |
 | [docs/practices/testing.md](docs/practices/testing.md) | Which layer catches which bug; fakes |
-| [docs/practices/observability.md](docs/practices/observability.md) | Crash reporting and the session_id pivot |
+| [docs/practices/observability.md](docs/practices/observability.md) | Sentry and Grafana; the session_id pivot |
+| [libraries/config/README.md](libraries/config/README.md) | Feature flags, QA overrides, and shipping a change without a store review |
 | [docs/practices/app-events.md](docs/practices/app-events.md) | The structured-event registry + `logEvent` discipline |
 | [docs/swift-kotlin-communication-patterns.md](docs/swift-kotlin-communication-patterns.md) | Exposing Kotlin to Swift and vice versa |
 

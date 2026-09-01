@@ -2,11 +2,15 @@ package com.dangerfield.movingeyes
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
+import androidx.compose.runtime.getValue
 import com.dangerfield.movingeyes.libraries.core.BuildInfo
 import com.dangerfield.movingeyes.libraries.navigation.DesignSystemRoute
 import com.dangerfield.movingeyes.libraries.navigation.FeatureEntryPoint
 import com.dangerfield.movingeyes.libraries.navigation.Router
+import com.dangerfield.movingeyes.libraries.navigation.QaConfigRoute
 import com.dangerfield.movingeyes.libraries.navigation.ShakeDialogRoute
 import com.dangerfield.movingeyes.libraries.navigation.dialog
 import com.dangerfield.movingeyes.libraries.navigation.routeDeepLink
@@ -30,7 +34,9 @@ import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class, multibinding = true)
 @Inject
-class ShakeDialogEntryPoint : FeatureEntryPoint {
+class ShakeDialogEntryPoint(
+    private val qaConfigViewModelFactory: () -> QaConfigViewModel,
+) : FeatureEntryPoint {
 
     override fun NavGraphBuilder.buildNavGraph(router: Router) {
         dialog<ShakeDialogRoute> { backStackEntry, dialogState ->
@@ -49,7 +55,14 @@ class ShakeDialogEntryPoint : FeatureEntryPoint {
                                 router.goBack()
                                 router.navigate(DesignSystemRoute())
                             },
-                        )
+                        ),
+                        ShakeAction(
+                            label = "Config",
+                            onSelect = {
+                                router.goBack()
+                                router.navigate(QaConfigRoute())
+                            },
+                        ),
                     )
                 } else {
                     emptyList()
@@ -64,6 +77,23 @@ class ShakeDialogEntryPoint : FeatureEntryPoint {
             deepLinks = listOf(routeDeepLink<DesignSystemRoute>("movingeyes://design-system")),
         ) {
             Screen { padding -> CatalogScreen(modifier = Modifier.padding(padding)) }
+        }
+
+        //   adb shell am start -d "movingeyes://qa-config"
+        screen<QaConfigRoute>(
+            deepLinks = listOf(routeDeepLink<QaConfigRoute>("movingeyes://qa-config")),
+        ) {
+            val viewModel: QaConfigViewModel = viewModel { qaConfigViewModelFactory() }
+            val overrides by viewModel.overrides.collectAsStateWithLifecycle()
+            Screen { padding ->
+                QaConfigScreen(
+                    values = viewModel.values,
+                    overrides = overrides,
+                    onOverride = viewModel::override,
+                    onClearAll = viewModel::clearAll,
+                    modifier = Modifier.padding(padding),
+                )
+            }
         }
     }
 }

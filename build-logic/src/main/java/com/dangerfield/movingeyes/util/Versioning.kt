@@ -114,16 +114,24 @@ fun BuildConfigExtension.writeCommonMetadata(metadata: VersionMetadata) {
 }
 
 data class TelemetryMetadata(
+    val grafanaOtlpBaseUrl: String,
+    val grafanaOtlpInstanceId: String,
+    val grafanaLogsWriteToken: String,
     val sentryDsn: String,
 )
 
 /**
  * Client telemetry credentials, injected at build time so no secret lives in
- * source. Resolution: CI env (`SENTRY_DSN`, set from a repo secret in the
- * beta/release workflows) → `local.properties` (`sentry.dsn`, per-dev) → blank.
+ * source. Resolution for each value: CI env (`GRAFANA_OTLP_BASE_URL` /
+ * `GRAFANA_OTLP_INSTANCE_ID` / `GRAFANA_LOGS_WRITE_TOKEN` / `SENTRY_DSN`, set
+ * from repo secrets in the beta/release workflows) → `local.properties`
+ * (`grafana.otlpBaseUrl` / `grafana.otlpInstanceId` / `grafana.logsWriteToken`
+ * / `sentry.dsn`, per-dev) → blank.
  *
- * A blank DSN leaves `SentryRuntimeConfig.isEnabled` false and crash reporting
- * no-ops, so a fresh clone builds and runs with zero setup.
+ * Blank values leave the corresponding pipe dormant: no Grafana credentials →
+ * `GrafanaCloud.isConfigured` is false and app events stay on-device; no Sentry
+ * DSN → `SentryRuntimeConfig.isEnabled` is false and crash reporting no-ops.
+ * The app builds and runs either way, so a fresh clone works with zero setup.
  */
 fun Project.loadTelemetryMetadata(): TelemetryMetadata {
     val properties = Properties()
@@ -139,11 +147,17 @@ fun Project.loadTelemetryMetadata(): TelemetryMetadata {
             ?: ""
 
     return TelemetryMetadata(
+        grafanaOtlpBaseUrl = resolve("GRAFANA_OTLP_BASE_URL", "grafana.otlpBaseUrl"),
+        grafanaOtlpInstanceId = resolve("GRAFANA_OTLP_INSTANCE_ID", "grafana.otlpInstanceId"),
+        grafanaLogsWriteToken = resolve("GRAFANA_LOGS_WRITE_TOKEN", "grafana.logsWriteToken"),
         sentryDsn = resolve("SENTRY_DSN", "sentry.dsn"),
     )
 }
 
 fun BuildConfigExtension.writeTelemetryMetadata(metadata: TelemetryMetadata) {
+    buildConfigField("String", "GRAFANA_OTLP_BASE_URL", "\"${metadata.grafanaOtlpBaseUrl}\"")
+    buildConfigField("String", "GRAFANA_OTLP_INSTANCE_ID", "\"${metadata.grafanaOtlpInstanceId}\"")
+    buildConfigField("String", "GRAFANA_LOGS_WRITE_TOKEN", "\"${metadata.grafanaLogsWriteToken}\"")
     buildConfigField("String", "SENTRY_DSN", "\"${metadata.sentryDsn}\"")
 }
 

@@ -80,6 +80,16 @@ And under **Settings → Secrets and variables → Actions → Variables** (not 
 | `SENTRY_ORG` | Your Sentry org slug |
 | `SENTRY_PROJECT` | Your Sentry project slug |
 
+### Grafana Cloud (optional, but this is your product analytics)
+
+Baked into store builds so `logEvent` app events and Warn+ logs reach Loki. Leave unset and the pipe stays dormant — the app builds and runs fine, you just can't see what anyone does with it. Given the one metric that matters is display session duration, that's a real loss.
+
+| Secret | Notes |
+| --- | --- |
+| `GRAFANA_OTLP_BASE_URL` | Grafana Cloud → OpenTelemetry → OTLP endpoint base URL |
+| `GRAFANA_OTLP_INSTANCE_ID` | Same page — instance id (the numeric user) |
+| `GRAFANA_LOGS_WRITE_TOKEN` | An access-policy token with `logs:write`. Grafana auto-revokes `glc_` tokens it finds in public repos — never commit one. |
+
 ---
 
 ## Repo settings
@@ -117,9 +127,14 @@ One non-consumable, `$4.99`, unlocking everything. No subscription: roughly 90% 
 
 1. **Play Console** → Monetize → In-app products → create the product.
 2. **App Store Connect** → Features → In-App Purchases → Non-Consumable → same product id.
-3. Wire both into RevenueCat and put the SDK key where the billing module reads it.
 
-Test a real sandbox purchase *and* a restore-after-reinstall on both platforms before shipping. Then kill the network mid-session and confirm the cached entitlement still grants — nobody gets locked out of their decoration on Halloween night because RevenueCat had a blip.
+**You can't develop against these until the app is on a track.** Play returns nothing from `queryProductDetails` until a build is published to at least internal testing; Apple will sandbox-test against a product in "Ready to Submit" without going live, and Xcode StoreKit configuration files work with no App Store Connect at all. That's why `billing.realPurchasesEnabled` has `debugOverride = false` — a sideloaded debug build uses the fake client and a seeded catalog, so the paywall is testable off-store. Flip it in the QA menu (shake → Config) when you want the real store on a debug build.
+
+Before shipping, on both platforms:
+
+- A real sandbox purchase completes and the unlock applies.
+- **Delete the app, reinstall, and confirm the unlock comes back without tapping anything.** A non-consumable belongs to the store account, not the install, so the app re-checks entitlements silently on launch; "Restore purchases" is the manual fallback for a signed-out or switched account, and Apple requires it to exist regardless.
+- Kill the network mid-session and confirm the cached entitlement still grants. Nobody gets locked out of their decoration on Halloween night because a store query timed out.
 
 ---
 
@@ -174,6 +189,8 @@ Inject `ReviewPrompter` and call `requestReview()` after a display session longe
 
 1. **App boots to a black canvas** on an Android device and the iOS simulator. Cold start under 1.5s.
 2. **Trigger a test crash → Sentry.** Debug builds: shake → debug menu. Expected: the event in Sentry within a minute, tagged with `session_id` and `commit_sha`.
-3. **A beta build reaches TestFlight and Play internal** from a push to `main`.
+3. **Find `app.launched` in Loki** (if Grafana is wired): `{service_name="movingeyes-client"} | event_name="app.launched"`. Expected: one record per cold start, sharing a `session_id` with everything else from that run.
+4. **Remote config round trip.** Edit `pages/app-config.json` to set `"telemetry.appEventsSampleRate": 0.5`, merge, then background and foreground the app twice (refresh is throttled to 5 min). Expected: the new value shows in the QA menu (shake → Config) as the resolved value.
+5. **A beta build reaches TestFlight and Play internal** from a push to `main`.
 
 See `docs/release-automation.md` for the full pipeline runbook.

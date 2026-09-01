@@ -12,7 +12,21 @@ This is **Kotlin Multiplatform**—most code is shared, but some platform featur
 
 Moving Eyes turns a phone or tablet into a Halloween decoration: the screen fills with animated eyes, the device gets taped behind a painting with the eyes cut out, and it runs unattended for five hours.
 
-It is a **display appliance**, not a drawing app, and that reframe drives everything. There are **no accounts, no backend, and no network calls** beyond crash reporting and one in-app purchase. Don't reintroduce an auth layer, a sync engine, or a server — they were deliberately stripped. The canvas is the screen at 1:1 (no zoom, no pan), because a pixel here is a physical millimetre on a device about to be aligned with holes cut in cardboard.
+It is a **display appliance**, not a drawing app, and that reframe drives everything. There are **no accounts and no backend**. Don't reintroduce an auth layer, a sync engine, or a server — they were deliberately stripped. The canvas is the screen at 1:1 (no zoom, no pan), because a pixel here is a physical millimetre on a device about to be aligned with holes cut in cardboard.
+
+The app makes exactly three kinds of outbound request, none on the critical path and all failing closed:
+
+- **Sentry** — crashes and user feedback (`:libraries:movingeyes:impl`).
+- **Grafana** — `logEvent` app events and Warn+ logs over OTLP, disk-buffered (`:libraries:telemetry:impl`). This is what answers "is the product working"; see `docs/practices/observability.md`.
+- **Remote config** — one static JSON file on GitHub Pages (`:libraries:config`). The only way to change shipped behaviour without a store review, which matters when the season is ten days long.
+
+Anything else that phones home needs a reason, because near-empty store privacy labels are a deliberate marketing asset for an app that asks for a microphone.
+
+## Feature flags (`:libraries:config`)
+
+Every flag is an injectable `ConfiguredValue` subclass contributed into `Set<QaConfigValue>`, so it appears in the QA menu (shake → Config) automatically. Resolution order, highest first: local QA override → `debugOverride` (debug builds only) → `pages/app-config.json` → the in-code `default`.
+
+`debugOverride` is the important one for anything store-backed: a sideloaded debug build has no provisioned Play/StoreKit catalog, so a real billing client returns nothing. Default those flags to the fake on debug and the real path on shippable builds. Full reference in [`libraries/config/README.md`](libraries/config/README.md).
 
 ## Build Commands
 

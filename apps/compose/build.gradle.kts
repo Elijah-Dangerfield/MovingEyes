@@ -34,6 +34,9 @@ kotlin {
             implementation(projects.libraries.storage)
             implementation(projects.libraries.storage.impl)
             implementation(projects.libraries.movingeyes.storage)
+            implementation(projects.libraries.config)
+            implementation(projects.libraries.config.impl)
+            implementation(projects.libraries.telemetry.impl)
 
             implementation(projects.features.editor)
             implementation(projects.features.editor.impl)

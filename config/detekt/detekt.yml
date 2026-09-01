@@ -8,6 +8,10 @@ movingeyes:
   active: true
   VerifyStrings:
     active: true
-    # The design-system catalog is developer-facing spec copy, never shipped
-    # UI, so its labels are plain constants rather than string resources.
-    excludes: ['**/libraries/ui/src/commonMain/kotlin/**/catalog/**']
+    # Developer-facing surfaces that never ship to a user: the design-system
+    # catalog (spec copy) and the QA menu (both debug-build only, reachable
+    # solely by shaking the device). Their labels are plain constants.
+    excludes: [
+      '**/libraries/ui/src/commonMain/kotlin/**/catalog/**',
+      '**/apps/compose/src/commonMain/kotlin/**/QaConfig*.kt',
+    ]

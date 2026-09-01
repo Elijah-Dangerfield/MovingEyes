@@ -21,6 +21,10 @@ ksp = "2.3.0"
 kotlinInject = "0.8.0"
 kotlinxCoroutinesCore = "1.10.2"
 kotlinxDatetime = "0.7.1"
+ktor = "3.3.3"
+okio = "3.9.1"
+# KMP client-side OTel (io.opentelemetry.kotlin) — experimental, pinned exactly.
+opentelemetryKotlin = "0.5.0"
 jetbrainsNavigationCompose = "2.9.1"
 kotlinInjectAnvil = "0.1.6"
 room = "2.8.4"
@@ -61,6 +65,26 @@ kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesCore" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
+
+# Client-side OpenTelemetry. Only :libraries:telemetry:impl touches these — the
+# OTel types stay confined to GrafanaLogTree so the tree can be re-backed
+# without touching call sites.
+otel-kotlin-api = { module = "io.opentelemetry.kotlin:api", version.ref = "opentelemetryKotlin" }
+otel-kotlin-sdk-api = { module = "io.opentelemetry.kotlin:sdk-api", version.ref = "opentelemetryKotlin" }
+otel-kotlin-implementation = { module = "io.opentelemetry.kotlin:implementation", version.ref = "opentelemetryKotlin" }
+otel-kotlin-exporters-core = { module = "io.opentelemetry.kotlin:exporters-core", version.ref = "opentelemetryKotlin" }
+otel-kotlin-exporters-persistence = { module = "io.opentelemetry.kotlin:exporters-persistence", version.ref = "opentelemetryKotlin" }
+okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
+
+# Ktor client. The app makes exactly two kinds of outbound request: the static
+# app-config fetch and the OTLP telemetry export. There is no API to talk to.
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-contentNegotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-client-encoding = { module = "io.ktor:ktor-client-encoding", version.ref = "ktor" }
+ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 
 google-play-review = { module = "com.google.android.play:review", version = "2.0.2" }
 google-play-review-ktx = { module = "com.google.android.play:review-ktx", version = "2.0.2" }

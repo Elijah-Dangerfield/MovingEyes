@@ -1,0 +1,4 @@
+{
+  "_comment": "Remote config. Served from GitHub Pages, fetched at launch, cached on device. Keys are the dotted ConfiguredValue.path; anything absent falls back to the in-code default, so an empty object is the correct 'no overrides' state. See libraries/config/README.md.",
+  "_why": "The app has no backend and its whole year of traffic lands in ten days. A store review takes longer than that window can spare, so this file is how a strobing mood gets capped, a paywall line gets reworded, or the telemetry pipe gets muted without shipping a build."
+}
