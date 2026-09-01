@@ -1,5 +1,6 @@
 package com.dangerfield.movingeyes
 
+import com.dangerfield.movingeyes.libraries.billing.StoreKitCoordinator
 import com.dangerfield.movingeyes.libraries.movingeyes.PermissionManager
 import com.dangerfield.movingeyes.libraries.review.ReviewLauncher
 import me.tatarka.inject.annotations.Provides
@@ -12,6 +13,10 @@ import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 abstract class IosAppComponent(
     private val permissionManager: PermissionManager,
     private val reviewLauncher: ReviewLauncher,
+    // The Swift `IOSStoreKitCoordinator`, passed in from `iOSApp.swift`.
+    // StoreKit 2's purchase APIs are Swift-only async, so the implementation
+    // has to live over there. Android binds a no-op via anvil.
+    private val storeKitCoordinator: StoreKitCoordinator,
 ) : AppComponent {
 
     @Provides
@@ -19,6 +24,9 @@ abstract class IosAppComponent(
 
     @Provides
     fun provideReviewLauncher(): ReviewLauncher = reviewLauncher
+
+    @Provides
+    fun provideStoreKitCoordinator(): StoreKitCoordinator = storeKitCoordinator
 }
 
 
@@ -26,4 +34,5 @@ abstract class IosAppComponent(
 expect fun create(
     permissionManager: PermissionManager,
     reviewLauncher: ReviewLauncher,
+    storeKitCoordinator: StoreKitCoordinator,
 ): IosAppComponent

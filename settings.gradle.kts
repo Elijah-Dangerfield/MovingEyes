@@ -42,6 +42,8 @@ include(":features:editor")
 include(":features:editor:impl")
 
 // Libraries
+include(":libraries:billing")
+include(":libraries:billing:impl")
 include(":libraries:config")
 include(":libraries:config:impl")
 include(":libraries:core")

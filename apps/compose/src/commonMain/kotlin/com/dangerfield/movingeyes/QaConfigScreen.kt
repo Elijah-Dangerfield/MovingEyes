@@ -37,8 +37,13 @@ import com.dangerfield.movingeyes.system.Dimension
 fun QaConfigScreen(
     values: List<ConfiguredValue<*>>,
     overrides: Map<String, Any>,
+    isUnlocked: Boolean,
+    lastBillingResult: String?,
     onOverride: (path: String, value: Any) -> Unit,
     onClearAll: () -> Unit,
+    onPurchase: () -> Unit,
+    onRestore: () -> Unit,
+    onClearEntitlement: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val grouped = values
@@ -66,6 +71,39 @@ fun QaConfigScreen(
                 ) {
                     Text("Clear all overrides")
                 }
+            }
+        }
+
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(Dimension.D400)) {
+                Text(
+                    text = "billing",
+                    typography = AppTheme.typography.Readout.R300,
+                    color = AppTheme.colors.accentPrimary,
+                    allCaps = true,
+                )
+                Text(
+                    text = if (isUnlocked) "Unlocked" else "Free tier",
+                    typography = AppTheme.typography.Heading.H600,
+                    color = if (isUnlocked) AppTheme.colors.accentPrimary else AppTheme.colors.text,
+                )
+                lastBillingResult?.let {
+                    Text(
+                        text = it,
+                        typography = AppTheme.typography.Readout.R400,
+                        color = AppTheme.colors.textSecondary,
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(Dimension.D400)) {
+                    Button(onClick = onPurchase, size = ButtonSize.Small) { Text("Buy") }
+                    Button(onClick = onRestore, size = ButtonSize.Small, style = ButtonStyle.Outlined) {
+                        Text("Restore")
+                    }
+                    Button(onClick = onClearEntitlement, size = ButtonSize.Small, style = ButtonStyle.Text) {
+                        Text("Clear")
+                    }
+                }
+                HorizontalDivider()
             }
         }
 

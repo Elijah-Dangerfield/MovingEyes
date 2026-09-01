@@ -7,12 +7,14 @@ struct iOSApp: App {
 
     let permissionManager = IOSPermissionManager()
     let reviewLauncher = IOSReviewLauncher()
+    let storeKitCoordinator = IOSStoreKitCoordinator()
     private let iOSAppComponent: IosAppComponent
 
     init() {
         self.iOSAppComponent = create(
             permissionManager: permissionManager,
-            reviewLauncher: reviewLauncher
+            reviewLauncher: reviewLauncher,
+            storeKitCoordinator: storeKitCoordinator
         )
         iOSAppComponent.telemetry.initialize()
         // Construct every @AutoInit singleton up front — resolving the set is

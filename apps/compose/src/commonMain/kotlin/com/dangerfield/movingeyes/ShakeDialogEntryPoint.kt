@@ -85,12 +85,19 @@ class ShakeDialogEntryPoint(
         ) {
             val viewModel: QaConfigViewModel = viewModel { qaConfigViewModelFactory() }
             val overrides by viewModel.overrides.collectAsStateWithLifecycle()
+            val isUnlocked by viewModel.isUnlocked.collectAsStateWithLifecycle()
+            val lastBillingResult by viewModel.lastBillingResult.collectAsStateWithLifecycle()
             Screen { padding ->
                 QaConfigScreen(
                     values = viewModel.values,
                     overrides = overrides,
+                    isUnlocked = isUnlocked,
+                    lastBillingResult = lastBillingResult,
                     onOverride = viewModel::override,
                     onClearAll = viewModel::clearAll,
+                    onPurchase = viewModel::purchase,
+                    onRestore = viewModel::restore,
+                    onClearEntitlement = viewModel::clearEntitlement,
                     modifier = Modifier.padding(padding),
                 )
             }
