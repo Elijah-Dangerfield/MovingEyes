@@ -2,54 +2,51 @@ package com.dangerfield.movingeyes.system.typography
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import org.jetbrains.compose.resources.Font
-import movingeyes.libraries.ui.generated.resources.DMSerifText_Italic
-import movingeyes.libraries.ui.generated.resources.DMSerifText_Regular
+import movingeyes.libraries.ui.generated.resources.IBMPlexMono_Medium
+import movingeyes.libraries.ui.generated.resources.IBMPlexMono_Regular
+import movingeyes.libraries.ui.generated.resources.IBMPlexMono_SemiBold
+import movingeyes.libraries.ui.generated.resources.IBMPlexSans_Bold
+import movingeyes.libraries.ui.generated.resources.IBMPlexSans_Medium
+import movingeyes.libraries.ui.generated.resources.IBMPlexSans_Regular
+import movingeyes.libraries.ui.generated.resources.IBMPlexSans_SemiBold
 import movingeyes.libraries.ui.generated.resources.Res
-import movingeyes.libraries.ui.generated.resources.Roboto_Bold
-import movingeyes.libraries.ui.generated.resources.Roboto_Light
-import movingeyes.libraries.ui.generated.resources.Roboto_Medium
-import movingeyes.libraries.ui.generated.resources.Roboto_Regular
-import movingeyes.libraries.ui.generated.resources.Roboto_SemiBold
-import movingeyes.libraries.ui.generated.resources.lust_script_regular
-import movingeyes.libraries.ui.generated.resources.poppins_bold
-import movingeyes.libraries.ui.generated.resources.poppins_light
-import movingeyes.libraries.ui.generated.resources.poppins_medium
-import movingeyes.libraries.ui.generated.resources.poppins_regular
-import movingeyes.libraries.ui.generated.resources.poppins_semibold
 
-
-val BrandFontFamily: FontFamily
-    @Composable get() = FontFamily(
-        Font(
-            resource = Res.font.lust_script_regular, weight = FontWeight.Normal
-        ),
-    )
-
+/**
+ * Two families, both IBM Plex, both bundled — no system fallbacks, so a
+ * readout lines up identically on a Pixel and an iPad.
+ *
+ * The pairing is the whole visual argument: Plex Sans carries text at heavier
+ * weights than a typical app would use, and Plex Mono carries **every number** —
+ * coordinates, millimetres, hex, battery, countdown. Numbers being monospaced
+ * is the tell that this is an instrument rather than a toy, and it's the reason
+ * a mono is worth 460KB of binary.
+ *
+ * Light and Italic are deliberately absent. Nothing in this UI is quiet enough
+ * to want Light at arm's length in a dark room, and there is no long-form prose
+ * to italicise.
+ */
 val SansSerifFontFamily: FontFamily
     @Composable get() = FontFamily(
-        Font(
-            resource = Res.font.Roboto_Light, weight = FontWeight.Light
-        ), Font(
-            resource = Res.font.Roboto_Regular, weight = FontWeight.Normal
-        ), Font(
-            resource = Res.font.Roboto_Medium, weight = FontWeight.Medium
-        ), Font(
-            resource = Res.font.Roboto_Bold, weight = FontWeight.Bold
-        ), Font(
-            resource = Res.font.Roboto_SemiBold, weight = FontWeight.SemiBold
-        )
+        Font(resource = Res.font.IBMPlexSans_Regular, weight = FontWeight.Normal),
+        Font(resource = Res.font.IBMPlexSans_Medium, weight = FontWeight.Medium),
+        Font(resource = Res.font.IBMPlexSans_SemiBold, weight = FontWeight.SemiBold),
+        Font(resource = Res.font.IBMPlexSans_Bold, weight = FontWeight.Bold),
     )
 
-val SerifFontFamily: FontFamily
+/** Every number in the app. See [SansSerifFontFamily] for why. */
+val MonoFontFamily: FontFamily
     @Composable get() = FontFamily(
-        Font(
-            resource = Res.font.DMSerifText_Regular, weight = FontWeight.Normal
-        ),
-
-        Font(
-            resource = Res.font.DMSerifText_Italic, style = FontStyle.Italic
-        ),
+        Font(resource = Res.font.IBMPlexMono_Regular, weight = FontWeight.Normal),
+        Font(resource = Res.font.IBMPlexMono_Medium, weight = FontWeight.Medium),
+        Font(resource = Res.font.IBMPlexMono_SemiBold, weight = FontWeight.SemiBold),
     )
+
+/**
+ * The app has no display face. Kept as an alias so callers that reach for a
+ * "brand" family get Plex Sans rather than a compile error or, worse, a
+ * script font on a haunted painting.
+ */
+val BrandFontFamily: FontFamily
+    @Composable get() = SansSerifFontFamily

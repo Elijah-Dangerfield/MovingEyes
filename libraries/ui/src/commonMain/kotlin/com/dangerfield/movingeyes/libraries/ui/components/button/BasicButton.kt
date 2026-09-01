@@ -182,13 +182,16 @@ internal fun ButtonSize.padding(hasIcon: Boolean): PaddingValues =
 // - Small: L500 (12sp) - Compact buttons in toolbars
 // - Medium: L600 (14sp) - Most common button size
 // - Large: L600.SemiBold (14sp, heavier weight) - Primary CTAs
+//
+// Sentence case, not caps. Safelight reads as instrument labelling, and
+// shouting is the opposite of that — "Unlock Moving Eyes", "Got it", "Refit".
+// Caps also cost width, and several of these buttons carry a full sentence.
 
 private val ExtraSmallButtonTextConfig: TextConfig
     @Composable get() = TextConfig(
         typography = AppTheme.typography.Label.L400,
         overflow = TextOverflow.Ellipsis,
         maxLines = 1,
-        allCaps = true
     )
 
 private val SmallButtonTextConfig: TextConfig
@@ -196,7 +199,6 @@ private val SmallButtonTextConfig: TextConfig
         typography = AppTheme.typography.Label.L500,
         overflow = TextOverflow.Ellipsis,
         maxLines = 1,
-        allCaps = true
     )
 
 private val MediumButtonTextConfig: TextConfig
@@ -204,7 +206,6 @@ private val MediumButtonTextConfig: TextConfig
         typography = AppTheme.typography.Label.L600,
         overflow = TextOverflow.Ellipsis,
         maxLines = 1,
-        allCaps = true
     )
 
 private val LargeButtonTextConfig: TextConfig
@@ -212,7 +213,6 @@ private val LargeButtonTextConfig: TextConfig
         typography = AppTheme.typography.Label.L600.SemiBold,
         overflow = TextOverflow.Ellipsis,
         maxLines = 1,
-        allCaps = true
     )
 
 

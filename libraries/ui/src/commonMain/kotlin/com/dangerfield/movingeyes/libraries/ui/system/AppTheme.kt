@@ -14,7 +14,7 @@ import com.dangerfield.movingeyes.libraries.ui.system.LocalColors
 import com.dangerfield.movingeyes.libraries.ui.system.LocalContentColor
 import com.dangerfield.movingeyes.libraries.ui.system.LocalTypography
 import com.dangerfield.movingeyes.system.color.Colors
-import com.dangerfield.movingeyes.system.color.defaultColors
+import com.dangerfield.movingeyes.system.color.safelightColors
 import com.dangerfield.movingeyes.system.typography.rememberTypography
 
 object AppTheme {
@@ -34,7 +34,7 @@ fun AppThemeProvider(
     content: @Composable () -> Unit
 ) {
 
-    val colors = defaultColors
+    val colors = safelightColors
 
     val textSelectionColors = TextSelectionColors(
         handleColor = colors.accentPrimary.color,

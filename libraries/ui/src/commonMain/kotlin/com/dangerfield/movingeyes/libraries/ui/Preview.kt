@@ -21,7 +21,7 @@ import com.dangerfield.movingeyes.libraries.core.BuildInfo
 import com.dangerfield.movingeyes.libraries.core.fixed
 import com.dangerfield.movingeyes.system.AppThemeProvider
 import com.dangerfield.movingeyes.system.background
-import com.dangerfield.movingeyes.system.color.defaultColors
+import com.dangerfield.movingeyes.system.color.safelightColors
 import com.dangerfield.movingeyes.system.thenIf
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -73,7 +73,7 @@ sealed class PreviewBottomBar(val render: @Composable () -> Unit) {
 fun PreviewContent(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp),
-    backgroundColor: ColorResource? = defaultColors.background,
+    backgroundColor: ColorResource? = safelightColors.background,
     bottomBar: PreviewBottomBar = PreviewBottomBar.None,
     content: @Composable () -> Unit,
 ) {

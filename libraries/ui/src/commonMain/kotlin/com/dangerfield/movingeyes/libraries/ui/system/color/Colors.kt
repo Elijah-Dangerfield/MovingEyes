@@ -52,6 +52,14 @@ interface Colors {
     /* Texts */
     val text: ColorResource
     val textSecondary: ColorResource
+
+    /**
+     * The quietest readable text: field labels above a number, section
+     * eyebrows, unit suffixes. Distinct from [textDisabled] — a tertiary label
+     * is live and its control works, it's just not the thing being read.
+     * Conflating the two makes every axis label look switched off.
+     */
+    val textTertiary: ColorResource
     val textDisabled: ColorResource
     val danger: ColorResource
 
@@ -76,41 +84,56 @@ interface StatusColor {
     val bad: ColorResource
 }
 
-val defaultColors = object : Colors {
-    // Blue as primary accent - like a clear sky
-    override val accentPrimary = ColorResource.Blue600
-    override val onAccentPrimary = ColorResource.White
-    // Purple as secondary - adds a touch of creativity and calm
-    override val accentSecondary = ColorResource.Purple600
-    override val onAccentSecondary = ColorResource.White
+/**
+ * Safelight. One theme, dark only — this app is used in a dark room, at arm's
+ * length, and a light mode would be actively hostile to the thing it's for.
+ *
+ * The rules the design leans on, which the semantic names above don't make
+ * obvious on their own:
+ *
+ *  - [background] is true black and belongs to the **canvas only**. Chrome
+ *    sits on [surfacePrimary] or above so the canvas edge always reads as an
+ *    edge, and so OLED pixels under the eyes stay genuinely off.
+ *  - [accentPrimary] is the single amber. It marks live, selected and
+ *    unlocked, and nothing else. If a second accent starts to feel necessary,
+ *    the hierarchy is wrong somewhere else.
+ *  - Nothing in chrome drops below 60% contrast against its plate.
+ */
+val safelightColors = object : Colors {
+    override val accentPrimary = ColorResource.Accent
+    override val onAccentPrimary = ColorResource.Surface1
+    override val accentSecondary = ColorResource.AccentDeep
+    override val onAccentSecondary = ColorResource.TextHi
 
-    override val shadow = ColorResource.Black_A30
-    override val textDisabled = ColorResource.Gray400
-    override val danger = ColorResource.Red600
-    // White surfaces for a clean, modern look
-    override val surfacePrimary = ColorResource.White
-    override val surfaceDisabled = ColorResource.Gray200
-    override val onSurfacePrimary = ColorResource.Gray900
-    override val surfaceSecondary = ColorResource.Gray100
-    override val onSurfaceSecondary = ColorResource.Gray800
-    override val surfaceTertiary = ColorResource.Gray200
-    override val onSurfaceTertiary = ColorResource.Gray700
-    override val onSurfaceDisabled = ColorResource.Gray400
-    // Light gray background for a soft, neutral canvas
-    override val background = ColorResource.Gray50
-    override val onBackground = ColorResource.Gray900
-    override val border = ColorResource.Gray300
-    override val borderSecondary = ColorResource.Gray400
-    override val borderDisabled = ColorResource.Gray200
-    // Dark gray text on light backgrounds for high readability
-    override val text = ColorResource.Gray900
+    override val shadow = ColorResource.Black_A70
+    override val danger = ColorResource.Danger
+
+    override val background = ColorResource.Canvas
+    override val onBackground = ColorResource.TextHi
     override val backgroundOverlay = ColorResource.Black_A70
-    override val textSecondary = ColorResource.Gray600
+
+    override val surfacePrimary = ColorResource.Surface1
+    override val onSurfacePrimary = ColorResource.TextHi
+    override val surfaceSecondary = ColorResource.Surface2
+    override val onSurfaceSecondary = ColorResource.TextHi
+    override val surfaceTertiary = ColorResource.Surface3
+    override val onSurfaceTertiary = ColorResource.TextHi
+    override val surfaceDisabled = ColorResource.Surface2
+    override val onSurfaceDisabled = ColorResource.TextLow
+
+    override val border = ColorResource.Line
+    override val borderSecondary = ColorResource.LineStrong
+    override val borderDisabled = ColorResource.Surface2
+
+    override val text = ColorResource.TextHi
+    override val textSecondary = ColorResource.TextMid
+    override val textTertiary = ColorResource.TextLow
+    override val textDisabled = ColorResource.TextLow
 
     override val status = object : StatusColor {
-        override val okay = ColorResource.Green600
-        override val warning = ColorResource.Amber600
-        override val bad = ColorResource.Red600
+        override val okay = ColorResource.Accent
+        override val warning = ColorResource.Accent
+        override val bad = ColorResource.Danger
     }
 }
 
@@ -538,8 +561,8 @@ fun PreviewColorSwatch(colors: Colors) {
 
 @Preview(widthDp = 600, heightDp = 2000)
 @Composable
-private fun PreviewDefaultColors() {
-    PreviewColorSwatch(defaultColors)
+private fun PreviewSafelightColors() {
+    PreviewColorSwatch(safelightColors)
 }
 
 @Composable

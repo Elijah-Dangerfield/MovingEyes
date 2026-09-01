@@ -91,3 +91,18 @@ object LineHeightRatio {
 fun Dp.lineHeight(ratio: Float): TextUnit = (this.value * ratio).sp
 
 fun Dp.sp(): TextUnit = this.value.sp
+/**
+ * Minimum hit areas.
+ *
+ * **56dp, not the usual 44.** This app is operated at arm's length in a dim
+ * room, often one-handed while the other hand holds a piece of cardboard
+ * against a wall. The platform minimum is sized for a phone held 30cm from
+ * your face in good light, which is not the situation. Anything interactive
+ * gets [Target.Minimum] whatever its visual size.
+ */
+object Target {
+    val Minimum: Dp = 56.dp
+    val IconButton: Dp = 56.dp
+    val PrimaryButtonHeight: Dp = 60.dp
+    val ListRowHeight: Dp = 64.dp
+}

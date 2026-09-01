@@ -189,7 +189,35 @@ interface Typography {
     val Body: BodyTypography
     val Label: LabelTypography
     val Caption: CaptionTypography
+
+    /** Numbers. See [ReadoutTypography]. */
+    val Readout: ReadoutTypography
     val Default: TypographyResource
+}
+
+/**
+ * IBM Plex Mono, for **every number the app shows a user**: eye coordinates,
+ * inter-pupil distance in px and mm, hex colour values, battery percentage,
+ * the demo countdown, angles.
+ *
+ * Two reasons this is its own category rather than a `.Mono` modifier on
+ * Caption. First, monospaced digits are the tell that this is an instrument and
+ * not a toy — it's a deliberate signal, so it deserves a name a reviewer can
+ * check against. Second, a readout that changes every frame must not reflow the
+ * layout around it: in a monospace face `1` and `8` are the same width, so a
+ * position counting up from 97 to 103 doesn't shift the label beside it.
+ *
+ * Sizes are literal rather than drawn from the Dimension scale because the
+ * design calls for 15 / 13 / 12sp and the scale has no rungs at 13 or 15.
+ * Bending the scale to fit three numbers would be worse than stating them.
+ */
+interface ReadoutTypography {
+    /** 15sp — the selection readout pill, the primary live measurement. */
+    val R500: TypographyResource
+    /** 13sp — secondary readouts, hex fields, axis labels. */
+    val R400: TypographyResource
+    /** 12sp — the smallest legible readout; section eyebrows, battery. */
+    val R300: TypographyResource
 }
 
 interface BrandTypography {
@@ -251,35 +279,64 @@ interface CaptionTypography {
 
 @Composable
 fun rememberTypography(): Typography {
-    val serifFontFamily = SerifFontFamily
     val sansSerifFontFamily = SansSerifFontFamily
-    val brandFontFamily = BrandFontFamily
+    val monoFontFamily = MonoFontFamily
 
-    return remember(serifFontFamily, sansSerifFontFamily, brandFontFamily) {
+    return remember(sansSerifFontFamily, monoFontFamily) {
         DefaultTypography(
-            serifFontFamily = serifFontFamily,
             sansSerifFontFamily = sansSerifFontFamily,
-            brandFontFamily = brandFontFamily
+            monoFontFamily = monoFontFamily,
         )
     }
 }
 
 class DefaultTypography(
-    serifFontFamily: FontFamily,
     sansSerifFontFamily: FontFamily,
-    brandFontFamily: FontFamily
+    monoFontFamily: FontFamily,
 ) : Typography {
-    override val Display: DisplayTypography = DisplayTypographyImpl(serifFontFamily)
-
-    override val Brand: BrandTypography = BrandTypographyImpl(brandFontFamily)
-
+    // Every text category is Plex Sans; there is no display or script face.
+    override val Display: DisplayTypography = DisplayTypographyImpl(sansSerifFontFamily)
+    override val Brand: BrandTypography = BrandTypographyImpl(sansSerifFontFamily)
     override val Heading: HeadingTypography = HeadingTypographyImpl(sansSerifFontFamily)
-
     override val Body: BodyTypography = BodyTypographyImpl(sansSerifFontFamily)
     override val Label: LabelTypography = LabelTypographyImpl(sansSerifFontFamily)
     override val Caption: CaptionTypography = CaptionTypographyImpl(sansSerifFontFamily)
 
+    override val Readout: ReadoutTypography = ReadoutTypographyImpl(monoFontFamily)
+
     override val Default: TypographyResource = Body.B600
+}
+
+class ReadoutTypographyImpl(
+    private val fontFamily: FontFamily
+) : ReadoutTypography {
+
+    override val R500 = TypographyResource(
+        fontFamily = fontFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 15.sp,
+        lineHeight = 20.sp,
+        lineBreak = LineBreak.Simple,
+        identifier = "readout-500"
+    )
+
+    override val R400 = TypographyResource(
+        fontFamily = fontFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 13.sp,
+        lineHeight = 16.sp,
+        lineBreak = LineBreak.Simple,
+        identifier = "readout-400"
+    )
+
+    override val R300 = TypographyResource(
+        fontFamily = fontFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 12.sp,
+        lineHeight = 16.sp,
+        lineBreak = LineBreak.Simple,
+        identifier = "readout-300"
+    )
 }
 
 class DisplayTypographyImpl(

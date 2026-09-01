@@ -15,8 +15,8 @@ import com.dangerfield.movingeyes.system.typography.TypographyResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 private const val TYPE_SUBTITLE =
-    "Display = serif, Brand = the brand face. Heading / Label / Body / Caption = sans. Higher " +
-        "number = bigger. Modifiers chain off any token: .Italic, .Bold, .SemiBold, …"
+    "IBM Plex Sans for text, IBM Plex Mono for every number. Higher number = bigger. " +
+        "Modifiers chain off any token: .Bold, .SemiBold, .Medium, …"
 
 /** The type page body. Split into two halves so [DesignSystemPreview] can lay it out in two
  *  columns; call this combined version for a single-column page. */
@@ -32,25 +32,14 @@ internal fun TypographyCatalogBodyHeadlines() {
     val t = AppTheme.typography
 
     CatalogSection(
-        "Display · serif",
-        "Hero headlines only. The italic is the dialog & bottom-sheet title signature.",
+        "Display",
+        "Hero headlines only — the paywall promise, a first-run card. Rare by design.",
     ) {
-        TypeRow("Display.D1500", t.Display.D1500, "Welcome back")
-        TypeRow("Display.D1300", t.Display.D1300, "Welcome back")
-        TypeRow("Display.D1100", t.Display.D1100, "Welcome back")
-        TypeRow("Display.D1000", t.Display.D1000, "Welcome back")
-        TypeRow("Display.D900", t.Display.D900, "Welcome back")
-        TypeRow("Display.D900.Italic", t.Display.D900.Italic, "Daily summary")
-        TypeRow("Display.D800.Italic", t.Display.D800.Italic, "Sign out?")
-    }
-
-    CatalogSection(
-        "Brand",
-        "The brand face — splash, logotype moments. Not for running UI.",
-    ) {
-        TypeRow("Brand.B1300", t.Brand.B1300, "Moving Eyes")
-        TypeRow("Brand.B1100", t.Brand.B1100, "Moving Eyes")
-        TypeRow("Brand.B900", t.Brand.B900, "Moving Eyes")
+        TypeRow("Display.D1500", t.Display.D1500, "Make them move")
+        TypeRow("Display.D1300", t.Display.D1300, "Make them move")
+        TypeRow("Display.D1100", t.Display.D1100, "Make them move")
+        TypeRow("Display.D1000", t.Display.D1000, "Make them move")
+        TypeRow("Display.D900", t.Display.D900, "Make them move")
     }
 
     CatalogSection(
@@ -95,11 +84,21 @@ internal fun TypographyCatalogBodyText() {
 
     CatalogSection(
         "Caption · sans (metadata)",
-        "The smallest type — timestamps, counts, helper text. Pair with textSecondary.",
+        "The smallest type — helper text, section eyebrows. Pair with textSecondary.",
     ) {
-        TypeRow("Caption.C400", t.Caption.C400, "42m remaining")
-        TypeRow("Caption.C300", t.Caption.C300, "42m remaining")
-        TypeRow("Caption.C200", t.Caption.C200, "42m remaining")
+        TypeRow("Caption.C400", t.Caption.C400, "Free scenes blink on a fixed default")
+        TypeRow("Caption.C300", t.Caption.C300, "Free scenes blink on a fixed default")
+        TypeRow("Caption.C200", t.Caption.C200, "Free scenes blink on a fixed default")
+    }
+
+    CatalogSection(
+        "Readout · mono (numbers)",
+        "Every number a user sees. Monospace so a live value can't reflow the label beside it, " +
+            "and because tabular digits are what make this read as an instrument.",
+    ) {
+        TypeRow("Readout.R500", t.Readout.R500, "2 eyes · 148 px · 31.3 mm · 0°")
+        TypeRow("Readout.R400", t.Readout.R400, "X 597   Y 384   IPD 220 px")
+        TypeRow("Readout.R300", t.Readout.R300, "86% · charging")
     }
 }
 

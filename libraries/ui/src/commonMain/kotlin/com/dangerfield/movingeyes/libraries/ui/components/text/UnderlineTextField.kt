@@ -124,12 +124,32 @@ private val underlineTextFieldPadding
 private val outlinedTextFieldColors
     @Composable
     get() = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = AppTheme.colors.text.color,
+        unfocusedTextColor = AppTheme.colors.text.color,
+        disabledTextColor = AppTheme.colors.textDisabled.color,
+        errorTextColor = AppTheme.colors.text.color,
+        cursorColor = AppTheme.colors.accentPrimary.color,
+        errorCursorColor = AppTheme.colors.danger.color,
         focusedContainerColor = AppTheme.colors.background.color,
         unfocusedContainerColor = AppTheme.colors.background.color,
         disabledContainerColor = AppTheme.colors.background.color,
-        focusedBorderColor = AppTheme.colors.border.color,
+        errorContainerColor = AppTheme.colors.background.color,
+        // Focus is the one place the accent earns its keep in a form: it's the
+        // only "live" state on the screen.
+        focusedBorderColor = AppTheme.colors.accentPrimary.color,
         unfocusedBorderColor = AppTheme.colors.border.color,
         disabledBorderColor = AppTheme.colors.borderDisabled.color,
+        // Without these, the error states fall through to MaterialTheme's
+        // colorScheme, which AppThemeProvider deliberately fills with red
+        // sentinels — so a missing binding shows up as a screaming red border
+        // rather than silently looking almost right.
+        errorBorderColor = AppTheme.colors.danger.color,
+        errorLabelColor = AppTheme.colors.danger.color,
+        errorSupportingTextColor = AppTheme.colors.danger.color,
+        errorPlaceholderColor = AppTheme.colors.textSecondary.color,
+        focusedPlaceholderColor = AppTheme.colors.textSecondary.color,
+        unfocusedPlaceholderColor = AppTheme.colors.textSecondary.color,
+        disabledPlaceholderColor = AppTheme.colors.textDisabled.color,
     )
 @Composable
 @Preview
