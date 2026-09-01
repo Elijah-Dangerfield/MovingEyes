@@ -30,12 +30,6 @@ kotlin {
             api(compose.materialIconsExtended)
             api(compose.material3AdaptiveNavigationSuite)
             api(libs.compose.backhandler)
-
-            api(libs.compottie)
-            api(libs.compottie.resources)
-            api(libs.compottie.dot)
-            api(libs.compottie.lite)
-            api(libs.compottie.network)
         }
     }
 }

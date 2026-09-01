@@ -6,7 +6,7 @@ import com.dangerfield.movingeyes.libraries.movingeyes.SessionTracker
 import com.dangerfield.movingeyes.libraries.movingeyes.Telemetry
 import com.dangerfield.movingeyes.libraries.core.logging.KLog
 import com.dangerfield.movingeyes.libraries.flowroutines.AppCoroutineScope
-import com.dangerfield.movingeyes.libraries.networking.InstallIdProvider
+import com.dangerfield.movingeyes.libraries.movingeyes.InstallIdProvider
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.launch
@@ -18,9 +18,8 @@ import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 /**
  * Mirrors the current app [com.dangerfield.movingeyes.libraries.movingeyes.Session]
  * onto the crash-reporting scope so every Sentry event — crashes and the
- * user-feedback the testers file — carries a `session_id` tag. The backend
- * stamps the same id (sent via `X-Session-Id`) onto its OTel traces and
- * logs, so one value pulls a session's frontend and backend telemetry.
+ * user-feedback the testers file — carries a `session_id` tag, so one value
+ * pulls everything that happened in a single run of the app.
  *
  * Started on cold boot, after [Telemetry.initialize] has run (init happens
  * in the platform entry point before any lifecycle event), so the tag is in

@@ -34,19 +34,9 @@ kotlin {
             implementation(projects.libraries.storage)
             implementation(projects.libraries.storage.impl)
             implementation(projects.libraries.movingeyes.storage)
-            implementation(projects.libraries.config)
-            implementation(projects.libraries.config.impl)
-            implementation(projects.libraries.movingeyes.storage)
-            implementation(projects.libraries.networking)
-            implementation(projects.libraries.networking.impl)
-            implementation(projects.libraries.telemetry.impl)
-            implementation(projects.libraries.identity)
-            implementation(projects.libraries.identity.impl)
 
-            implementation(projects.features.home)
-            implementation(projects.features.home.impl)
-            implementation(projects.features.onboarding)
-            implementation(projects.features.onboarding.impl)
+            implementation(projects.features.editor)
+            implementation(projects.features.editor.impl)
 
             implementation(libs.atomicfu)
             

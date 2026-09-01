@@ -9,13 +9,11 @@ import com.dangerfield.movingeyes.util.configureKotlinMultiplatform
 import com.dangerfield.movingeyes.util.configureReleaseSigning
 import com.dangerfield.movingeyes.util.enforceModuleBoundaries
 import com.dangerfield.movingeyes.util.libs
-import com.dangerfield.movingeyes.util.loadSupabaseMetadata
 import com.dangerfield.movingeyes.util.verifyGitHooksInstalled
 import com.dangerfield.movingeyes.util.loadVersionMetadata
 import com.dangerfield.movingeyes.util.optInKotlinMarkers
 import com.dangerfield.movingeyes.util.VersionMetadata
 import com.dangerfield.movingeyes.util.writeCommonMetadata
-import com.dangerfield.movingeyes.util.writeSupabaseMetadata
 import com.github.gmazzo.buildconfig.BuildConfigExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -112,7 +110,6 @@ class ApplicationConventionPlugin : Plugin<Project> {
     }
 
     private fun Project.configureAppBuildConfig(metadata: VersionMetadata) {
-        val supabaseMetadata = loadSupabaseMetadata()
         extensions.configure(BuildConfigExtension::class.java) {
             packageName("${metadata.applicationId}.appconfig")
             className("AppBuildConfig")
@@ -120,7 +117,6 @@ class ApplicationConventionPlugin : Plugin<Project> {
                 internalVisibility = false
             }
             writeCommonMetadata(metadata)
-            writeSupabaseMetadata(supabaseMetadata)
         }
     }
 }

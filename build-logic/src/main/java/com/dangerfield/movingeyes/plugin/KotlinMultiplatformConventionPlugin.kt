@@ -7,13 +7,11 @@ import com.dangerfield.movingeyes.util.configureKotlinMultiplatform
 import com.dangerfield.movingeyes.util.configureKotlinInject
 import com.dangerfield.movingeyes.util.enforceModuleBoundaries
 import com.dangerfield.movingeyes.util.libs
-import com.dangerfield.movingeyes.util.loadSupabaseMetadata
 import com.dangerfield.movingeyes.util.loadTelemetryMetadata
 import com.dangerfield.movingeyes.util.loadVersionMetadata
 import com.dangerfield.movingeyes.util.optInKotlinMarkers
 import com.dangerfield.movingeyes.util.VersionMetadata
 import com.dangerfield.movingeyes.util.writeCommonMetadata
-import com.dangerfield.movingeyes.util.writeSupabaseMetadata
 import com.dangerfield.movingeyes.util.writeTelemetryMetadata
 import com.github.gmazzo.buildconfig.BuildConfigExtension
 import org.gradle.api.Plugin
@@ -81,7 +79,6 @@ class KotlinMultiplatformConventionPlugin : Plugin<Project> {
     }
 
     private fun Project.configureSharedBuildConfig(metadata: VersionMetadata) {
-        val supabaseMetadata = loadSupabaseMetadata()
         extensions.configure(BuildConfigExtension::class.java) {
             packageName("com.dangerfield.movingeyes.buildinfo")
             className("MovingEyesBuildConfig")
@@ -89,7 +86,6 @@ class KotlinMultiplatformConventionPlugin : Plugin<Project> {
                 internalVisibility = false
             }
             writeCommonMetadata(metadata)
-            writeSupabaseMetadata(supabaseMetadata)
             writeTelemetryMetadata(loadTelemetryMetadata())
         }
     }

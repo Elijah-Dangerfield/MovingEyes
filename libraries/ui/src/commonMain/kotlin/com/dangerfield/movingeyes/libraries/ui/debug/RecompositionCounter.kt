@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import com.dangerfield.movingeyes.libraries.core.logging.KLog
-import io.ktor.util.date.getTimeMillis
+import kotlin.time.TimeSource
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -62,6 +62,12 @@ private class RecompositionTracker(
     private val timestamps = ArrayDeque<Long>()
     private var lastRapidLoggedAt: Long = 0
 
+    // Monotonic, so a clock adjustment mid-session can't make the window
+    // look like it spans hours (or negative time).
+    private val startMark = TimeSource.Monotonic.markNow()
+
+    private fun elapsedMillis(): Long = startMark.elapsedNow().inWholeMilliseconds
+
     fun onRecompose(
         onRecompose: (Long) -> Unit,
         onRapidRecomposition: (RapidRecompositionInfo) -> Unit,
@@ -74,7 +80,7 @@ private class RecompositionTracker(
 
         if (rapidWindowMillis <= 0L) return
 
-        val now = getTimeMillis()
+        val now = elapsedMillis()
         timestamps.addLast(now)
         prune(now)
 

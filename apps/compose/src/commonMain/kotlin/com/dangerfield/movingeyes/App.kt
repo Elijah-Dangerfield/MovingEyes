@@ -26,12 +26,9 @@ import com.dangerfield.movingeyes.libraries.core.logOnFailure
 import com.dangerfield.movingeyes.libraries.core.BuildInfo
 import com.dangerfield.movingeyes.libraries.core.Platform
 import com.dangerfield.movingeyes.libraries.core.logging.KLog
-import com.dangerfield.movingeyes.libraries.navigation.AccessDeniedRoute
 import com.dangerfield.movingeyes.libraries.navigation.AnimationType
 import com.dangerfield.movingeyes.libraries.navigation.FeatureEntryPoint
-import com.dangerfield.movingeyes.libraries.navigation.NavigationOptions
 import com.dangerfield.movingeyes.libraries.navigation.Route
-import com.dangerfield.movingeyes.libraries.navigation.SessionExpiredRoute
 import com.dangerfield.movingeyes.libraries.navigation.floatingwindow.FloatingWindowHost
 import com.dangerfield.movingeyes.libraries.navigation.floatingwindow.FloatingWindowNavigator
 import com.dangerfield.movingeyes.libraries.navigation.impl.DelegatingRouter
@@ -48,7 +45,6 @@ import com.dangerfield.movingeyes.libraries.ui.components.dialog.rememberDialogH
 import com.dangerfield.movingeyes.libraries.ui.debug.RecompositionCounter
 import com.dangerfield.movingeyes.libraries.ui.snackbar.PresenterSnackbarHost
 import com.dangerfield.movingeyes.libraries.ui.snackbar.showDebugSnackBar
-import com.dangerfield.movingeyes.libraries.ui.system.LocalAppState
 import com.dangerfield.movingeyes.libraries.ui.system.LocalBuildInfo
 import com.dangerfield.movingeyes.libraries.ui.system.LocalClock
 import com.dangerfield.movingeyes.system.AppThemeProvider
@@ -83,24 +79,12 @@ fun App(appComponent: AppComponent) {
         }
     }
 
-    val authRepository = remember { appComponent.authRepository }
-
     LaunchedEffect(navController, deepLinkBridge) {
         deepLinkBridge.urls.collect { url ->
-            // The browser OAuth return trip (`…://login-callback#...`) carries
-            // a Supabase session in its fragment, not a navigable destination —
-            // hand it to supabase-kt to import instead of the nav graph. Every
-            // other link routes as before. The repo emits the new AuthState on
-            // success, which the app's auth collectors react to.
-            if (authRepository.isOAuthRedirect(url)) {
-                Catching { authRepository.completeOAuthRedirect(url) }
-                    .logOnFailure { "Failed to complete OAuth redirect" }
-            } else {
-                Catching {
-                    val request = NavDeepLinkRequest.Builder.fromUri(NavUri(url)).build()
-                    navController.handleDeepLink(request)
-                }.logOnFailure { "Failed to handle deep link: $url" }
-            }
+            Catching {
+                val request = NavDeepLinkRequest.Builder.fromUri(NavUri(url)).build()
+                navController.handleDeepLink(request)
+            }.logOnFailure { "Failed to handle deep link: $url" }
         }
     }
 
@@ -130,21 +114,18 @@ fun App(appComponent: AppComponent) {
         }
     )
 
-    val appState = remember { appComponent.appState }
-
     CompositionLocalProvider(
-        LocalAppState provides appState,
         LocalClock provides appComponent.provideClock(),
         LocalBuildInfo provides BuildInfo,
         LocalDialogHostState provides dialogHostState
     ) {
         AppThemeProvider {
             Box(modifier = Modifier.fillMaxSize()) {
-                // Stage 1: null until the async AppData read resolves — the
-                // platform splash (keyed on appViewModel.isReady) covers the
-                // gap. Stage 2: the Compose boot gate holds a loading screen
-                // until the remaining boot work (config + profile resolve)
-                // lands, so the first real frame renders authoritative data.
+                // Two-stage boot: the platform splash (keyed on
+                // appViewModel.isReady) covers the start-destination resolve,
+                // then this gate covers whatever boot work follows. Both are
+                // instant today; the gate is what a scene hydrate would hang
+                // off so the canvas renders the real scene on frame one.
                 val bootComplete by appViewModel.isBootComplete.collectAsState()
                 val startDestination by appViewModel.startDestination.collectAsState()
                 val route = startDestination
@@ -163,38 +144,6 @@ fun App(appComponent: AppComponent) {
 
                 SplashGate()
 
-                // The auth server rejected our session mid-run: push a blocking
-                // SessionExpired screen (kept on top, stack intact) that owns
-                // "sign in again" (claimed) vs "start fresh" (guest). An ambient
-                // network event can't present this from a feature screen, so it
-                // routes here. The screen picks its copy off wasAnonymous.
-                LaunchedEffect(Unit) {
-                    appViewModel.sessionExpired.collect { event ->
-                        router.navigate(
-                            SessionExpiredRoute(wasAnonymous = event.wasAnonymous),
-                            NavigationOptions(launchSingleTop = true),
-                        )
-                    }
-                }
-
-                // Server returned the locked `403` access-denied envelope: push
-                // the blocking AccessDenied screen. Same launchSingleTop pattern
-                // as SessionExpired — a burst of denied calls collapses to one
-                // screen on top. The screen keys title/body off `reason` and
-                // surfaces the optional lift date + appeal link.
-                LaunchedEffect(Unit) {
-                    appViewModel.accessDenied.collect { denial ->
-                        router.navigate(
-                            AccessDeniedRoute(
-                                reason = denial.reason,
-                                until = denial.until,
-                                appealUrl = denial.appealUrl,
-                            ),
-                            NavigationOptions(launchSingleTop = true),
-                        )
-                    }
-                }
-
                 DialogHost(
                     modifier = Modifier.matchParentSize(),
                     hostState = dialogHostState
@@ -209,8 +158,8 @@ fun App(appComponent: AppComponent) {
  *
  * Type-safe nav stores the route as its serializer name — the fully-qualified
  * class name followed by argument placeholders, e.g.
- * `com.dangerfield.movingeyes.features.home.HomeRoute?tab={tab}`. We strip the args and
- * the package to get just `HomeRoute`, keeping the tag low-cardinality and
+ * `com.dangerfield.movingeyes.features.editor.EditorRoute`. We strip the args
+ * and the package to get just `EditorRoute`, keeping the tag low-cardinality and
  * readable. Returns null for unnamed/graph destinations.
  */
 private fun NavDestination.routeClassNameOrNull(): String? =

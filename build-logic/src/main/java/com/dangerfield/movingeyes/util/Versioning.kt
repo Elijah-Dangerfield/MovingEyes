@@ -23,15 +23,6 @@ data class VersionMetadata(
     val releaseDisplay: String = "$versionName ($buildNumber)"
 }
 
-data class SupabaseMetadata(
-    val projectId: String,
-    val anonKey: String
-) {
-    val url: String = projectId.takeIf { it.isNotBlank() }
-        ?.let { "https://$it.supabase.co" }
-        ?: ""
-}
-
 /**
  * Resolves the app's version/build metadata with this precedence:
  *  1. **CI env overrides** — `VERSION_NAME_OVERRIDE`, `VERSION_CODE_OVERRIDE`,
@@ -122,53 +113,17 @@ fun BuildConfigExtension.writeCommonMetadata(metadata: VersionMetadata) {
     buildConfigField("String", "COMMIT_BRANCH", "\"${metadata.commitBranch}\"")
 }
 
-fun Project.loadSupabaseMetadata(): SupabaseMetadata {
-    val properties = Properties()
-    val localProperties = rootProject.file("local.properties")
-    if (localProperties.exists()) {
-        FileInputStream(localProperties).use(properties::load)
-    }
-
-    fun env(key: String): String? = System.getenv(key)?.takeIf { it.isNotBlank() }
-
-    val projectId = properties.stringOrNull("supabase.projectId")
-        ?: env("SUPABASE_PROJECT_ID")
-        ?: "mfozvowjsxdwrslyoyrf"
-    val anonKey = properties.stringOrNull("supabase.anonKey")
-        ?: env("SUPABASE_ANON_KEY")
-        ?: ""
-
-    return SupabaseMetadata(
-        projectId = projectId,
-        anonKey = anonKey
-    )
-}
-
-fun BuildConfigExtension.writeSupabaseMetadata(metadata: SupabaseMetadata) {
-    buildConfigField("String", "SUPABASE_PROJECT_ID", "\"${metadata.projectId}\"")
-    buildConfigField("String", "SUPABASE_URL", "\"${metadata.url}\"")
-    buildConfigField("String", "SUPABASE_ANON_KEY", "\"${metadata.anonKey}\"")
-}
-
 data class TelemetryMetadata(
-    val grafanaOtlpBaseUrl: String,
-    val grafanaOtlpInstanceId: String,
-    val grafanaLogsWriteToken: String,
     val sentryDsn: String,
 )
 
 /**
  * Client telemetry credentials, injected at build time so no secret lives in
- * source. Resolution for each value: CI env (`GRAFANA_OTLP_BASE_URL` /
- * `GRAFANA_OTLP_INSTANCE_ID` / `GRAFANA_LOGS_WRITE_TOKEN` / `SENTRY_DSN`, set
- * from repo secrets in beta/release workflows) → `local.properties`
- * (`grafana.otlpBaseUrl` / `grafana.otlpInstanceId` / `grafana.logsWriteToken`
- * / `sentry.dsn`, per-dev) → blank.
+ * source. Resolution: CI env (`SENTRY_DSN`, set from a repo secret in the
+ * beta/release workflows) → `local.properties` (`sentry.dsn`, per-dev) → blank.
  *
- * Blank values leave the corresponding pipe dormant: no Grafana credentials →
- * `GrafanaCloud.isConfigured` is false and app events stay local; no Sentry
- * DSN → `SentryRuntimeConfig.isEnabled` is false and crash reporting no-ops.
- * The app builds and runs either way, so a fresh clone works with zero setup.
+ * A blank DSN leaves `SentryRuntimeConfig.isEnabled` false and crash reporting
+ * no-ops, so a fresh clone builds and runs with zero setup.
  */
 fun Project.loadTelemetryMetadata(): TelemetryMetadata {
     val properties = Properties()
@@ -184,17 +139,11 @@ fun Project.loadTelemetryMetadata(): TelemetryMetadata {
             ?: ""
 
     return TelemetryMetadata(
-        grafanaOtlpBaseUrl = resolve("GRAFANA_OTLP_BASE_URL", "grafana.otlpBaseUrl"),
-        grafanaOtlpInstanceId = resolve("GRAFANA_OTLP_INSTANCE_ID", "grafana.otlpInstanceId"),
-        grafanaLogsWriteToken = resolve("GRAFANA_LOGS_WRITE_TOKEN", "grafana.logsWriteToken"),
         sentryDsn = resolve("SENTRY_DSN", "sentry.dsn"),
     )
 }
 
 fun BuildConfigExtension.writeTelemetryMetadata(metadata: TelemetryMetadata) {
-    buildConfigField("String", "GRAFANA_OTLP_BASE_URL", "\"${metadata.grafanaOtlpBaseUrl}\"")
-    buildConfigField("String", "GRAFANA_OTLP_INSTANCE_ID", "\"${metadata.grafanaOtlpInstanceId}\"")
-    buildConfigField("String", "GRAFANA_LOGS_WRITE_TOKEN", "\"${metadata.grafanaLogsWriteToken}\"")
     buildConfigField("String", "SENTRY_DSN", "\"${metadata.sentryDsn}\"")
 }
 

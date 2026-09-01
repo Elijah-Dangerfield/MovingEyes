@@ -8,11 +8,11 @@ import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Reference user-scoped Room table. Replace with your app's real tables —
- * the pattern to copy is: an `@Entity`, a `@Dao` extending [ClearableDao],
- * a `ProvideXxxDao` binding in `:libraries:storage:impl` that ALSO
- * contributes the DAO into the ClearableDao multibinding set, and the
- * entity registered in `AppDatabase`.
+ * Placeholder table. Room refuses to generate a database with no entities,
+ * and the app's real schema (scenes, eyes, groups) doesn't exist until the
+ * scene-persistence phase. Delete this file, its `ProvideExampleUserDataDao`
+ * binding, and its `AppDatabase` registration the moment the scene tables
+ * land — nothing reads it.
  */
 @Entity(tableName = "example_user_data")
 data class ExampleUserDataEntity(
@@ -21,7 +21,7 @@ data class ExampleUserDataEntity(
 )
 
 @Dao
-interface ExampleUserDataDao : ClearableDao {
+interface ExampleUserDataDao {
     @Upsert
     suspend fun upsert(row: ExampleUserDataEntity)
 
@@ -29,5 +29,5 @@ interface ExampleUserDataDao : ClearableDao {
     fun observe(key: String): Flow<ExampleUserDataEntity?>
 
     @Query("DELETE FROM example_user_data")
-    override suspend fun deleteAll()
+    suspend fun deleteAll()
 }

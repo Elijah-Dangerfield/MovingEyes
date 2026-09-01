@@ -14,19 +14,15 @@ import com.dangerfield.movingeyes.libraries.ui.components.BottomBarItem
 import com.dangerfield.movingeyes.libraries.ui.components.dialog.DialogHost
 import com.dangerfield.movingeyes.libraries.ui.components.dialog.LocalDialogHostState
 import com.dangerfield.movingeyes.libraries.ui.components.dialog.rememberDialogHostState
-import com.dangerfield.movingeyes.libraries.ui.system.LocalAppState
 import com.dangerfield.movingeyes.libraries.ui.system.LocalBuildInfo
 import com.dangerfield.movingeyes.libraries.ui.system.LocalClock
 import com.dangerfield.movingeyes.libraries.ui.system.color.ColorResource
-import com.dangerfield.movingeyes.libraries.core.AppState
 import com.dangerfield.movingeyes.libraries.core.BuildInfo
 import com.dangerfield.movingeyes.libraries.core.fixed
 import com.dangerfield.movingeyes.system.AppThemeProvider
 import com.dangerfield.movingeyes.system.background
 import com.dangerfield.movingeyes.system.color.defaultColors
 import com.dangerfield.movingeyes.system.thenIf
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlin.time.Clock
 import kotlin.time.Instant
 
@@ -76,7 +72,6 @@ sealed class PreviewBottomBar(val render: @Composable () -> Unit) {
 @Composable
 fun PreviewContent(
     modifier: Modifier = Modifier,
-    appState: AppState = PreviewAppState,
     contentPadding: PaddingValues = PaddingValues(0.dp),
     backgroundColor: ColorResource? = defaultColors.background,
     bottomBar: PreviewBottomBar = PreviewBottomBar.None,
@@ -84,7 +79,6 @@ fun PreviewContent(
 ) {
     val dialogHostState = rememberDialogHostState()
     CompositionLocalProvider(
-        LocalAppState provides appState,
         LocalClock provides Clock.fixed(Instant.parse("2023-01-01T00:00:00Z")),
         LocalBuildInfo provides BuildInfo,
         LocalDialogHostState provides dialogHostState
@@ -108,11 +102,4 @@ fun PreviewContent(
             }
         }
     }
-}
-
-
-val PreviewAppState = object : AppState {
-    override val isOffline: StateFlow<Boolean> = MutableStateFlow(false)
-
-    override val isBlockActive: StateFlow<Boolean> = MutableStateFlow(false)
 }

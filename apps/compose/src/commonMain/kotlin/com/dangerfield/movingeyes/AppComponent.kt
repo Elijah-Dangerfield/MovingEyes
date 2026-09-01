@@ -1,8 +1,6 @@
 package com.dangerfield.movingeyes
 
-import com.dangerfield.movingeyes.libraries.core.AppState
 import com.dangerfield.movingeyes.libraries.core.AutoInit
-import com.dangerfield.movingeyes.libraries.identity.auth.AuthRepository
 import com.dangerfield.movingeyes.libraries.navigation.DeepLinkBridge
 import com.dangerfield.movingeyes.libraries.navigation.impl.DelegatingRouter
 import com.dangerfield.movingeyes.libraries.movingeyes.Telemetry
@@ -23,16 +21,6 @@ interface AppComponent {
     val shakeHandler: ShakeHandler
     val deepLinkBridge: DeepLinkBridge
 
-    /**
-     * Production app-wide state (offline banner etc.). Backed by
-     * AppStateImpl — platform connectivity combined with witnessed
-     * request reachability.
-     */
-    val appState: AppState
-
-    /** Auth surface for App.kt's deep-link OAuth completion + routing collectors. */
-    val authRepository: AuthRepository
-    
     /**
      * Singletons that need to construct at app boot rather than lazily
      * on first injection. Anvil populates this set via the

@@ -5,7 +5,7 @@ import com.dangerfield.movingeyes.libraries.core.AutoInit
 import com.dangerfield.movingeyes.libraries.core.Catching
 import com.dangerfield.movingeyes.libraries.core.logging.KLog
 import com.dangerfield.movingeyes.libraries.flowroutines.AppCoroutineScope
-import com.dangerfield.movingeyes.libraries.networking.InstallIdProvider
+import com.dangerfield.movingeyes.libraries.movingeyes.InstallIdProvider
 import kotlin.concurrent.Volatile
 import kotlinx.coroutines.launch
 import me.tatarka.inject.annotations.Inject
@@ -22,12 +22,9 @@ import kotlin.uuid.Uuid
  * the read completes — typically within a few ms of process start,
  * since the [AppCache] is hydrated eagerly via [AutoInit] elsewhere.
  *
- * Calls to [current] before hydration completes return `null`; the header
- * is then simply omitted from the outgoing request. This is the intended
- * fallback shape — the server treats absence the same as "client too old
- * to send the header." A small window where the header is missing on the
- * very first /me of a cold boot is acceptable; the next request after
- * hydration sends it, and the server tags the profile then.
+ * Calls to [current] before hydration completes return `null`; the id is
+ * then simply omitted from whatever was being stamped. The window is a few
+ * ms at cold boot and nothing user-facing depends on it.
  *
  * Implements [AutoInit] so DI's boot-time iterator forces construction
  * at app start. Without that, the hydrate-on-init path wouldn't run

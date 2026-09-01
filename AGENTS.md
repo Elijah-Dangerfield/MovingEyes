@@ -8,6 +8,12 @@ KMP (Kotlin Multiplatform) app with Compose Multiplatform. Modular architecture 
 
 This is **Kotlin Multiplatform**—most code is shared, but some platform features (permissions, sensors, native APIs) require platform-specific implementations. When implementing something not inherently cross-platform, follow the patterns in `docs/swift-kotlin-communication-patterns.md`.
 
+### What this app is
+
+Moving Eyes turns a phone or tablet into a Halloween decoration: the screen fills with animated eyes, the device gets taped behind a painting with the eyes cut out, and it runs unattended for five hours.
+
+It is a **display appliance**, not a drawing app, and that reframe drives everything. There are **no accounts, no backend, and no network calls** beyond crash reporting and one in-app purchase. Don't reintroduce an auth layer, a sync engine, or a server — they were deliberately stripped. The canvas is the screen at 1:1 (no zoom, no pan), because a pixel here is a physical millimetre on a device about to be aligned with holes cut in cardboard.
+
 ## Build Commands
 
 ```shell
@@ -93,31 +99,11 @@ The `Set<AutoInit>` is resolved at app start (`Application.onCreate` on Android,
 
 **Opt in** when there's first-touch latency the user notices, an `init {}` that registers a listener, or a cache that needs its observer running before the user can navigate. **Skip** for debug-only / QA-menu singletons and anything whose `init {}` is empty. Forgetting the marker is a perf regression, not a correctness one — the class still works lazily — so the bigger risk is overuse making boot slow.
 
-## Auth model (`:libraries:identity`)
-
-Anonymous-first Supabase auth. Sessions are never minted implicitly: onboarding drives guest creation (`GuestAccountCreator`), the sign-in flows mint claimed ones, and `GuestSessionHealer` recovers a stranded onboarded device.
-
-- **`AuthState` is sealed with no in-flight sentinel** — `Authenticated(userId, isAnonymous, email)` or `Unauthenticated(cause, reason, wasAnonymous)`. `current()` suspends until the answer is real; `observe()` emits only resolved values. UI renders a spinner while awaiting its first emission, never off a `Loading` enum.
-- **Per-operation sealed outcomes** (`SignInOutcome`, `SignUpOutcome`, …) instead of thrown exceptions — screens render specific messages for invalid-credentials vs offline vs already-registered.
-- **`Unauthenticated.reason` drives app routing**: `SessionExpired` pushes the blocking recovery screen (sign-in-again for claimed, start-fresh for guests); `SignedOut` marks a deliberate exit this run so self-heal never resurrects a signed-out user; `None` is the ordinary no-session state.
-- **User-change choke point**: every transition flows through the auth orchestrator, which runs the `UserScopedDataReset` dump (Room tables via `ClearableDao` multibinding, profile caches, account-scoped `AppData` fields) *before* the new `AuthState` is emitted — a reactive loader can't race the wipe. `AppEvent.UserChanged(previous, current)` is the after-the-fact announcement for side effects that hold no user-scoped storage.
-- **Tokens**: the network layer only sees `AuthTokenProvider` (`awaitReady()` then `accessToken()`); a server-confirmed 401-after-refresh routes through `SessionRejectionBus` (no 401 loops), a 403 ban envelope through `AccessDeniedBus`.
-- **Session persistence is OS-encrypted** (Keychain on iOS via the Swift `IOSSecureSessionStorage`, `EncryptedSharedPreferences` on Android) with a file mirror for anonymous sessions so a TestFlight Keychain wipe can't strand a guest.
-- The browser-OAuth redirect is `movingeyes://login-callback` (the scheme renames with the project); `App.kt` hands it to `completeOAuthRedirect`, never the nav graph.
-
-## Triggered sync (`UserScopedSyncer`)
-
-Repositories that mirror server state don't invent their own refresh timing. Implement one idempotent `sync(): Result<Unit>`, contribute to the `UserScopedSyncer` multibinding (see `ExampleUserScopedSyncer` for the two-line registration recipe), and `UserScopedSyncCoordinator` runs it on every edge that matters: account became active (sign-in, cold-boot resolve, switch, claim), warm foreground, and connectivity regained — with exponential retry that parks as success while offline (re-armed by the reconnect edge). The level-keyed `runWhen` core means a subscriber can't miss an edge that fired before it attached. For offline *writes*, use the outbox pattern instead — `docs/practices/outbox.md`.
-
-## Server (`:apps:server`)
-
-A Ktor + Postgres backend with Supabase JWT auth. It reuses the client's conventions—kotlin-inject + anvil DI (`ServerScope` / `ServerComponent`), the `domain/` interface + `data/` impl split, one `fun Route.xRoutes(deps)` per resource—and degrades gracefully (boots with no DB / no Supabase). It's a plain JVM module, so it applies plugins directly rather than via a convention plugin.
-
-The full reference—how to add a route, repository, migration, or config value, plus the auth, persistence, and testing patterns—lives in [`apps/server/README.md`](apps/server/README.md). Read it before touching the server.
-
 ## Testing
 
-Conventions (hand-rolled fakes only, dispatcher choice, which layer catches which bug) live in [`docs/practices/testing.md`](docs/practices/testing.md) — read it before adding tests. The end-to-end tier is `:apps:integration`: an Android-library module whose tests run on the host JVM (`./gradlew :apps:integration:testDebugUnitTest`, needs Docker) and drive the real client stack — real `HomeViewModel`, real repositories, real HTTP client — over real TCP against a real in-process Ktor server on a Testcontainers Postgres. `HarnessSmokeTest` is the worked example; `commonMain` stays empty so iOS never links the JVM-only server.
+Conventions (hand-rolled fakes only, dispatcher choice, which layer catches which bug) live in [`docs/practices/testing.md`](docs/practices/testing.md) — read it before adding tests.
+
+The behaviour engine in `:libraries:eyes` is the module that most repays testing: it's pure Kotlin with no Compose dependency, driven by an injected clock, so a synthetic clock can assert that saccade intervals fall in range, that phase offsets keep a pair from ever blinking in lockstep, and that a startle decays over three seconds. Rendering and gesture code are verified on a device, not in unit tests.
 
 ## SEAViewModel Pattern
 
@@ -220,7 +206,6 @@ Default it to a noop, never `error("not provided")`. This keeps `@Preview` and u
 
 | Purpose | Path |
 |---------|------|
-| User model | `libraries/movingeyes/src/.../User.kt` |
 | SEAViewModel | `libraries/flowroutines/src/.../SEAViewModel.kt` |
 | App DI | `apps/compose/src/.../AppComponent.kt` |
 | iOS entry | `apps/ios/iosApp/iOSApp.swift` |

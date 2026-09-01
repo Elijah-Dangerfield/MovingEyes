@@ -4,22 +4,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
-import androidx.navigation.toRoute
-import com.dangerfield.movingeyes.features.home.HomeRoute
-import com.dangerfield.movingeyes.features.onboarding.SignInRoute
-import com.dangerfield.movingeyes.features.profile.BugReportRoute
-import com.dangerfield.movingeyes.libraries.flowroutines.ObserveEvents
-import com.dangerfield.movingeyes.libraries.navigation.AccessDeniedRoute
 import com.dangerfield.movingeyes.libraries.navigation.BlockingErrorRoute
 import com.dangerfield.movingeyes.libraries.navigation.ErrorDialogAction
 import com.dangerfield.movingeyes.libraries.navigation.ErrorDialogRoute
 import com.dangerfield.movingeyes.libraries.navigation.FeatureEntryPoint
-import com.dangerfield.movingeyes.libraries.navigation.NavigationOptions
 import com.dangerfield.movingeyes.libraries.navigation.Router
-import com.dangerfield.movingeyes.libraries.navigation.SessionExpiredRoute
 import com.dangerfield.movingeyes.libraries.navigation.dialog
 import com.dangerfield.movingeyes.libraries.navigation.screen
 import com.dangerfield.movingeyes.libraries.navigation.serializableType
@@ -33,53 +23,9 @@ import kotlin.reflect.typeOf
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class, multibinding = true)
 @Inject
-class ErrorEntryPoints(
-    private val sessionExpiredViewModelFactory: () -> SessionExpiredViewModel,
-) : FeatureEntryPoint {
+class ErrorEntryPoints : FeatureEntryPoint {
 
     override fun NavGraphBuilder.buildNavGraph(router: Router) {
-        screen<SessionExpiredRoute> { backStackEntry ->
-            val route = backStackEntry.toRoute<SessionExpiredRoute>()
-            val viewModel: SessionExpiredViewModel = viewModel { sessionExpiredViewModelFactory() }
-            val state by viewModel.stateFlow.collectAsStateWithLifecycle()
-
-            viewModel.ObserveEvents { event ->
-                when (event) {
-                    // Claimed account: tear down happened in the VM — land on
-                    // sign-in with a clean stack (Back must not resurrect the
-                    // dead session's screens).
-                    SessionExpiredViewModel.Event.NavigateToSignIn -> router.navigate(
-                        SignInRoute(),
-                        NavigationOptions(launchSingleTop = true, clearBackStack = true),
-                    )
-                    // Guest: a fresh anonymous session is live — the old stack
-                    // belonged to the dead account, so restart at Home.
-                    SessionExpiredViewModel.Event.StartedFresh -> router.navigate(
-                        HomeRoute(),
-                        NavigationOptions(launchSingleTop = true, clearBackStack = true),
-                    )
-                }
-            }
-
-            SessionExpiredScreen(
-                wasAnonymous = route.wasAnonymous,
-                working = state.working,
-                startFreshFailed = state.startFreshFailed,
-                onSignInAgain = { viewModel.takeAction(SessionExpiredViewModel.Action.SignInAgain) },
-                onStartFresh = { viewModel.takeAction(SessionExpiredViewModel.Action.StartFresh) },
-            )
-        }
-
-        screen<AccessDeniedRoute> { backStackEntry ->
-            val route = backStackEntry.toRoute<AccessDeniedRoute>()
-            AccessDeniedScreen(
-                reason = route.reason,
-                until = route.until,
-                appealUrl = route.appealUrl,
-                onAppeal = { url -> router.openWebLink(url) },
-            )
-        }
-
         screen<BlockingErrorRoute>(
             typeMap = mapOf()
         ) { backStackEntry ->
@@ -88,15 +34,6 @@ class ErrorEntryPoints(
                 title = route.title,
                 subtitle = route.subtitle,
                 errorCode = route.errorCode ?: DEFAULT_BLOCKING_ERROR.errorCode,
-                onReportToDevelopers = {
-                    router.navigate(
-                        BugReportRoute(
-                            logId = route.logId,
-                            errorCode = route.errorCode ?: DEFAULT_BLOCKING_ERROR.errorCode,
-                            contextMessage = route.contextMessage ?: route.subtitle,
-                        )
-                    )
-                }
             )
         }
 
@@ -126,17 +63,6 @@ class ErrorEntryPoints(
                 onAction = {
                     dismissWithAction { handleDialogAction(route.action, router) }
                 },
-                onReportToDeveloper = {
-                    dismissWithAction {
-                        router.navigate(
-                            BugReportRoute(
-                                logId = route.logId,
-                                errorCode = route.errorCode ?: DEFAULT_ERROR_DIALOG.errorCode,
-                                contextMessage = route.contextMessage ?: route.subtitle,
-                            )
-                        )
-                    }
-                }
             )
         }
     }

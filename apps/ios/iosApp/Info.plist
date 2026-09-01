@@ -23,9 +23,9 @@
 		<string>processing</string>
 	</array>
 	<!--
-	  Custom-scheme deep links. `movingeyes://login-callback` is the browser
-	  OAuth return trip and `movingeyes://auth/confirmed` the verify-email
-	  redirect — .onOpenURL in iOSApp.swift forwards both to DeepLinkBridge.
+	  Custom-scheme deep links, reserved for scene-code imports
+	  (`movingeyes://scene/<code>`). .onOpenURL in iOSApp.swift forwards them
+	  to DeepLinkBridge.
 
 	  Universal Links (https://...) require an `Associated Domains`
 	  entitlement (`applinks:example.com`) plus an

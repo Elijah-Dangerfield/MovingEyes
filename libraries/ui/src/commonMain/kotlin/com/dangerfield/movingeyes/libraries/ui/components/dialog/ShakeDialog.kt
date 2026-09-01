@@ -18,21 +18,26 @@ import com.dangerfield.movingeyes.libraries.ui.components.button.ButtonType
 import com.dangerfield.movingeyes.libraries.ui.components.text.Text
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
-// Debug-only CTA label — dev-facing, so a constant rather than a string
-// resource (the button never renders in release builds).
-private const val NetworkInspectorCta = "Network inspector"
+/** One entry in the shake menu. Dev-facing, so labels are plain strings. */
+data class ShakeAction(
+    val label: String,
+    val onSelect: () -> Unit,
+    val type: ButtonType = ButtonType.Secondary,
+)
 
+/**
+ * The debug menu, reached by shaking the device. Shake only arms in debug
+ * builds — a tablet being taped behind cardboard gets shaken plenty, and a
+ * dialog over a mounted scene would be worse than useless.
+ */
 @Composable
 fun ShakeDialog(
     headline: String,
     subtext: String?,
     onDismiss: () -> Unit,
-    onReportBug: () -> Unit,
     modifier: Modifier = Modifier,
     state: DialogState = rememberDialogState(),
-    // Debug-only: when non-null, an extra action opens the on-device network
-    // inspector. Release callers leave this null so the button never shows.
-    onOpenNetworkInspector: (() -> Unit)? = null,
+    actions: List<ShakeAction> = emptyList(),
 ) {
     BasicDialog(
         state = state,
@@ -63,35 +68,21 @@ fun ShakeDialog(
             }
         },
         bottomContent = {
-            Column{
-                Button(
-                    onClick = {
-                        state.dismiss()
-                        onReportBug()
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    size = ButtonSize.Medium,
-                    type = ButtonType.Danger,
-                ) {
-                    Text("Report a bug")
-                }
-
-                if (onOpenNetworkInspector != null) {
-                    Spacer(modifier = Modifier.height(Dimension.D500))
+            Column {
+                actions.forEach { action ->
                     Button(
                         onClick = {
                             state.dismiss()
-                            onOpenNetworkInspector()
+                            action.onSelect()
                         },
                         modifier = Modifier.fillMaxWidth(),
                         size = ButtonSize.Medium,
-                        type = ButtonType.Secondary,
+                        type = action.type,
                     ) {
-                        Text(NetworkInspectorCta)
+                        Text(action.label)
                     }
+                    Spacer(modifier = Modifier.height(Dimension.D500))
                 }
-
-                Spacer(modifier = Modifier.height(Dimension.D500))
 
                 Button(
                     onClick = onDismiss,
@@ -114,7 +105,6 @@ private fun ShakeDialogPreview_WithSubtext() {
             headline = "I felt that.",
             subtext = "Testing the waters?",
             onDismiss = {},
-            onReportBug = {},
         )
     }
 }
@@ -127,34 +117,19 @@ private fun ShakeDialogPreview_NoSubtext() {
             headline = "Whoa.",
             subtext = null,
             onDismiss = {},
-            onReportBug = {},
         )
     }
 }
 
 @Preview
 @Composable
-private fun ShakeDialogPreview_WithInspector() {
+private fun ShakeDialogPreview_WithActions() {
     PreviewContent {
         ShakeDialog(
             headline = "I felt that.",
             subtext = "Testing the waters?",
             onDismiss = {},
-            onReportBug = {},
-            onOpenNetworkInspector = {},
-        )
-    }
-}
-
-@Preview
-@Composable
-private fun ShakeDialogPreview_LongMessage() {
-    PreviewContent {
-        ShakeDialog(
-            headline = "You really like shaking me.",
-            subtext = "I've lost count.",
-            onDismiss = {},
-            onReportBug = {},
+            actions = listOf(ShakeAction(label = "Design system", onSelect = {})),
         )
     }
 }

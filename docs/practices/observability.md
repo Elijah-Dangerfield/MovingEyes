@@ -1,92 +1,52 @@
-# Observability: one id, three systems
+# Observability
 
-The stack is Sentry (crashes, user feedback, stack traces), Loki (logs — client app events and
-server request logs), and Tempo (server traces). What ties them together is a single correlation
-id: **`session_id`**, the UUID of the current client app session.
+Moving Eyes ships no server and collects nothing that leaves the device except crash reports.
+That makes this page short, and short is the point: the store privacy labels are close to empty,
+and that's a marketing asset worth protecting. Before adding anything that phones home, check it
+against the promise in the listing.
 
-## The session_id pivot
+## What exists
 
-A "session" is a user-perceptible run of the app: it starts on cold boot and rolls over after
-15 minutes in the background (`SessionTracker` in `:libraries:movingeyes`). Each session mints a
-fresh UUID, and that one value is stamped everywhere:
+**Sentry**, and only Sentry. Configured in `AppTelemetry` (`:libraries:movingeyes:impl`), gated
+on a `SENTRY_DSN` injected at build time — blank leaves crash reporting off entirely, which is
+what a local build gets by default.
 
-- **Client → Sentry.** `SessionTelemetryBinder` writes it onto the crash-reporting scope as a
-  `session_id` tag on every rollover, so every crash, error event, and user-feedback report
-  carries it. `install_id` (stable per install) rides along as a second tag.
-- **Client → server.** `DefaultClientHeadersProvider` sends it on every request as `X-Session-Id`
-  (plus `X-Install-Id`).
-- **Server → Tempo.** `installHttpServerTracing` (apps/server `plugins/Tracing.kt`) pins
-  `session_id`/`install_id` onto the HTTP root span from the headers, and carries them in OTel
-  Baggage so `BaggageAttributeSpanProcessor` copies them onto **every child span** — the whole
-  trace tree matches `{ .session_id = "…" }`, not just the root.
-- **Server → Loki.** CallLogging lifts the same headers into MDC (`plugins/Observability.kt`),
-  and the logback OTel appender forwards MDC as log attributes (`captureMdcAttributes` in
-  `logback.xml`), so every backend log line for the request is filterable by `session_id`.
-- **Server → Sentry.** `captureToSentry` tags server errors with the MDC `session_id`/`install_id`
-  plus the active `trace_id`/`span_id`, so a backend error links to both the client session and
-  its Tempo trace.
-- **Client → Loki.** `GrafanaLogTree` (`:libraries:telemetry:impl`) stamps `session_id` /
-  `install_id` / `is_offline` on every app-event record it exports.
+Every event carries:
 
-The key naming rule: it is always the underscore form `session_id`, in all systems, so one query
-string works everywhere. The same rule applies to any context you add — if a key exists on backend
-spans and client Sentry tags, spell it identically (`Telemetry.setContext(key, value)` client-side,
-`SpanAttrs` server-side).
+- `session_id` — a fresh UUID per app session, where a session is a cold boot or a return after
+  15 minutes in the background (`SessionTracker`). Set on the Sentry scope by
+  `SessionTelemetryBinder`, so a native crash surfaced on the next launch still carries the
+  session it happened in.
+- `install_id` — stable per install, dies on uninstall (`CachedInstallIdProvider`, backed by
+  `AppData.installId`). Stable across sessions, so "every report from this tester" is answerable
+  without knowing who the tester is.
+- `route` — the current navigation destination, updated in `App.kt` as the back stack changes.
+- `commit_sha` / `commit_branch` — build provenance, so triage can tell whether a report is
+  already fixed on main.
+- `environment` — `releaseChannel-platform-buildType`. All platforms and build types report into
+  one project; this tag separates them.
 
-## Loki label conventions
+## Log levels and what they do
 
-Stream labels are only `service_name` + `deployment_environment`. Everything else — `event_name`,
-`session_id`, `install_id`, event attributes, `detected_level` — is **structured metadata**: filter
-with pipes, never line filters.
+`KLog` fans out to every planted tree. In practice:
 
-```
-# All app events from prod clients
-{service_name="movingeyes-client", deployment_environment="prod"} | event_name != ""
+- **Verbose / Debug** — logcat and os_log only; buffered in memory (debug builds buffer Verbose+,
+  release buffers Debug+) and attached to a user feedback report if one is filed.
+- **Info** — the same, plus a Sentry breadcrumb in release builds. `logEvent` lives here.
+- **Warn** — breadcrumb.
+- **Error** — a Sentry event, unless the throwable implements `ExpectedControlFlow`.
 
-# One event type
-{service_name="movingeyes-client"} | event_name="app.launched"
+## The frame loop
 
-# Client Warn+ logs (no event_name — that's how you tell them from events)
-{service_name="movingeyes-client"} | detected_level=~"warn|error"
+The renderer advances state on a 30fps clock for hours at a stretch. **Nothing in the frame path
+may log**, not even at Verbose: a Verbose line at 30fps is 108,000 entries an hour, which will
+evict every useful line from the feedback ring buffer and burn measurable battery on string
+formatting. Log the transitions around the loop (session started, mood changed, startle fired),
+never the loop itself.
 
-# Server logs for one session
-{service_name="movingeyes-server"} | session_id="<uuid>"
-```
+## Finding one session
 
-Client records also carry resource attributes: `service.version`, `platform` (android/ios),
-`build_number`, `commit_sha`, `release_channel`, and `deployment.environment` (dev for debug
-builds, prod for release).
-
-## How to find a session
-
-Start from wherever the report landed and pivot on the id:
-
-1. **From a Sentry issue or feedback report:** copy the `session_id` tag.
-2. **Client side of the story:** `{service_name="movingeyes-client"} | session_id="<uuid>"` in
-   Loki — the app events and Warn+ logs for that session, each stamped with `is_offline` *at emit
-   time* (a record that shipped later from the disk buffer still says what connectivity looked
-   like when it happened). Feedback reports also carry a `session-log.txt` attachment — the
-   in-memory ring buffer of fine-grained logs that never left the device.
-3. **Backend side:** `{service_name="movingeyes-server"} | session_id="<uuid>"` for logs;
-   `{ .session_id = "<uuid>" }` in Tempo for every request trace the session produced.
-4. **The reverse direction works too:** a server error in Sentry carries `trace_id` (paste into
-   Tempo) and `session_id` (pull the client's events), so backend-first investigations reach the
-   client story in one hop.
-
-Build provenance closes the loop: client Sentry events are tagged `commit_sha`/`commit_branch`
-(injected at build time — see `loadVersionMetadata` in build-logic), so a report pins to the exact
-code that produced it.
-
-## Credentials and kill switches
-
-All client telemetry credentials are build-time injected and env-optional (`loadTelemetryMetadata`
-in build-logic → `TelemetryInfo` in `:libraries:core`): blank `SENTRY_DSN` disables crash
-reporting; blank Grafana values leave the OTLP pipe dormant. Nothing breaks in a fresh clone.
-
-At runtime, remote config owns the levers (`:libraries:telemetry:impl` `TelemetryConfigValues`):
-`telemetry.appEventsEnabled` (instant kill switch), `telemetry.appEventsSampleRate` (per-session
-sampling, stable-hashed so a session's events are all-or-nothing), and
-`telemetry.klogForwardingEnabled` (Warn+ log mirroring). The server's OTel pipeline is gated by a
-single env var: `OTEL_EXPORTER_OTLP_ENDPOINT` unset → stdout exporters, set → OTLP/HTTP.
-
-The event registry lives in [`app-events.md`](app-events.md).
+1. In Sentry, filter issues by `session_id` or `install_id`.
+2. A user-feedback report carries a `session-log.txt` attachment — the in-memory ring buffer at
+   the moment the report was filed, including the Debug/Verbose lines that never ship as
+   breadcrumbs. That's usually the fastest route to what actually happened.

@@ -6,7 +6,6 @@ import com.dangerfield.movingeyes.libraries.movingeyes.Session
 import com.dangerfield.movingeyes.libraries.movingeyes.SessionStartReason
 import com.dangerfield.movingeyes.libraries.movingeyes.SessionTracker
 import com.dangerfield.movingeyes.libraries.core.logging.KLog
-import com.dangerfield.movingeyes.libraries.networking.SessionIdProvider
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -48,12 +47,11 @@ import kotlin.uuid.Uuid
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class, multibinding = true, boundType = AppEventListener::class)
 @ContributesBinding(AppScope::class, boundType = SessionTracker::class)
-@ContributesBinding(AppScope::class, boundType = SessionIdProvider::class)
 @Inject
 @OptIn(ExperimentalUuidApi::class)
 class SessionTrackerImpl(
     private val clock: Clock,
-) : SessionTracker, SessionIdProvider, AppEventListener {
+) : SessionTracker, AppEventListener {
 
     private val logger = KLog.withTag("SessionTracker")
 
@@ -76,9 +74,6 @@ class SessionTrackerImpl(
     override val current: Session get() = state.value
 
     override fun observe(): Flow<Session> = state.asStateFlow()
-
-    /** [SessionIdProvider] — the current session's correlation UUID, sent on every request. */
-    override fun current(): String = state.value.uuid
 
     override fun onColdBoot(event: AppEvent.ColdBoot) {
         startNewSession(SessionStartReason.ColdBoot)

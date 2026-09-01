@@ -6,6 +6,48 @@ the decision, alternatives considered, and *why*. Newest first.
 
 ---
 
+## 2026-09-01 — No accounts, no backend, no sync
+
+**Decision:** deleted `:apps:server`, `:apps:admin`, `:apps:integration`,
+`:libraries:identity`, `:libraries:networking`, `:libraries:config`,
+`:libraries:telemetry:impl`, `:features:onboarding` and `:features:home`, plus the
+triggered-sync engine, the user-scoped data-reset dump, and the Supabase build
+plumbing. This supersedes every server-side decision below, which is kept only as
+history.
+
+**Why:** Moving Eyes is a local display appliance. Purchases restore through the
+store account, scenes live in Room on the device, and roughly 90% of a year's
+installs land in a ten-day window — so an off-season hosting bill buys nothing.
+Keeping the stack "just in case" costs a slower build, a wider attack surface, and
+store privacy labels that stop being close to empty, which is a genuine marketing
+asset for an app whose category is "spooky app wants your microphone."
+
+**What survived and why:** Sentry crash reporting (in `:libraries:movingeyes:impl`,
+which never depended on the deleted modules), `SessionTracker` for correlating a
+run of the app, `logEvent` for analytics that currently have no sink, and all of the
+CI / release-please / TestFlight / Play automation — that automation is the reason
+to start from the template at all.
+
+**Cost accepted:** `logEvent` calls are emitted with nowhere to go until an
+analytics sink lands; `docs/practices/app-events.md` says so explicitly rather than
+implying a pipeline exists.
+
+## 2026-09-01 — Grafana/OTel client pipeline cut with the server
+
+**Decision:** deleted `:libraries:telemetry:impl` (the OTLP exporter, disk-backed
+durable log buffer, and Grafana log tree) rather than untangling it.
+
+**Alternatives:** keep it and keep `:libraries:networking` + `:libraries:config`
+alive purely to feed it, or rewrite its `InstallIdProvider` / `SessionIdProvider` /
+HTTP-engine dependencies against new seams.
+
+**Why cut:** the module existed to correlate client logs with *server* traces, and
+there is no server. What it uniquely provided — off-device visibility into
+non-crashing errors — is worth real money in a networked product and worth very
+little in a decoration that makes no requests. Sentry already carries errors, and
+the in-memory ring buffer attached to user feedback covers the "what led up to
+this" question. Untangling would have kept two modules alive to serve one consumer.
+
 ## 2026-06-21 — Server mirrors client conventions
 
 **Decision:** `:apps:server` reuses the client's stack — kotlin-inject + anvil DI

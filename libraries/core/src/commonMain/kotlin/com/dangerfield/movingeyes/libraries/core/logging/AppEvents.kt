@@ -1,10 +1,11 @@
 package com.dangerfield.movingeyes.libraries.core.logging
 
 /**
- * Extra key marking a log entry as a structured app event. `GrafanaLogTree`
- * (in `:libraries:telemetry:impl`) forwards entries carrying this key to
- * Grafana Cloud; every other tree treats them as ordinary Info logs, so the
- * same call lands in logcat and Sentry breadcrumbs for free.
+ * Extra key marking a log entry as a structured app event. Trees that only
+ * care about events filter on it; every other tree treats them as ordinary
+ * Info logs, so the same call lands in logcat and Sentry breadcrumbs for free.
+ *
+ * There is no analytics sink yet — see `docs/practices/app-events.md`.
  */
 const val EXTRA_APP_EVENT = "app_event"
 

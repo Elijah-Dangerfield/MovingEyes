@@ -1,7 +1,6 @@
 package com.dangerfield.movingeyes.libraries.movingeyes.impl.logging
 
-import com.dangerfield.movingeyes.libraries.core.AuthReason
-import com.dangerfield.movingeyes.libraries.core.AuthUnready
+import com.dangerfield.movingeyes.libraries.core.ExpectedControlFlow
 import com.dangerfield.movingeyes.libraries.core.logging.LogContext
 import com.dangerfield.movingeyes.libraries.core.logging.LogEntry
 import com.dangerfield.movingeyes.libraries.core.logging.LogLevel
@@ -18,8 +17,7 @@ class SentryLogTreeTest {
 
     @Test
     fun `expected control-flow throwable at error level is not captured as an event`() {
-        assertFalse(tree.shouldCaptureEvent(errorEntry(AuthUnready(AuthReason.FinishingSetup))))
-        assertFalse(tree.shouldCaptureEvent(errorEntry(AuthUnready(AuthReason.NeedAccount))))
+        assertFalse(tree.shouldCaptureEvent(errorEntry(ExpectedSignal())))
     }
 
     @Test
@@ -46,6 +44,8 @@ class SentryLogTreeTest {
             )
         )
     }
+
+    private class ExpectedSignal : Exception("expected"), ExpectedControlFlow
 
     private fun errorEntry(throwable: Throwable?): LogEntry = LogEntry(
         level = LogLevel.Error,

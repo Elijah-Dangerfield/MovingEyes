@@ -1,87 +1,67 @@
 # Moving Eyes
 
-A Kotlin Multiplatform template with the production systems already wired — not a hello-world scaffold. It carries the hardened patterns of a shipped KMP app (Compose Multiplatform client, Ktor server on Fly.io, Supabase auth) so a new project starts at "day 30", not day 0.
+Halloween decoration for tablets. Fill the screen with animated eyes, tape the device behind a painting with the eyes cut out, and walk away for five hours.
 
-## What you get, working, on day one
+Android and iOS from one Kotlin Multiplatform codebase.
 
-**Client (Android + iOS from one codebase)**
-- Anonymous-first **Supabase auth**: guest creation in onboarding, email/password + Sign in with Apple + browser OAuth, encrypted session storage (Keychain / EncryptedSharedPreferences), session self-heal, blocking screens for expired sessions and banned accounts
-- **Offline detection that tells the truth** — OS connectivity combined with witnessed request reachability, driving an offline banner and a `ConnectivityRegained` event
-- **Triggered sync**: implement one idempotent `sync()`, register it, and it runs on sign-in, foreground, and reconnect with retry — plus an offline-write outbox pattern with a shipped reference
-- **Remote config end-to-end**: typed `ConfiguredValue`s, offline-first fetch with kill-switch flags (`upgrade.maintenanceMode`, forced-upgrade), QA overrides, and a hosted **admin console** (Kotlin/JS) with targeting rules, audit log, and prod confirm-by-typing
-- **Telemetry that answers pages**: one `session_id` pivots Sentry issues, Grafana Loki logs, and Tempo traces; structured `logEvent`s ship over OTLP with disk-buffered durability; MetricKit exit reports on iOS
-- **Dev tooling**: shake for the QA dialog, on-device Wiretap network inspector (debug-only, noop artifact in store builds), a living design-system catalog, in-app review prompting with sane eligibility gates
+## The reframe
 
-**Server (Ktor + Postgres, deploys to Fly.io)**
-- Supabase JWT verification, ban gate (403 envelope the client understands), player reports (Google Play UGC compliance), account deletion (`DELETE /v1/me`), remote-config source + admin API, session-correlated tracing/logging
-- Boots gracefully with zero config (limited mode) and ships a docker-compose local stack
-- Two environments: dev auto-deploys on merge, prod behind an approval gate
+This is a **display appliance**, not a drawing app. The user configures it once, mounts the device, and leaves. Everything follows from that:
 
-**Process**
-- CI from the first push: build + unit/server/integration test jobs, release-please versioning, TestFlight/Play release pipelines, detekt with a custom user-facing-strings rule, conventional-commit hooks
-- An **integration harness** that drives the real client stack against the real server over a real Postgres — in a unit test
-- Docs that assume nothing: `SETUP.md` runbook from init to first release, practice guides for testing, observability, app events, and outboxes
+- It runs unattended, so it needs keep-awake, immersive fullscreen, and a brightness override that can go below the OS minimum.
+- A kid will poke the screen, so the canvas is lockable.
+- A tablet at full brightness animating for five hours dies by 9pm, so battery is a first-class concern.
+- The screen sits behind cardboard, so aligning eyes to physical holes is the single most important interaction. The canvas is the screen at 1:1 — no zoom, no pan — because a pixel here is a millimetre of cardboard.
+- Pure black is the default canvas. On OLED those pixels are off, and the illusion becomes eyes floating in a void rather than a glowing rectangle behind a painting.
 
-## Build & Run
+There are **no accounts and no backend**. The only network traffic is crash reporting and one in-app purchase.
+
+## Build & run
 
 ```shell
-# Android
 ./gradlew :apps:compose:assembleDebug
-
-# iOS - compile Kotlin framework
-./gradlew :apps:compose:compileKotlinIosSimulatorArm64
-
-# iOS - or open in Xcode
-open apps/ios/iosApp.xcodeproj
-
-# Server (boots in limited mode with zero config)
-./gradlew :apps:server:run
-
-# Server with a local Postgres
-docker compose -f apps/server/docker-compose.yml up -d
-
-# Everything the CI gate runs
-./gradlew testDebugUnitTest :apps:server:test :apps:integration:testDebugUnitTest
 ```
 
-### First-time setup
+```shell
+./gradlew :apps:compose:compileKotlinIosSimulatorArm64
+```
 
-See **[SETUP.md](SETUP.md)** for the hour-1/day-1 runbook — Supabase project + auth providers, Fly dev/prod apps, GitHub secrets, Sentry/Grafana keys, store listings, and the first-release manual-promotion gotcha. Each step has the command and the expected output.
+```shell
+open apps/ios/iosApp.xcodeproj
+```
+
+```shell
+./gradlew testDebugUnitTest
+```
 
 Before your first commit:
 
 ```shell
-./scripts/install_hooks.sh   # installs the Conventional Commits + detekt hooks
+./scripts/install_hooks.sh
 ```
 
-## Project Structure
+## Project structure
 
 ```
 apps/compose/          # KMP entry point (Android + iOS)
 apps/ios/              # Swift/Xcode wrapper
-apps/server/           # Ktor + Postgres backend (Fly.io)
-apps/admin/            # Kotlin/JS remote-config admin console
-apps/integration/      # End-to-end harness (real client ↔ real server ↔ real DB)
 features/<name>/       # Routes and public API
 features/<name>/impl/  # Screens and ViewModels
 libraries/<name>/      # Interfaces
 libraries/<name>/impl/ # Implementations
 ```
 
-Architecture rules (enforced at Gradle configuration time), the ViewModel/DI/navigation patterns, and every convention live in **[AGENTS.md](AGENTS.md)** — it's written for AI agents and humans alike and is the single source of truth for how code here is shaped.
+Architecture rules (enforced at Gradle configuration time), the ViewModel/DI/navigation patterns, and every convention live in **[AGENTS.md](AGENTS.md)** — written for AI agents and humans alike, and the single source of truth for how code here is shaped.
 
 ## Doc map
 
 | Doc | What it covers |
 |---|---|
 | [SETUP.md](SETUP.md) | Init → running app → first release, step by step |
-| [AGENTS.md](AGENTS.md) | Architecture, conventions, auth model, sync, testing rules |
-| [docs/practices/testing.md](docs/practices/testing.md) | Which layer catches which bug; fakes; the integration harness |
-| [docs/practices/observability.md](docs/practices/observability.md) | The session_id pivot; finding one session across Sentry/Loki/Tempo |
+| [AGENTS.md](AGENTS.md) | Architecture, conventions, testing rules |
+| [docs/practices/testing.md](docs/practices/testing.md) | Which layer catches which bug; fakes |
+| [docs/practices/observability.md](docs/practices/observability.md) | Crash reporting and the session_id pivot |
 | [docs/practices/app-events.md](docs/practices/app-events.md) | The structured-event registry + `logEvent` discipline |
-| [docs/practices/outbox.md](docs/practices/outbox.md) | Offline writes that must not be lost |
-| [apps/server/DEPLOY.md](apps/server/DEPLOY.md) | Fly.io two-environment deployment |
-| [apps/admin/README.md](apps/admin/README.md) | The remote-config admin console |
 | [docs/swift-kotlin-communication-patterns.md](docs/swift-kotlin-communication-patterns.md) | Exposing Kotlin to Swift and vice versa |
 
 ---

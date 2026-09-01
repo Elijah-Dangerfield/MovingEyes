@@ -3,7 +3,6 @@ package com.dangerfield.movingeyes.libraries.ui.system
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.staticCompositionLocalOf
 import com.dangerfield.movingeyes.libraries.ui.system.color.ColorResource
-import com.dangerfield.movingeyes.libraries.core.AppState
 import com.dangerfield.movingeyes.libraries.core.BuildInfo
 import com.dangerfield.movingeyes.system.color.Colors
 import com.dangerfield.movingeyes.system.typography.Typography
@@ -23,10 +22,6 @@ val LocalTypography = compositionLocalOf<Typography> {
 
 val LocalBuildInfo = staticCompositionLocalOf<BuildInfo> {
     error("No LocalBuildInfo provided")
-}
-
-val LocalAppState = staticCompositionLocalOf<AppState> {
-    error("No LocalAppState provided")
 }
 
 val LocalClock = staticCompositionLocalOf<Clock> {
