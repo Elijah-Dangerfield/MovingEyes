@@ -94,8 +94,9 @@
       cut the long-press-corner exit and nobody guesses the back gesture when
       the screen has stopped responding to taps.
     -->
-    <string name="display_play">Play</string>
-    <string name="display_exit">Exit display</string>
+    <!-- Names the mode it enters rather than borrowing media vocabulary; the
+         app calls this display mode everywhere else. -->
+    <string name="display_enter">Display</string>
     <!--
       A single percent sign, not the Android-style `%%` escape: Compose
       Resources leaves `%%` alone rather than collapsing it, so escaping here

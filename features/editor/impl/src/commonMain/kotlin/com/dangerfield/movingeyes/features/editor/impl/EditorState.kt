@@ -117,13 +117,6 @@ class EditorState(
     /** Indices into [eyes]. Empty means nothing selected. */
     val selection: List<Int> get() = _selection
 
-    /**
-     * The canvas ignores touches, for the moment the tablet goes behind the
-     * painting. Eyes keep animating, so a locked scene still reads as alive.
-     */
-    var isLocked by mutableStateOf(false)
-        private set
-
     /** Bumped whenever a per-eye value changes, so the readout and panels
      *  recompose. The values themselves stay off Compose state — see the
      *  class doc. */
@@ -140,13 +133,7 @@ class EditorState(
 
     // ---- Selection ------------------------------------------------------
 
-    fun toggleLock() {
-        isLocked = !isLocked
-        if (isLocked) clearSelection()
-    }
-
     fun select(index: Int, additive: Boolean = false) {
-        if (isLocked) return
         if (additive) {
             if (!_selection.remove(index)) _selection.add(index)
         } else {
@@ -156,7 +143,6 @@ class EditorState(
     }
 
     fun selectAll() {
-        if (isLocked) return
         _selection.clear()
         _selection.addAll(_eyes.indices)
     }
@@ -164,7 +150,6 @@ class EditorState(
     fun clearSelection() = _selection.clear()
 
     fun setSelection(indices: Collection<Int>) {
-        if (isLocked) return
         _selection.clear()
         _selection.addAll(indices.filter { it in _eyes.indices })
     }
@@ -180,17 +165,12 @@ class EditorState(
 
     /** One undo step per gesture, not per frame: a drag recording every touch
      *  move would need two hundred undos to get back. */
-    fun beginGesture(): DragSession? {
-        if (isLocked) return null
-        val start = pushUndo() ?: return null
-        return DragSession(start)
-    }
+    fun beginGesture(): DragSession = DragSession(pushUndo())
 
     /** For a discrete change — a colour, a style, a mood. */
-    fun beginEdit(): Boolean = pushUndo() != null
+    fun beginEdit() = pushUndo()
 
-    private fun pushUndo(): SceneSnapshot? {
-        if (isLocked) return null
+    private fun pushUndo(): SceneSnapshot {
         val start = snapshot()
         undoStack.addLast(start)
         if (undoStack.size > MaxUndoSteps) undoStack.removeFirst()
@@ -320,7 +300,7 @@ class EditorState(
     // ---- Motion ---------------------------------------------------------
 
     fun setMood(mood: Mood) {
-        if (!beginEdit()) return
+        beginEdit()
         activeIndices().forEach { index ->
             _moods[index] = mood
             _eyes[index].runtime.behavior = behaviorFor(mood)
@@ -332,7 +312,7 @@ class EditorState(
     /** Moves the eye to [Mood.Custom]: a scene claiming Frantic while running
      *  something else would come back wrong. */
     fun setBehavior(behavior: BehaviorConfig) {
-        if (!beginEdit()) return
+        beginEdit()
         activeIndices().forEach { index ->
             _moods[index] = Mood.Custom
             _eyes[index].runtime.behavior =
@@ -391,8 +371,7 @@ class EditorState(
     ) {
         val active = activeIndices()
         if (active.isEmpty()) return
-        if (recordUndo && !beginEdit()) return
-        if (!recordUndo && isLocked) return
+        if (recordUndo) beginEdit()
 
         if (mode == RotationMode.Group && active.size > 1) {
             val points = active.map { pixelPointOf(it, canvasWidthPx, canvasHeightPx) }
@@ -438,7 +417,8 @@ class EditorState(
         transform: (List<CanvasPoint>) -> List<CanvasPoint>,
     ) {
         val active = activeIndices()
-        if (active.size < 2 || !beginEdit()) return
+        if (active.size < 2) return
+        beginEdit()
 
         val moved = transform(active.map { pixelPointOf(it, canvasWidthPx, canvasHeightPx) })
         active.forEachIndexed { slot, index ->
@@ -456,7 +436,7 @@ class EditorState(
     /** Copies the first active eye so the new one lands as a plausible partner
      *  rather than a default that needs re-styling. */
     fun addEye() {
-        if (!beginEdit()) return
+        beginEdit()
         val template = activeIndices().firstOrNull()?.let { _eyes[it] }
         val added = RenderedEye(
             style = template?.style ?: _eyes.firstOrNull()?.style ?: return,
@@ -483,7 +463,7 @@ class EditorState(
      *  nothing is selected. */
     fun deleteSelection() {
         if (_selection.isEmpty() || _selection.size == _eyes.size) return
-        if (!beginEdit()) return
+        beginEdit()
 
         _selection.sortedDescending().forEach { index ->
             _eyes.removeAt(index)
@@ -496,22 +476,22 @@ class EditorState(
     // ---- Scene ----------------------------------------------------------
 
     fun setCanvasRotation(rotation: CanvasRotation) {
-        if (!beginEdit()) return
+        beginEdit()
         canvas = canvas.copy(rotation = rotation)
     }
 
     fun setCanvasColor(color: Long) {
-        if (!beginEdit()) return
+        beginEdit()
         canvas = canvas.copy(color = color)
     }
 
     fun setSleepTimer(timer: Duration?) {
-        if (!beginEdit()) return
+        beginEdit()
         canvas = canvas.copy(sleepTimer = timer)
     }
 
     fun setReactivityEnabled(enabled: Boolean) {
-        if (!beginEdit()) return
+        beginEdit()
         canvas = canvas.copy(reactivityEnabled = enabled)
     }
 
@@ -541,7 +521,8 @@ class EditorState(
 
     private inline fun editActive(block: (RenderedEye) -> Unit) {
         val active = activeIndices()
-        if (active.isEmpty() || !beginEdit()) return
+        if (active.isEmpty()) return
+        beginEdit()
         active.forEach { block(_eyes[it]) }
         transformChanged()
     }

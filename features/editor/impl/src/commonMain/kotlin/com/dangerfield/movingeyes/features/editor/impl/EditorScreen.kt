@@ -25,6 +25,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +38,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dangerfield.movingeyes.features.editor.impl.panels.LookPanel
@@ -78,11 +80,10 @@ import com.dangerfield.movingeyes.system.Motion
 import com.dangerfield.movingeyes.system.Target
 import movingeyes.libraries.resources.generated.resources.Res
 import movingeyes.libraries.resources.generated.resources.demo_countdown
-import movingeyes.libraries.resources.generated.resources.display_play
+import movingeyes.libraries.resources.generated.resources.display_enter
 import movingeyes.libraries.resources.generated.resources.demo_ended
 import movingeyes.libraries.resources.generated.resources.demo_keep
 import movingeyes.libraries.resources.generated.resources.editor_eye_count
-import movingeyes.libraries.resources.generated.resources.editor_lock
 import movingeyes.libraries.resources.generated.resources.editor_readout_hint
 import movingeyes.libraries.resources.generated.resources.editor_readout_ipd
 import movingeyes.libraries.resources.generated.resources.editor_readout_millimeters
@@ -92,7 +93,6 @@ import movingeyes.libraries.resources.generated.resources.editor_readout_x
 import movingeyes.libraries.resources.generated.resources.editor_readout_y
 import movingeyes.libraries.resources.generated.resources.editor_redo
 import movingeyes.libraries.resources.generated.resources.editor_undo
-import movingeyes.libraries.resources.generated.resources.editor_unlock
 import movingeyes.libraries.resources.generated.resources.panel_look
 import movingeyes.libraries.resources.generated.resources.panel_motion
 import movingeyes.libraries.resources.generated.resources.panel_place
@@ -103,6 +103,7 @@ import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.min
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
 import kotlin.time.Duration.Companion.minutes
@@ -137,6 +138,7 @@ fun EditorScreen(
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val density = LocalDensity.current
+        val scope = rememberCoroutineScope()
         val haptics = LocalHapticFeedback.current
 
         val displayWidthPx = with(density) { maxWidth.toPx() }
@@ -211,12 +213,18 @@ fun EditorScreen(
         val occupied = if (display.isActive) 0f else panel.occupiedPx
         val isRail = maxWidth >= RailBreakpointDp
         val insetPx = with(density) { CanvasInset.toPx() } * 2f
-        val canvasScale = minOf(
-            1f,
-            (displayWidthPx - (if (isRail) occupied else 0f) - insetPx) / displayWidthPx,
-            (displayHeightPx - (if (isRail) 0f else occupied) - insetPx) / displayHeightPx,
-        ).coerceAtLeast(MinCanvasScale)
-        val isScaled = canvasScale < 0.999f
+        // Display mode is exactly 1:1 with no inset and no edge. A percent of
+        // scale there would make every millimetre on screen a lie.
+        val canvasScale = if (display.isActive) {
+            1f
+        } else {
+            minOf(
+                1f,
+                (displayWidthPx - (if (isRail) occupied else 0f) - insetPx) / displayWidthPx,
+                (displayHeightPx - (if (isRail) 0f else occupied) - insetPx) / displayHeightPx,
+            ).coerceAtLeast(MinCanvasScale)
+        }
+        val isScaled = !display.isActive && canvasScale < 0.999f
         val shiftX = if (isRail) -occupied / 2f else 0f
         val shiftY = if (isRail) 0f else -occupied / 2f
 
@@ -339,7 +347,7 @@ fun EditorScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .editorGestures(
-                        enabled = !editor.isLocked,
+                        enabled = !display.isActive,
                         handleAt = { position ->
                             selectionBounds(
                                 eyes = editor.eyes,
@@ -359,7 +367,19 @@ fun EditorScreen(
                                 canvasHeight = canvasHeightPx,
                                 minimumTouchPx = minimumTouchPx,
                             )
-                            if (hit != null) editor.select(hit) else editor.clearSelection()
+                            when {
+                                hit == null -> {
+                                    editor.clearSelection()
+                                    scope.launch { panel.collapse() }
+                                }
+                                // Tapping an already-selected eye is asking
+                                // about that eye, so it opens the inspector.
+                                editor.isSelected(hit) -> {
+                                    tab = PanelTab.Look
+                                    scope.launch { panel.expand() }
+                                }
+                                else -> editor.select(hit)
+                            }
                         },
                         onDoubleTap = { editor.selectAll() },
                         onDrag = { pan ->
@@ -369,7 +389,11 @@ fun EditorScreen(
                                 pan = pan,
                                 canvasWidthPx = canvasWidthPx,
                                 canvasHeightPx = canvasHeightPx,
-                                snapThresholdPx = if (snappingEnabled) snapThresholdPx else 0f,
+                                snapThresholdPx = if (snappingEnabled) {
+                                    snapThresholdPx / canvasScale
+                                } else {
+                                    0f
+                                },
                                 onGuides = { guides = it },
                             )
                             // On capture only: a tick in both directions turns
@@ -413,6 +437,7 @@ fun EditorScreen(
 
             SelectionOverlay(
                 showCanvasEdge = isScaled,
+                showCenterLines = dragSession != null,
                 eyes = editor.eyes,
                 selection = editor.selection,
                 guides = guides,
@@ -447,8 +472,9 @@ fun EditorScreen(
                     canvasHeightPx = canvasHeightPx,
                     screenMetrics = screenMetrics,
                 ),
+                panelClearance = with(density) { occupied.toDp() },
                 onOpenScenes = { drawerOpen = true },
-                onPlay = {
+                onEnterDisplay = {
                     editor.clearSelection()
                     display.enter()
                 },
@@ -461,22 +487,40 @@ fun EditorScreen(
             enter = fadeIn(Motion.Chrome.restore()),
             exit = fadeOut(Motion.Chrome.dissolve()),
         ) {
-        AdaptivePanel(state = panel) {
-            Column(
-                modifier = Modifier
-                    .padding(Dimension.D700)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(Dimension.D600),
-            ) {
-                // SegmentedControl's label is a plain function, not composable.
-                val tabLabels = PanelTab.entries.associateWith { stringResource(it.label) }
+        // SegmentedControl's label is a plain function, not composable.
+        val tabLabels = PanelTab.entries.associateWith { stringResource(it.label) }
+        AdaptivePanel(
+            state = panel,
+            header = {
                 SegmentedControl(
                     options = PanelTab.entries,
                     selected = tab,
-                    onSelect = { tab = it },
+                    onSelect = {
+                        tab = it
+                        // Picking a tab is asking to see it. Without this the
+                        // only way in is a bare handle, and "how do I change
+                        // the colour" has no visible answer.
+                        scope.launch { panel.expand() }
+                    },
                     label = { tabLabels.getValue(it) },
+                    modifier = Modifier.padding(
+                        start = Dimension.D700,
+                        end = Dimension.D700,
+                        bottom = Dimension.D500,
+                    ),
                 )
-
+            },
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(
+                        start = Dimension.D700,
+                        end = Dimension.D700,
+                        bottom = Dimension.D700,
+                    )
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(Dimension.D600),
+            ) {
                 when (tab) {
                     PanelTab.Place -> PlacePanel(
                         editor = editor,
@@ -696,8 +740,9 @@ private val DemoControl.paywallTrigger: PaywallTrigger
 private fun EditorChrome(
     editor: EditorState,
     readout: String,
+    panelClearance: Dp,
     onOpenScenes: () -> Unit,
-    onPlay: () -> Unit,
+    onEnterDisplay: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
@@ -721,7 +766,7 @@ private fun EditorChrome(
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(start = Dimension.D700, end = Dimension.D700, bottom = Dimension.D700)
-                .padding(bottom = Motion.Panel.GrabEdgeDp),
+                .padding(bottom = panelClearance),
         )
 
         Row(
@@ -742,22 +787,13 @@ private fun EditorChrome(
                 enabled = editor.canRedo,
                 onClick = { editor.redo() },
             )
-            ToolbarButton(
-                label = stringResource(
-                    if (editor.isLocked) Res.string.editor_unlock else Res.string.editor_lock,
-                ),
-                enabled = true,
-                isActive = editor.isLocked,
-                onClick = { editor.toggleLock() },
-            )
-
             // In the toolbar, not floating at the bottom, where the panel
             // would cover it and hide the app's whole point while editing.
             Button(
-                onClick = onPlay,
+                onClick = onEnterDisplay,
                 size = ButtonSize.Small,
             ) {
-                Text(stringResource(Res.string.display_play))
+                Text(stringResource(Res.string.display_enter))
             }
         }
     }

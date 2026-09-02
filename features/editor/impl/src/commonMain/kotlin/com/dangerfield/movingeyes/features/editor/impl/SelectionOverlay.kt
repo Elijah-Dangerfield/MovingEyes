@@ -42,6 +42,10 @@ fun SelectionOverlay(
     /** Draws the device edge while the canvas is scaled down, so the scene has
      *  a boundary to read against instead of floating in black. */
     showCanvasEdge: Boolean = false,
+    /** Faint centre crosshairs, shown while something is being dragged so the
+     *  middle of the canvas is visible *before* you snap to it rather than only
+     *  at the moment you arrive. */
+    showCenterLines: Boolean = false,
 ) {
     Canvas(modifier = modifier) {
         // Read so the overlay redraws while a drag is moving eyes that aren't
@@ -55,6 +59,8 @@ fun SelectionOverlay(
                 style = Stroke(width = 1.dp.toPx()),
             )
         }
+
+        if (showCenterLines) drawCenterLines(accent)
 
         guides.forEach { drawGuide(it, accent) }
 
@@ -108,6 +114,25 @@ private fun DrawScope.drawSelectionBox(bounds: Rect, accent: Color) {
         radius = RotateHandleRadius.toPx(),
         center = stalkTop,
         style = Stroke(width = stroke * 1.5f),
+    )
+}
+
+private fun DrawScope.drawCenterLines(accent: Color) {
+    val dash = PathEffect.dashPathEffect(floatArrayOf(6f, 14f))
+    val faint = accent.copy(alpha = 0.3f)
+    drawLine(
+        color = faint,
+        start = Offset(size.width / 2f, 0f),
+        end = Offset(size.width / 2f, size.height),
+        strokeWidth = 1.dp.toPx(),
+        pathEffect = dash,
+    )
+    drawLine(
+        color = faint,
+        start = Offset(0f, size.height / 2f),
+        end = Offset(size.width, size.height / 2f),
+        strokeWidth = 1.dp.toPx(),
+        pathEffect = dash,
     )
 }
 

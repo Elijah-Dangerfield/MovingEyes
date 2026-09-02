@@ -28,7 +28,9 @@ class PanelState internal constructor(initiallyExpanded: Boolean) {
     internal val travel = Animatable(if (initiallyExpanded) 0f else 1f)
 
     internal var extentPx by mutableIntStateOf(0)
-    internal var grabEdgePx by mutableIntStateOf(0)
+
+    /** The header's height. It never slides away, so it bounds the travel. */
+    internal var headerPx by mutableIntStateOf(0)
 
     /** How much the panel covers right now, in pixels. Read this to lay out
      *  around it; it updates every frame of a drag. */
@@ -39,7 +41,7 @@ class PanelState internal constructor(initiallyExpanded: Boolean) {
 
     /** The distance the panel can travel: everything but the grab edge, which
      *  always stays on screen. */
-    private val slidePx: Float get() = (extentPx - grabEdgePx).coerceAtLeast(0).toFloat()
+    private val slidePx: Float get() = (extentPx - headerPx).coerceAtLeast(0).toFloat()
 
     internal fun offsetPx(): Int = (slidePx * travel.value).roundToInt()
 

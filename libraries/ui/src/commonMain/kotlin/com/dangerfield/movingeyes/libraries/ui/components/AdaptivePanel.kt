@@ -80,14 +80,16 @@ enum class PanelLayout { Sheet, Rail }
 fun AdaptivePanel(
     state: PanelState,
     modifier: Modifier = Modifier,
+    /** Stays on screen when the panel is slid away, and is the drag handle.
+     *  Put the thing that says what the panel is for in here — a bare handle
+     *  gives no reason to open it. */
+    header: @Composable (PanelLayout) -> Unit,
     content: @Composable (PanelLayout) -> Unit,
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val layout = if (maxWidth >= RailBreakpoint) PanelLayout.Rail else PanelLayout.Sheet
         val scope = rememberCoroutineScope()
         val density = LocalDensity.current
-
-        state.grabEdgePx = with(density) { Motion.Panel.GrabEdgeDp.roundToPx() }
 
         val travel = state.travel.value
         val contentAlpha = ((Motion.Panel.ContentFadeAtTravel - travel) /
@@ -108,11 +110,13 @@ fun AdaptivePanel(
             layout = layout,
             offsetPx = state.offsetPx(),
             onExtentMeasured = { state.extentPx = it },
+            onHeaderMeasured = { state.headerPx = it },
             expanded = state.isExpanded,
             onToggle = { scope.launch { state.toggle() } },
             contentAlpha = contentAlpha,
             dragModifier = drag,
             maxSheetHeight = maxHeight * SheetMaxHeightFraction,
+            header = { header(layout) },
         ) {
             content(layout)
         }
@@ -124,11 +128,13 @@ private fun BoxScope.Panel(
     layout: PanelLayout,
     offsetPx: Int,
     onExtentMeasured: (Int) -> Unit,
+    onHeaderMeasured: (Int) -> Unit,
     expanded: Boolean,
     onToggle: () -> Unit,
     contentAlpha: Float,
     dragModifier: Modifier,
     maxSheetHeight: Dp,
+    header: @Composable () -> Unit,
     content: @Composable () -> Unit,
 ) {
     val shape = when (layout) {
@@ -164,23 +170,26 @@ private fun BoxScope.Panel(
             .clip(shape)
             .background(AppTheme.colors.surfacePrimary.color),
     ) {
-        GrabEdge(expanded = expanded, onToggle = onToggle, dragModifier = dragModifier)
+        Column(
+            modifier = Modifier
+                .onSizeChanged { onHeaderMeasured(it.height) }
+                .then(dragModifier),
+        ) {
+            GrabEdge(expanded = expanded, onToggle = onToggle)
+            header()
+        }
         Box(modifier = Modifier.alpha(contentAlpha)) { content() }
     }
 }
 
-/**
- * Draggable along the panel's axis and still tappable, because a tap is what
- * you reach for when the panel is a sliver at the bottom of the screen. Amber
- * when collapsed, when it's the only way back in.
- */
+/** Still tappable, because a tap is what you reach for when the panel is
+ *  mostly off screen. Amber when collapsed, when it's the way back in. */
 @Composable
-private fun GrabEdge(expanded: Boolean, onToggle: () -> Unit, dragModifier: Modifier) {
+private fun GrabEdge(expanded: Boolean, onToggle: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(Motion.Panel.GrabEdgeDp)
-            .then(dragModifier)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -207,7 +216,10 @@ private fun GrabEdge(expanded: Boolean, onToggle: () -> Unit, dragModifier: Modi
 @Composable
 private fun PreviewSheetPanel() {
     PreviewContent {
-        AdaptivePanel(state = rememberPanelState()) { layout -> PanelSample(layout) }
+        AdaptivePanel(
+            state = rememberPanelState(),
+            header = { SegmentedControl(listOf("Place", "Look"), "Place", {}, label = { it }) },
+        ) { layout -> PanelSample(layout) }
     }
 }
 
@@ -215,7 +227,10 @@ private fun PreviewSheetPanel() {
 @Composable
 private fun PreviewRailPanel() {
     PreviewContent {
-        AdaptivePanel(state = rememberPanelState()) { layout -> PanelSample(layout) }
+        AdaptivePanel(
+            state = rememberPanelState(),
+            header = { SegmentedControl(listOf("Place", "Look"), "Place", {}, label = { it }) },
+        ) { layout -> PanelSample(layout) }
     }
 }
 
