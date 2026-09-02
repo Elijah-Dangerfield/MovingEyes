@@ -63,7 +63,7 @@ import com.dangerfield.movingeyes.libraries.scene.Scene
 import com.dangerfield.movingeyes.libraries.scene.ScenePreset
 import com.dangerfield.movingeyes.libraries.scene.ScenePresets
 import com.dangerfield.movingeyes.libraries.ui.components.AdaptivePanel
-import com.dangerfield.movingeyes.libraries.ui.components.PanelInsets
+import com.dangerfield.movingeyes.libraries.ui.components.rememberPanelState
 import com.dangerfield.movingeyes.libraries.ui.components.ReadoutPill
 import com.dangerfield.movingeyes.libraries.ui.components.SegmentedControl
 import com.dangerfield.movingeyes.libraries.ui.components.ToastAction
@@ -183,10 +183,9 @@ fun EditorScreen(
         var wasSnapped by remember { mutableStateOf(false) }
         var dragSession by remember { mutableStateOf<DragSession?>(null) }
         var snappingEnabled by remember { mutableStateOf(true) }
-        var panelExpanded by remember { mutableStateOf(true) }
+        val panel = rememberPanelState()
         var tab by remember { mutableStateOf(PanelTab.Place) }
         var drawerOpen by remember { mutableStateOf(false) }
-        var panelInsets by remember { mutableStateOf(PanelInsets()) }
 
         val display = remember(editor) {
             DisplayModeState(sleepTimer = editor.canvas.sleepTimer)
@@ -203,27 +202,23 @@ fun EditorScreen(
 
         BackHandler(enabled = display.isActive) { display.exit() }
 
-        // The scene shrinks into whatever the panel leaves, rather than hiding
-        // behind it. Normalised coordinates are untouched, so this is a preview
-        // scale and not a change to the composition; collapsing the panel
-        // animates back to true 1:1, which is what the mm readout describes.
-        val freeWidth = maxWidth - panelInsets.end - CanvasInset * 2
-        val freeHeight = maxHeight - panelInsets.bottom - CanvasInset * 2
-        // Against the display's own dimensions: a turned layer is laid out
-        // swapped but occupies the screen's shape once rotated.
-        val targetScale = minOf(
+        // The scene shrinks into whatever the panel leaves rather than hiding
+        // behind it, driven by the panel's own live position so the two move
+        // together frame for frame. Normalised coordinates are untouched — this
+        // is a preview scale, not a change to the composition — and sliding the
+        // panel away returns it to true 1:1, which is what the mm readout
+        // describes.
+        val occupied = if (display.isActive) 0f else panel.occupiedPx
+        val isRail = maxWidth >= RailBreakpointDp
+        val insetPx = with(density) { CanvasInset.toPx() } * 2f
+        val canvasScale = minOf(
             1f,
-            freeWidth / maxWidth,
-            freeHeight / maxHeight,
+            (displayWidthPx - (if (isRail) occupied else 0f) - insetPx) / displayWidthPx,
+            (displayHeightPx - (if (isRail) 0f else occupied) - insetPx) / displayHeightPx,
         ).coerceAtLeast(MinCanvasScale)
-        val canvasScale by animateFloatAsState(
-            targetValue = if (display.isActive) 1f else targetScale,
-            animationSpec = Motion.Panel.slide(),
-            label = "canvasScale",
-        )
         val isScaled = canvasScale < 0.999f
-        val shiftX = with(density) { (-panelInsets.end / 2).toPx() }
-        val shiftY = with(density) { (-panelInsets.bottom / 2).toPx() }
+        val shiftX = if (isRail) -occupied / 2f else 0f
+        val shiftY = if (isRail) 0f else -occupied / 2f
 
         // Read here rather than in the save handler: a string resource can only
         // be read from a composable, and the handler isn't one.
@@ -466,11 +461,7 @@ fun EditorScreen(
             enter = fadeIn(Motion.Chrome.restore()),
             exit = fadeOut(Motion.Chrome.dissolve()),
         ) {
-        AdaptivePanel(
-            expanded = panelExpanded,
-            onExpandedChange = { panelExpanded = it },
-            onOccupiedChange = { panelInsets = it },
-        ) {
+        AdaptivePanel(state = panel) {
             Column(
                 modifier = Modifier
                     .padding(Dimension.D700)
@@ -959,6 +950,10 @@ private val ToolbarClearance = 88.dp
 
 /** Breathing room around the scaled canvas, so its edge reads as an edge. */
 private val CanvasInset = 12.dp
+
+/** Matches AdaptivePanel's own breakpoint; the editor needs to know which
+ *  dimension the panel is eating. */
+private val RailBreakpointDp = 720.dp
 
 /** Below this the scene is too small to work with; better to let the panel
  *  cover a little than to shrink to a postage stamp. */

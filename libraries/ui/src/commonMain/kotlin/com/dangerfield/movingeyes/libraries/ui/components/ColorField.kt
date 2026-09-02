@@ -24,6 +24,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.dangerfield.movingeyes.libraries.ui.PreviewContent
+import com.dangerfield.movingeyes.libraries.ui.components.color.ColorPicker
+import com.dangerfield.movingeyes.libraries.ui.components.color.Hsv
+import com.dangerfield.movingeyes.libraries.ui.components.color.parseHexOrNull
+import com.dangerfield.movingeyes.libraries.ui.components.color.toHexDigits
 import com.dangerfield.movingeyes.libraries.ui.components.text.OutlinedTextField
 import com.dangerfield.movingeyes.libraries.ui.components.text.Text
 import com.dangerfield.movingeyes.system.AppTheme
@@ -34,19 +38,15 @@ private val SwatchCornerRadius = 10.dp
 private val SwatchSize = 40.dp
 
 /**
- * Sclera, iris, pupil, canvas. A swatch, a hex field, and recent colours.
+ * Sclera, iris, pupil, canvas: a picker for browsing, a hex field for knowing.
  *
- * **Hex entry is not optional.** A hue wheel alone is unusable with low vision,
- * and it's also the wrong tool for the job here: people match an eye to a
- * colour they already have — a paint chip, a costume, a photo of a cat — and a
- * hex code is how they say it. The wheel is for browsing, the field is for
- * knowing.
+ * **Both, not one.** A picker alone is unusable with low vision and is the
+ * wrong tool when someone is matching a colour they already have — a paint
+ * chip, a costume, a photo of a cat — which is a hex code. A hex field alone
+ * makes finding a colour you *don't* already know a guessing game.
  *
- * There is deliberately no eyedropper. It would mean a camera or a screen
+ * There is deliberately no eyedropper: it would mean a camera or a screen
  * capture, and the app asks for exactly one permission.
- *
- * [onColorChange] fires only on a **valid** six-digit hex, so a half-typed
- * value never repaints the canvas mid-keystroke.
  */
 @Composable
 fun ColorField(
@@ -58,6 +58,11 @@ fun ColorField(
 ) {
     var hexInput by remember(color) { mutableStateOf(color.toHexDigits()) }
     val isValid = hexInput.parseHexOrNull() != null
+
+    // Held rather than derived from `color` so dragging to black or to zero
+    // saturation doesn't lose the hue and snap the slider back to red.
+    var hsv by remember { mutableStateOf(Hsv.from(color)) }
+    if (hsv.toColor() != color) hsv = Hsv.from(color)
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -99,6 +104,14 @@ fun ColorField(
             )
         }
 
+        ColorPicker(
+            hsv = hsv,
+            onHsvChange = {
+                hsv = it
+                onColorChange(it.toColor())
+            },
+        )
+
         if (recents.isNotEmpty()) {
             Row(horizontalArrangement = Arrangement.spacedBy(Dimension.D300)) {
                 recents.forEach { recent ->
@@ -129,22 +142,8 @@ private fun Char.isHexDigit(): Boolean =
     this in '0'..'9' || this in 'a'..'f' || this in 'A'..'F'
 
 /** `RRGGBB`, no leading `#` — the field renders the hash as a prefix, not as data. */
-internal fun Color.toHexDigits(): String {
-    fun channel(value: Float): String =
-        (value * 255).toInt().coerceIn(0, 255).toString(16).uppercase().padStart(2, '0')
-    return channel(red) + channel(green) + channel(blue)
-}
 
 /** Null until all six digits are present, so a partial entry can't repaint the canvas. */
-internal fun String.parseHexOrNull(): Color? {
-    if (length != HexDigits || !all { it.isHexDigit() }) return null
-    val value = toLong(radix = 16)
-    return Color(
-        red = ((value shr 16) and 0xFF).toInt() / 255f,
-        green = ((value shr 8) and 0xFF).toInt() / 255f,
-        blue = (value and 0xFF).toInt() / 255f,
-    )
-}
 
 @Preview
 @Composable

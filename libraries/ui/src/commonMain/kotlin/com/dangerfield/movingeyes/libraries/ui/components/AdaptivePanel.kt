@@ -1,8 +1,10 @@
 package com.dangerfield.movingeyes.libraries.ui.components
 
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,16 +22,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -38,8 +38,8 @@ import com.dangerfield.movingeyes.libraries.ui.components.text.Text
 import com.dangerfield.movingeyes.system.AppTheme
 import com.dangerfield.movingeyes.system.Dimension
 import com.dangerfield.movingeyes.system.Motion
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
-import kotlin.math.roundToInt
 
 /**
  * Below this width the panel is a bottom sheet; at or above it, a right rail.
@@ -52,11 +52,10 @@ import kotlin.math.roundToInt
 private val RailBreakpoint = 720.dp
 
 /**
- * How much of the screen a bottom sheet may take. The canvas above it is the
- * product, and a control surface that hides what it controls is a settings
- * screen wearing a sheet's clothes.
+ * How much of the screen a bottom sheet may take. The canvas scales into what's
+ * left, and past this there isn't enough left to judge a composition by.
  */
-private const val SheetMaxHeightFraction = 0.55f
+private const val SheetMaxHeightFraction = 0.5f
 
 private val PanelCornerRadius = 16.dp
 private val GrabHandleWidth = 44.dp
@@ -64,9 +63,6 @@ private val GrabHandleHeight = 4.dp
 
 /** Which shape the panel took. Callers lay their contents out differently. */
 enum class PanelLayout { Sheet, Rail }
-
-/** How much of the screen the panel covers right now. */
-data class PanelInsets(val bottom: Dp = 0.dp, val end: Dp = 0.dp)
 
 /**
  * The editor's controls, in the shape the device calls for.
@@ -76,70 +72,46 @@ data class PanelInsets(val bottom: Dp = 0.dp, val end: Dp = 0.dp)
  * [Motion.Panel.RailWidthDp] rail on the right, so the canvas keeps its full
  * height and the whole transform row fits on one line.
  *
- * Both collapse to a [Motion.Panel.GrabEdgeDp] grab edge, and collapsed is
- * always one tap from open. Contents fade out at 60% of the travel so no text
- * is legible mid-slide — a half-rendered label sliding past is the cheapest way
- * to make a smooth animation look broken.
- *
- * The panel reports how much it covers through [onOccupiedChange] so the canvas
- * can scale itself into what's left. It never changes the canvas's *bounds* —
- * the scene keeps its normalised coordinates and simply renders smaller, then
- * animates back to true 1:1 when the panel collapses.
+ * Drag the grab edge to slide it away; a flick decides on its own. [state]
+ * carries the live position, so a caller can scale the canvas against
+ * `occupiedPx` and the two move together rather than one chasing the other.
  */
 @Composable
 fun AdaptivePanel(
-    expanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit,
+    state: PanelState,
     modifier: Modifier = Modifier,
-    /** How much of the screen the panel currently covers, so the canvas can
-     *  scale itself into what's left rather than hiding behind it. */
-    onOccupiedChange: (PanelInsets) -> Unit = {},
     content: @Composable (PanelLayout) -> Unit,
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val layout = if (maxWidth >= RailBreakpoint) PanelLayout.Rail else PanelLayout.Sheet
+        val scope = rememberCoroutineScope()
+        val density = LocalDensity.current
 
-        val travel by animateFloatAsState(
-            targetValue = if (expanded) 0f else 1f,
-            animationSpec = Motion.Panel.slide(),
-            label = "panelTravel",
-        )
+        state.grabEdgePx = with(density) { Motion.Panel.GrabEdgeDp.roundToPx() }
 
+        val travel = state.travel.value
         val contentAlpha = ((Motion.Panel.ContentFadeAtTravel - travel) /
             Motion.Panel.ContentFadeAtTravel).coerceIn(0f, 1f)
 
-        val grabEdgePx = with(androidx.compose.ui.platform.LocalDensity.current) {
-            Motion.Panel.GrabEdgeDp.roundToPx()
-        }
-
-        // The panel slides its own measured extent minus the grab edge, so the
-        // handle is always the thing left on screen whatever the content height.
-        var extentPx by remember { mutableIntStateOf(0) }
-        val offsetPx = ((extentPx - grabEdgePx).coerceAtLeast(0) * travel).roundToInt()
-
-        val density = androidx.compose.ui.platform.LocalDensity.current
-        val visiblePx = (extentPx - offsetPx).coerceAtLeast(0)
-        val visible = with(density) { visiblePx.toDp() }
-        LaunchedEffect(visible, layout) {
-            onOccupiedChange(
-                when (layout) {
-                    PanelLayout.Sheet -> PanelInsets(bottom = visible)
-                    PanelLayout.Rail -> PanelInsets(end = visible)
-                },
-            )
-        }
+        val drag = Modifier.draggable(
+            state = rememberDraggableState { delta ->
+                scope.launch { state.dragBy(delta) }
+            },
+            orientation = when (layout) {
+                PanelLayout.Sheet -> Orientation.Vertical
+                PanelLayout.Rail -> Orientation.Horizontal
+            },
+            onDragStopped = { velocity -> state.settle(velocity, Motion.Panel.slide()) },
+        )
 
         Panel(
             layout = layout,
-            offsetPx = offsetPx,
-            onExtentMeasured = { extentPx = it },
-            expanded = expanded,
-            onToggle = { onExpandedChange(!expanded) },
+            offsetPx = state.offsetPx(),
+            onExtentMeasured = { state.extentPx = it },
+            expanded = state.isExpanded,
+            onToggle = { scope.launch { state.toggle() } },
             contentAlpha = contentAlpha,
-            // A sheet is capped so the canvas is always visible above it. Left
-            // uncapped, a long tab grows to fill the screen and hides the thing
-            // being edited — which defeats the point of editing live, and is
-            // exactly what a modal settings screen would have done.
+            dragModifier = drag,
             maxSheetHeight = maxHeight * SheetMaxHeightFraction,
         ) {
             content(layout)
@@ -155,6 +127,7 @@ private fun BoxScope.Panel(
     expanded: Boolean,
     onToggle: () -> Unit,
     contentAlpha: Float,
+    dragModifier: Modifier,
     maxSheetHeight: Dp,
     content: @Composable () -> Unit,
 ) {
@@ -191,19 +164,23 @@ private fun BoxScope.Panel(
             .clip(shape)
             .background(AppTheme.colors.surfacePrimary.color),
     ) {
-        GrabEdge(expanded = expanded, onToggle = onToggle)
+        GrabEdge(expanded = expanded, onToggle = onToggle, dragModifier = dragModifier)
         Box(modifier = Modifier.alpha(contentAlpha)) { content() }
     }
 }
 
-/** The always-visible handle. Amber when collapsed, because then it's the only
- *  way back in and it needs to read as live. */
+/**
+ * Draggable along the panel's axis and still tappable, because a tap is what
+ * you reach for when the panel is a sliver at the bottom of the screen. Amber
+ * when collapsed, when it's the only way back in.
+ */
 @Composable
-private fun GrabEdge(expanded: Boolean, onToggle: () -> Unit) {
+private fun GrabEdge(expanded: Boolean, onToggle: () -> Unit, dragModifier: Modifier) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(Motion.Panel.GrabEdgeDp)
+            .then(dragModifier)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -230,9 +207,7 @@ private fun GrabEdge(expanded: Boolean, onToggle: () -> Unit) {
 @Composable
 private fun PreviewSheetPanel() {
     PreviewContent {
-        AdaptivePanel(expanded = true, onExpandedChange = {}) { layout ->
-            PanelSample(layout)
-        }
+        AdaptivePanel(state = rememberPanelState()) { layout -> PanelSample(layout) }
     }
 }
 
@@ -240,9 +215,7 @@ private fun PreviewSheetPanel() {
 @Composable
 private fun PreviewRailPanel() {
     PreviewContent {
-        AdaptivePanel(expanded = true, onExpandedChange = {}) { layout ->
-            PanelSample(layout)
-        }
+        AdaptivePanel(state = rememberPanelState()) { layout -> PanelSample(layout) }
     }
 }
 

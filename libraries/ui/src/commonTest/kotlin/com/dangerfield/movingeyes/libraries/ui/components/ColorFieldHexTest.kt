@@ -1,6 +1,8 @@
 package com.dangerfield.movingeyes.libraries.ui.components
 
 import androidx.compose.ui.graphics.Color
+import com.dangerfield.movingeyes.libraries.ui.components.color.parseHexOrNull
+import com.dangerfield.movingeyes.libraries.ui.components.color.toHexDigits
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
