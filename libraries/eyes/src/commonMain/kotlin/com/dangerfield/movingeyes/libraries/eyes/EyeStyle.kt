@@ -55,6 +55,16 @@ data class EyeStyle(
      *  cheapest thing that makes an eye look wet and alive. */
     val glintRatio: Float,
 
+    /**
+     * How far the aperture tapers to points at the corners: 0 is a plain oval,
+     * 1 is a full almond.
+     *
+     * A real eye is not an ellipse. It's two lids meeting at corners, and the
+     * upper one is more curved than the lower. An oval reads as a drawing of an
+     * eye; the almond is most of what separates the two.
+     */
+    val cornerTaper: Float = 0f,
+
     /** Draws the red vein layer. Only meaningful on styles that have one. */
     val hasVeins: Boolean = false,
 
@@ -125,6 +135,7 @@ object EyeStyles {
         irisRatio = 0.44f,
         pupilRatio = 0.44f,
         glintRatio = 0.20f,
+        cornerTaper = 0.9f,
         tier = EyeTier.Free,
         defaultIris = 0xFF7A5A34,
     )
@@ -153,6 +164,7 @@ object EyeStyles {
         irisRatio = 0.42f,
         pupilRatio = 0.42f,
         glintRatio = 0.16f,
+        cornerTaper = 1.0f,
         hasVeins = true,
         defaultIris = 0xFF6B5136,
     )
@@ -164,6 +176,7 @@ object EyeStyles {
         irisRatio = 0.44f,
         pupilRatio = 0.46f,
         glintRatio = 0.18f,
+        cornerTaper = 1.0f,
         hasVeins = true,
         defaultSclera = 0xFFEFD9D2,
         defaultIris = 0xFF8A5A3A,
@@ -177,6 +190,7 @@ object EyeStyles {
         pupilRatio = 0.40f,
         scleraOpacity = 0.9f,
         glintRatio = 0.16f,
+        cornerTaper = 0.7f,
         defaultSclera = 0xFF2A1A16,
         defaultIris = 0xFFE0533A,
         defaultGlow = 10f,
@@ -190,6 +204,7 @@ object EyeStyles {
         pupilRatio = 0.30f,
         slitPupil = true,
         glintRatio = 0.18f,
+        cornerTaper = 0.55f,
         defaultSclera = 0xFFF0E9D8,
         defaultIris = 0xFFC8D24A,
         defaultGlow = 6f,
@@ -204,6 +219,7 @@ object EyeStyles {
         barPupil = true,
         scleraOpacity = 0.45f,
         glintRatio = 0.12f,
+        cornerTaper = 0.6f,
         defaultSclera = 0xFF3A1A0E,
         defaultIris = 0xFFF07A1E,
         defaultGlow = 18f,
@@ -230,6 +246,7 @@ object EyeStyles {
         pupilRatio = 0.28f,
         slitPupil = true,
         glintRatio = 0.14f,
+        cornerTaper = 0.85f,
         defaultSclera = 0xFFD8C89A,
         defaultIris = 0xFFB8A63C,
     )
@@ -241,6 +258,7 @@ object EyeStyles {
         irisRatio = 0.40f,
         pupilRatio = 0.30f,
         glintRatio = 0.12f,
+        cornerTaper = 0.6f,
         isMilky = true,
         defaultSclera = 0xFFCFC9BE,
         defaultIris = 0xFF9FB0A8,
@@ -253,6 +271,7 @@ object EyeStyles {
         irisRatio = 0.62f,
         pupilRatio = 0.48f,
         glintRatio = 0.34f,
+        cornerTaper = 0.2f,
         defaultSclera = 0xFFFBF6EE,
         defaultIris = 0xFF4A6FA5,
     )

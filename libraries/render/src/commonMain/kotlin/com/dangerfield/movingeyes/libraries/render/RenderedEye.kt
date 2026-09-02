@@ -3,16 +3,20 @@
 package com.dangerfield.movingeyes.libraries.render
 
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import com.dangerfield.movingeyes.libraries.eyes.BehaviorConfig
 import com.dangerfield.movingeyes.libraries.eyes.EyeRuntime
 import com.dangerfield.movingeyes.libraries.eyes.EyeStyle
 import com.dangerfield.movingeyes.libraries.eyes.GazeDirector
 import com.dangerfield.movingeyes.libraries.eyes.Moods
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.random.Random
 
 /**
@@ -41,6 +45,11 @@ class RenderedEye(
     gazeDirector: GazeDirector? = null,
 ) {
     val runtime = EyeRuntime(behavior, random, gazeDirector)
+
+    /** Fixed at construction so an eye's iris texture doesn't reshuffle when it
+     *  is recoloured or resized. Two eyes on one face have different irises;
+     *  the same eye across two frames does not. */
+    internal val fibres = irisFibres(random)
 
     /**
      * The gradient brushes, built once and reused until something they depend
@@ -96,16 +105,144 @@ class RenderedEye(
             sclera = scleraBrush(scleraColor, sizePx / 2f),
             iris = irisBrush(irisColor, irisRadius, style.isMilky),
             glow = if (glowPx > 0f) radialFade(irisColor, irisRadius + glowPx) else null,
+            lidShadow = lidShadowBrush(sizePx * style.aspectRatio),
+            glint = glintBrush(sizePx * style.glintRatio * GlintRadiusRatio),
+            fibreLight = irisColor.lighten(0.30f),
+            fibreDark = irisColor.shade(-0.30f),
+            limbal = irisColor.shade(-0.62f),
         )
     }
 }
+
+/**
+ * The shape of an eye: an upper and a lower curve meeting at two corners.
+ *
+ * Both curves are cubics with their control points at the same height, which
+ * puts the apex at exactly 3/4 of that height — hence [ApexToControl]. Pulling
+ * the controls inward (a smaller reach) draws the corners to a point without
+ * moving the apex, so [taper] changes how almond the eye is and nothing else.
+ *
+ * The lower curve is drawn tighter than the upper because a real lower lid is
+ * flatter. A vertically symmetric almond reads as a leaf.
+ */
+internal class Aperture(width: Float, height: Float, taper: Float) {
+
+    val halfWidth = width / 2f
+    private val rise = height / 2f / ApexToControl
+    private val upperReach = halfWidth * (1f - 0.42f * taper)
+    private val lowerReach = halfWidth * (1f - 0.62f * taper)
+
+    fun path(): Path = Path().apply {
+        moveTo(-halfWidth, 0f)
+        cubicTo(-upperReach, -rise, upperReach, -rise, halfWidth, 0f)
+        cubicTo(lowerReach, rise, -lowerReach, rise, -halfWidth, 0f)
+        close()
+    }
+
+    /**
+     * Everything one lid covers once it has descended [travel].
+     *
+     * The lid edge is the aperture's own curve slid across the eye, so the
+     * margin of a half-closed eye stays parallel to the shape it is closing —
+     * which is what makes a blink look like a lid rather than a crop.
+     */
+    fun lid(travel: Float, isUpper: Boolean): Path {
+        val direction = if (isUpper) 1f else -1f
+        val reach = if (isUpper) upperReach else lowerReach
+        val edge = travel * direction
+        val backstop = (rise + travel) * -direction
+
+        return Path().apply {
+            moveTo(-halfWidth, edge)
+            cubicTo(-reach, -rise * direction + edge, reach, -rise * direction + edge, halfWidth, edge)
+            lineTo(halfWidth, backstop)
+            lineTo(-halfWidth, backstop)
+            close()
+        }
+    }
+}
+
+/** Where a cubic with level control points puts its apex, as a fraction of the
+ *  control height. */
+private const val ApexToControl = 0.75f
 
 /** Cached per eye. See [RenderedEye.brushes]. */
 internal class EyeBrushes(
     val sclera: Brush,
     val iris: Brush,
     val glow: Brush?,
+    val lidShadow: Brush,
+    val glint: Brush,
+    val fibreLight: Color,
+    val fibreDark: Color,
+    val limbal: Color,
 )
+
+/**
+ * The upper lid's shadow falling across the eye.
+ *
+ * Free-standing eyes lit from nowhere look pasted on. The shadow is what puts
+ * the eye *into* a socket, and it is the cheapest depth cue available: one
+ * gradient over the top half.
+ */
+internal fun lidShadowBrush(height: Float): Brush = Brush.verticalGradient(
+    0f to Color.Black.copy(alpha = 0.34f),
+    0.5f to Color.Black.copy(alpha = 0.06f),
+    1f to Color.Transparent,
+    startY = -height / 2f,
+    endY = height * 0.15f,
+)
+
+/**
+ * The catchlight, as a soft-edged gradient rather than a hard dot.
+ *
+ * A crisp white circle reads as a sticker; the falloff is what reads as a
+ * reflection on a wet curved surface.
+ */
+internal fun glintBrush(radius: Float): Brush = Brush.radialGradient(
+    0f to Color.White.copy(alpha = 0.95f),
+    0.62f to Color.White.copy(alpha = 0.80f),
+    1f to Color.White.copy(alpha = 0f),
+    center = Offset.Zero,
+    radius = radius.coerceAtLeast(0.5f),
+)
+
+/**
+ * The radial striations of an iris, as a flat array of
+ * `[cos, sin, innerRadiusFraction, signedAlpha]`.
+ *
+ * A flat disc of colour is the last thing standing between this and something
+ * that looks photographed. Real fibres run from the pupil to the limbus at
+ * uneven lengths and alternate lighter and darker than the iris around them,
+ * which is what the sign on the alpha encodes.
+ *
+ * Kept as a `FloatArray` rather than objects because it is walked once per eye
+ * per frame, and a list of small classes there is a list of pointer chases.
+ */
+internal fun irisFibres(random: Random): FloatArray {
+    val data = FloatArray(FibreCount * 4)
+    var index = 0
+
+    repeat(FibreCount) { spoke ->
+        // Jittered off a regular spacing: evenly spaced fibres look machined,
+        // fully random ones clump and leave bald patches.
+        val angle = (spoke + random.nextFloat() * 0.7f - 0.35f) / FibreCount * TwoPi
+        val magnitude = 0.10f + random.nextFloat() * 0.22f
+
+        data[index++] = cos(angle)
+        data[index++] = sin(angle)
+        data[index++] = 0.30f + random.nextFloat() * 0.28f
+        data[index++] = if (random.nextBoolean()) magnitude else -magnitude
+    }
+    return data
+}
+
+/** Of the style's declared glint width. Big enough to catch the eye, small
+ *  enough that it doesn't flatten the fibres under it. */
+internal const val GlintRadiusRatio = 0.30f
+
+private const val FibreCount = 24
+private const val TwoPi = 6.2831855f
 
 /**
  * Sclera: a highlight up and to the left, falling off to a shaded rim. The
