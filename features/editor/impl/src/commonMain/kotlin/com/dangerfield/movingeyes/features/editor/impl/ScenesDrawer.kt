@@ -26,7 +26,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.dangerfield.movingeyes.libraries.eyes.EyeStyles
 import com.dangerfield.movingeyes.libraries.eyes.Moods
-import com.dangerfield.movingeyes.libraries.render.EyePreview
+import androidx.compose.runtime.remember
+import com.dangerfield.movingeyes.libraries.render.ScenePreview
 import com.dangerfield.movingeyes.libraries.scene.Scene
 import com.dangerfield.movingeyes.libraries.scene.ScenePreset
 import com.dangerfield.movingeyes.libraries.scene.ScenePresets
@@ -139,19 +140,7 @@ fun ScenesDrawer(
                         isLocked = false,
                         onClick = { onOpenScene(scene) },
                         onDelete = { onDeleteScene(scene) },
-                        preview = {
-                            val first = scene.eyes.firstOrNull()
-                            EyePreview(
-                                style = EyeStyles.byId(
-                                    first?.styleId ?: EyeStyles.HumanBasic.id,
-                                ),
-                                sizeDp = MiniatureEyeSize,
-                                irisColor = first?.let { Color(it.irisColor) },
-                                scleraColor = first?.let { Color(it.scleraColor) },
-                                behavior = first?.behavior() ?: Moods.FreeDefault,
-                                seed = index,
-                            )
-                        },
+                        preview = { ScenePreview(scene, height = MiniatureHeight) },
                     )
                 }
 
@@ -167,14 +156,9 @@ fun ScenesDrawer(
                         onClick = { onOpenPreset(preset) },
                         onDelete = null,
                         preview = {
-                            val first = preset.eyes.first()
-                            EyePreview(
-                                style = EyeStyles.byId(first.styleId),
-                                sizeDp = MiniatureEyeSize,
-                                irisColor = Color(first.irisColor),
-                                scleraColor = Color(first.scleraColor),
-                                behavior = first.behavior(),
-                                seed = index,
+                            ScenePreview(
+                                scene = remember(preset) { preset.toScene(preset.id.name, "") },
+                                height = MiniatureHeight,
                             )
                         },
                     )
@@ -214,12 +198,7 @@ private fun SceneRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Dimension.D500),
     ) {
-        Box(
-            modifier = Modifier.size(MiniatureSize),
-            contentAlignment = Alignment.Center,
-        ) {
-            preview()
-        }
+        preview()
 
         Text(
             text = name,
@@ -246,7 +225,6 @@ private val DrawerMaxWidth = 360.dp
 private const val DrawerWidthFraction = 0.86f
 private val RowHeight = 72.dp
 private val RowCornerRadius = 14.dp
-private val MiniatureSize = 48.dp
-private val MiniatureEyeSize = 34.dp
+private val MiniatureHeight = 52.dp
 
 private val ScrimColor = Color.Black.copy(alpha = 0.6f)

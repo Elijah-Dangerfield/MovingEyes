@@ -54,27 +54,76 @@ class ScenePresetsTest {
     }
 
     /**
-     * A pair that's off by a few thousandths reads as wrong instantly, and it's
-     * exactly the kind of thing that survives a code review.
+     * The two scenes that are meant to be graphic rather than alive. A cartoon
+     * is a drawing and a doll is unsettling because it's too perfect, so both
+     * must stay exactly level and mirrored — the opposite of every other preset.
      */
     @Test
-    fun `presets built from pairs are symmetric about their centre`() {
-        listOf(
-            ScenePresets.PortraitHaunt,
-            ScenePresets.PumpkinPals,
-            ScenePresets.CatInTheBushes,
-            ScenePresets.DemonAwakens,
-            ScenePresets.DollsRoom,
-        ).forEach { preset ->
+    fun `the deliberately graphic presets stay perfectly symmetric`() {
+        listOf(ScenePresets.PumpkinPals, ScenePresets.DollsRoom).forEach { preset ->
             val (left, right) = preset.eyes
             val centre = (left.x + right.x) / 2f
+
             assertTrue(
                 abs((centre - left.x) - (right.x - centre)) < 0.0001f,
                 "${preset.id} is asymmetric",
             )
-            assertEquals(left.y, right.y, "${preset.id} has a pair at different heights")
+            assertEquals(left.y, right.y, "${preset.id} is not level")
             assertEquals(left.sizeFraction, right.sizeFraction, "${preset.id} has mismatched eyes")
+            assertEquals(0f, left.rotationDegrees)
+            assertEquals(0f, right.rotationDegrees)
         }
+    }
+
+    /**
+     * And the ones that are meant to be alive. A pair sitting at identical
+     * heights, identical sizes and zero degrees reads as a logo, so these carry
+     * a deliberate tilt — small enough not to look like a mistake.
+     */
+    @Test
+    fun `the living presets are tilted rather than level`() {
+        listOf(
+            ScenePresets.PortraitHaunt,
+            ScenePresets.CatInTheBushes,
+            ScenePresets.DemonAwakens,
+            ScenePresets.BloodshotVigil,
+            ScenePresets.GhoulsStare,
+        ).forEach { preset ->
+            val (left, right) = preset.eyes
+
+            assertTrue(left.rotationDegrees != 0f, "${preset.id} is dead level")
+            assertTrue(left.y != right.y, "${preset.id} has no head tilt")
+            assertTrue(left.sizeFraction != right.sizeFraction, "${preset.id} has no perspective")
+
+            // Small enough to read as life rather than as a bug.
+            assertTrue(abs(left.rotationDegrees) < 8f, "${preset.id} is tilted $left")
+            assertTrue(abs(left.y - right.y) < 0.03f, "${preset.id} eyes are at different heights")
+            assertTrue(
+                abs(left.sizeFraction - right.sizeFraction) / left.sizeFraction < 0.1f,
+                "${preset.id} eyes are visibly different sizes",
+            )
+        }
+    }
+
+    /** Pure white is the loudest tell that an eye was drawn rather than seen. */
+    @Test
+    fun `no sclera is pure white`() {
+        allEyes().forEach { (preset, eye) ->
+            assertTrue(eye.scleraColor != 0xFFFFFFFF, "${preset.id} has a pure white sclera")
+        }
+    }
+
+    /** Distance takes size, colour and glow together; shrinking alone reads as
+     *  small eyes rather than distant ones. */
+    @Test
+    fun `window watchers recede on every axis at once`() {
+        val pairs = ScenePresets.WindowWatchers.eyes.chunked(2).map { it.first() }
+        val nearest = pairs.maxBy { it.sizeFraction }
+        val farthest = pairs.minBy { it.sizeFraction }
+
+        assertTrue(farthest.sizeFraction < nearest.sizeFraction)
+        assertTrue(farthest.glowFraction < nearest.glowFraction)
+        assertTrue(farthest.irisColor != nearest.irisColor, "the far pair is the same colour")
     }
 
     @Test

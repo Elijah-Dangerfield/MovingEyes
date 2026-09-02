@@ -20,9 +20,11 @@ import movingeyes.libraries.resources.generated.resources.motion_reactivity
 import movingeyes.libraries.resources.generated.resources.motion_restlessness
 import movingeyes.libraries.resources.generated.resources.motion_wander
 import movingeyes.libraries.resources.generated.resources.preset_attic_bats
+import movingeyes.libraries.resources.generated.resources.preset_bloodshot_vigil
 import movingeyes.libraries.resources.generated.resources.preset_cat_in_the_bushes
 import movingeyes.libraries.resources.generated.resources.preset_demon_awakens
 import movingeyes.libraries.resources.generated.resources.preset_dolls_room
+import movingeyes.libraries.resources.generated.resources.preset_ghouls_stare
 import movingeyes.libraries.resources.generated.resources.preset_portrait_haunt
 import movingeyes.libraries.resources.generated.resources.preset_pumpkin_pals
 import movingeyes.libraries.resources.generated.resources.preset_spider_nest
@@ -86,6 +88,8 @@ val ScenePresetId.label: StringResource
         ScenePresetId.DemonAwakens -> Res.string.preset_demon_awakens
         ScenePresetId.WindowWatchers -> Res.string.preset_window_watchers
         ScenePresetId.DollsRoom -> Res.string.preset_dolls_room
+        ScenePresetId.BloodshotVigil -> Res.string.preset_bloodshot_vigil
+        ScenePresetId.GhoulsStare -> Res.string.preset_ghouls_stare
     }
 
 /** Names the control in the "keep it" bar. */
