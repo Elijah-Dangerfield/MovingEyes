@@ -36,10 +36,14 @@ import kotlin.time.TimeSource
  */
 fun Modifier.editorGestures(
     enabled: Boolean,
+    /** Which selection handle a touch landed on, if any. Checked before
+     *  anything else: a corner is a resize, not a move of the eye beneath it. */
+    handleAt: (Offset) -> SelectionHandle?,
     onGestureStart: () -> Unit,
     onTap: (Offset) -> Unit,
     onDoubleTap: (Offset) -> Unit,
     onDrag: (pan: Offset) -> Unit,
+    onHandleDrag: (handle: SelectionHandle, from: Offset, to: Offset) -> Unit,
     onTransform: (zoom: Float, rotation: Float, centroid: Offset) -> Unit,
     onGestureEnd: () -> Unit,
     onUndo: () -> Unit,
@@ -56,9 +60,11 @@ fun Modifier.editorGestures(
     awaitEachGesture {
         val first = awaitFirstDown(requireUnconsumed = false)
 
+        val grabbed = handleAt(first.position)
         var pastSlop = false
         var startedGesture = false
         var maxPointers = 1
+        var handleFrom = first.position
 
         // Movement accumulates across events. Each pointer event carries only
         // the delta since the last one, so comparing a single event against
@@ -105,10 +111,17 @@ fun Modifier.editorGestures(
                     startedGesture = true
                 }
 
-                if (pressed >= 2) {
-                    onTransform(zoom, rotation, event.calculateCentroid(useCurrent = true))
-                } else {
-                    onDrag(if (firstMove) pendingPan else pan)
+                val position = event.changes.first().position
+                when {
+                    grabbed != null -> {
+                        onHandleDrag(grabbed, handleFrom, position)
+                        handleFrom = position
+                    }
+
+                    pressed >= 2 ->
+                        onTransform(zoom, rotation, event.calculateCentroid(useCurrent = true))
+
+                    else -> onDrag(if (firstMove) pendingPan else pan)
                 }
                 event.changes.forEach { if (it.positionChanged()) it.consume() }
             }

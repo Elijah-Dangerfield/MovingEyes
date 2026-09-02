@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import com.dangerfield.movingeyes.libraries.eyes.BehaviorConfig
 import com.dangerfield.movingeyes.libraries.eyes.EyeRuntime
 import com.dangerfield.movingeyes.libraries.eyes.EyeStyle
+import com.dangerfield.movingeyes.libraries.eyes.GazeDirector
 import com.dangerfield.movingeyes.libraries.eyes.Moods
 import kotlin.random.Random
 
@@ -37,8 +38,9 @@ class RenderedEye(
     glowFraction: Float = style.defaultGlow / 100f,
     behavior: BehaviorConfig = Moods.FreeDefault,
     random: Random = Random.Default,
+    gazeDirector: GazeDirector? = null,
 ) {
-    val runtime = EyeRuntime(behavior, random)
+    val runtime = EyeRuntime(behavior, random, gazeDirector)
 
     /**
      * The gradient brushes, built once and reused until something they depend

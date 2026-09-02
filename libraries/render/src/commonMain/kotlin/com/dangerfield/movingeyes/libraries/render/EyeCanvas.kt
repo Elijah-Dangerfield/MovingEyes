@@ -19,6 +19,8 @@ import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
+import com.dangerfield.movingeyes.libraries.eyes.GazeDirector
+import com.dangerfield.movingeyes.libraries.eyes.Moods
 
 /**
  * Every eye in the scene, in one Canvas, driven by one frame clock.
@@ -306,6 +308,12 @@ class EyeSceneState(
     eyes: List<RenderedEye> = emptyList(),
     /** 30fps by default; low-power mode drops this to 20. */
     frameIntervalSeconds: Float = 1f / 30f,
+    /**
+     * Shared so every eye in the scene looks at the same thing. See
+     * [GazeDirector] — a face looks at one thing, and eyes that each wander
+     * separately read as a bag of unrelated eyeballs.
+     */
+    val gaze: GazeDirector = GazeDirector(eyes.firstOrNull()?.runtime?.behavior ?: Moods.FreeDefault),
 ) {
     var eyes: List<RenderedEye> = eyes
     var frameIntervalSeconds: Float = frameIntervalSeconds
@@ -318,12 +326,14 @@ class EyeSceneState(
         private set
 
     fun advance(deltaSeconds: Float) {
+        gaze.advance(deltaSeconds)
         eyes.forEach { it.runtime.advance(deltaSeconds) }
         frameTick += 1
     }
 
-    /** A sound arrived. Every eye reacts, but not identically. */
+    /** A sound arrived. The scene looks toward it and every eye reacts. */
     fun startleAll(direction: Float, intensity: Float = 1f) {
+        gaze.look(direction, intensity)
         eyes.forEach { it.runtime.startle(direction, intensity) }
     }
 }

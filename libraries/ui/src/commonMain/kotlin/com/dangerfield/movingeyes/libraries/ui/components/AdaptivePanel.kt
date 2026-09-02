@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -64,6 +65,9 @@ private val GrabHandleHeight = 4.dp
 /** Which shape the panel took. Callers lay their contents out differently. */
 enum class PanelLayout { Sheet, Rail }
 
+/** How much of the screen the panel covers right now. */
+data class PanelInsets(val bottom: Dp = 0.dp, val end: Dp = 0.dp)
+
 /**
  * The editor's controls, in the shape the device calls for.
  *
@@ -77,16 +81,19 @@ enum class PanelLayout { Sheet, Rail }
  * is legible mid-slide — a half-rendered label sliding past is the cheapest way
  * to make a smooth animation look broken.
  *
- * **The canvas underneath never reflows.** This panel draws over it; it does
- * not resize it. Eyes keep their absolute positions and simply become visible
- * again. If this ever starts changing the canvas's bounds, every alignment the
- * user has done is silently wrong.
+ * The panel reports how much it covers through [onOccupiedChange] so the canvas
+ * can scale itself into what's left. It never changes the canvas's *bounds* —
+ * the scene keeps its normalised coordinates and simply renders smaller, then
+ * animates back to true 1:1 when the panel collapses.
  */
 @Composable
 fun AdaptivePanel(
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    /** How much of the screen the panel currently covers, so the canvas can
+     *  scale itself into what's left rather than hiding behind it. */
+    onOccupiedChange: (PanelInsets) -> Unit = {},
     content: @Composable (PanelLayout) -> Unit,
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
@@ -109,6 +116,18 @@ fun AdaptivePanel(
         // handle is always the thing left on screen whatever the content height.
         var extentPx by remember { mutableIntStateOf(0) }
         val offsetPx = ((extentPx - grabEdgePx).coerceAtLeast(0) * travel).roundToInt()
+
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        val visiblePx = (extentPx - offsetPx).coerceAtLeast(0)
+        val visible = with(density) { visiblePx.toDp() }
+        LaunchedEffect(visible, layout) {
+            onOccupiedChange(
+                when (layout) {
+                    PanelLayout.Sheet -> PanelInsets(bottom = visible)
+                    PanelLayout.Rail -> PanelInsets(end = visible)
+                },
+            )
+        }
 
         Panel(
             layout = layout,

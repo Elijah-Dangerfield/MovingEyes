@@ -3,6 +3,7 @@
 package com.dangerfield.movingeyes.features.editor.impl
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -48,6 +49,7 @@ import com.dangerfield.movingeyes.features.paywall.PaywallTrigger
 import com.dangerfield.movingeyes.features.settings.SettingsRoute
 import com.dangerfield.movingeyes.libraries.billing.DemoControl
 import com.dangerfield.movingeyes.libraries.eyes.Mood
+import com.dangerfield.movingeyes.libraries.eyes.GazeDirector
 import com.dangerfield.movingeyes.libraries.eyes.Moods
 import com.dangerfield.movingeyes.libraries.eyes.isStrobing
 import com.dangerfield.movingeyes.libraries.navigation.Router
@@ -61,6 +63,7 @@ import com.dangerfield.movingeyes.libraries.scene.Scene
 import com.dangerfield.movingeyes.libraries.scene.ScenePreset
 import com.dangerfield.movingeyes.libraries.scene.ScenePresets
 import com.dangerfield.movingeyes.libraries.ui.components.AdaptivePanel
+import com.dangerfield.movingeyes.libraries.ui.components.PanelInsets
 import com.dangerfield.movingeyes.libraries.ui.components.ReadoutPill
 import com.dangerfield.movingeyes.libraries.ui.components.SegmentedControl
 import com.dangerfield.movingeyes.libraries.ui.components.ToastAction
@@ -140,15 +143,22 @@ fun EditorScreen(
         val displayHeightPx = with(density) { maxHeight.toPx() }
         val snapThresholdPx = with(density) { Motion.Snap.ThresholdDp.toPx() }
         val minimumTouchPx = with(density) { Target.Minimum.toPx() }
+        val handleTouchPx = minimumTouchPx / 2f
+        val rotateGapPx = with(density) { RotateHandleGap.toPx() }
 
         // Keyed on the *display* size, not the scene size: a canvas turn
         // changes the scene's dimensions, and re-keying on those would discard
         // everything unsaved each time someone tried a mounting orientation.
         val openScene = state.openScene
+        // One director for the scene, so every eye looks at the same thing.
+        val gaze = remember(openScene) {
+            GazeDirector((openScene ?: blankScene()).eyes.firstOrNull()?.behavior() ?: Moods.FreeDefault)
+        }
         val editor = remember(openScene, displayWidthPx, displayHeightPx) {
             val scene = openScene ?: blankScene()
             EditorState(
-                eyes = scene.toRenderedEyes(displayWidthPx, displayHeightPx),
+                gaze = gaze,
+                eyes = scene.toRenderedEyes(displayWidthPx, displayHeightPx, gaze),
                 moods = scene.eyes.map { it.mood },
                 canvas = CanvasSettings(
                     rotation = scene.canvasRotation,
@@ -159,7 +169,7 @@ fun EditorScreen(
                 ),
             )
         }
-        val sceneState = remember(editor) { EyeSceneState(eyes = editor.eyes) }
+        val sceneState = remember(editor) { EyeSceneState(eyes = editor.eyes, gaze = gaze) }
 
         // A quarter turn swaps what "across" and "down" mean, so gestures,
         // snapping and the readout all work in these rather than the display's
@@ -176,6 +186,7 @@ fun EditorScreen(
         var panelExpanded by remember { mutableStateOf(true) }
         var tab by remember { mutableStateOf(PanelTab.Place) }
         var drawerOpen by remember { mutableStateOf(false) }
+        var panelInsets by remember { mutableStateOf(PanelInsets()) }
 
         val display = remember(editor) {
             DisplayModeState(sleepTimer = editor.canvas.sleepTimer)
@@ -191,6 +202,28 @@ fun EditorScreen(
         )
 
         BackHandler(enabled = display.isActive) { display.exit() }
+
+        // The scene shrinks into whatever the panel leaves, rather than hiding
+        // behind it. Normalised coordinates are untouched, so this is a preview
+        // scale and not a change to the composition; collapsing the panel
+        // animates back to true 1:1, which is what the mm readout describes.
+        val freeWidth = maxWidth - panelInsets.end - CanvasInset * 2
+        val freeHeight = maxHeight - panelInsets.bottom - CanvasInset * 2
+        // Against the display's own dimensions: a turned layer is laid out
+        // swapped but occupies the screen's shape once rotated.
+        val targetScale = minOf(
+            1f,
+            freeWidth / maxWidth,
+            freeHeight / maxHeight,
+        ).coerceAtLeast(MinCanvasScale)
+        val canvasScale by animateFloatAsState(
+            targetValue = if (display.isActive) 1f else targetScale,
+            animationSpec = Motion.Panel.slide(),
+            label = "canvasScale",
+        )
+        val isScaled = canvasScale < 0.999f
+        val shiftX = with(density) { (-panelInsets.end / 2).toPx() }
+        val shiftY = with(density) { (-panelInsets.bottom / 2).toPx() }
 
         // Read here rather than in the save handler: a string resource can only
         // be read from a composable, and the handler isn't one.
@@ -229,9 +262,11 @@ fun EditorScreen(
         LaunchedEffect(reactivityWanted) {
             if (!reactivityWanted) return@LaunchedEffect
             viewModel.reactivity.events.collect { event ->
-                editor.startle(event.direction, event.intensity)
+                sceneState.startleAll(event.direction, event.intensity)
             }
         }
+
+        var lockedItem by remember { mutableStateOf<LockedItem?>(null) }
 
         fun enableReactivity(enabled: Boolean) {
             if (!enabled) {
@@ -259,11 +294,7 @@ fun EditorScreen(
             if (isUnlocked || mood in Moods.Free) {
                 editor.setMood(mood)
             } else {
-                gate(viewModel, router, DemoControl.Mood) {
-                    val before = editor.snapshot()
-                    editor.setMood(mood)
-                    return@gate { editor.restore(before) }
-                }
+                lockedItem = LockedItem.Mood(mood)
             }
         }
 
@@ -300,7 +331,13 @@ fun EditorScreen(
                     width = if (turned) maxHeight else maxWidth,
                     height = if (turned) maxWidth else maxHeight,
                 )
-                .graphicsLayer { rotationZ = editor.canvas.rotation.degrees.toFloat() },
+                .graphicsLayer {
+                    rotationZ = editor.canvas.rotation.degrees.toFloat()
+                    scaleX = canvasScale
+                    scaleY = canvasScale
+                    translationX = shiftX
+                    translationY = shiftY
+                },
         ) {
             EyeCanvas(
                 state = sceneState,
@@ -308,6 +345,16 @@ fun EditorScreen(
                     .fillMaxSize()
                     .editorGestures(
                         enabled = !editor.isLocked,
+                        handleAt = { position ->
+                            selectionBounds(
+                                eyes = editor.eyes,
+                                selection = editor.selection,
+                                canvasWidth = canvasWidthPx,
+                                canvasHeight = canvasHeightPx,
+                            )?.let { bounds ->
+                                handleAt(position, bounds, handleTouchPx, rotateGapPx)
+                            }
+                        },
                         onGestureStart = { dragSession = editor.beginGesture() },
                         onTap = { position ->
                             val hit = editor.eyes.hitTest(
@@ -337,6 +384,24 @@ fun EditorScreen(
                             }
                             wasSnapped = snappedNow
                         },
+                        onHandleDrag = { handle, from, to ->
+                            when (handle) {
+                                is SelectionHandle.Corner -> editor.scaleAbout(
+                                    factor = cornerScale(handle.anchor, from, to),
+                                    anchor = CanvasPoint(handle.anchor.x, handle.anchor.y),
+                                    canvasWidthPx = canvasWidthPx,
+                                    canvasHeightPx = canvasHeightPx,
+                                )
+
+                                is SelectionHandle.Rotate -> editor.rotateSelection(
+                                    degrees = rotationBetween(handle.pivot, from, to),
+                                    mode = RotationMode.Group,
+                                    canvasWidthPx = canvasWidthPx,
+                                    canvasHeightPx = canvasHeightPx,
+                                    recordUndo = false,
+                                )
+                            }
+                        },
                         onTransform = { zoom, rotation, _ ->
                             transformSelection(editor, zoom, rotation)
                         },
@@ -352,6 +417,7 @@ fun EditorScreen(
             )
 
             SelectionOverlay(
+                showCanvasEdge = isScaled,
                 eyes = editor.eyes,
                 selection = editor.selection,
                 guides = guides,
@@ -403,6 +469,7 @@ fun EditorScreen(
         AdaptivePanel(
             expanded = panelExpanded,
             onExpandedChange = { panelExpanded = it },
+            onOccupiedChange = { panelInsets = it },
         ) {
             Column(
                 modifier = Modifier
@@ -431,13 +498,7 @@ fun EditorScreen(
                     PanelTab.Look -> LookPanel(
                         editor = editor,
                         isUnlocked = isUnlocked,
-                        onLockedStyleTapped = { style ->
-                            gate(viewModel, router, DemoControl.EyeStyle) {
-                                val before = editor.snapshot()
-                                editor.setStyle(style)
-                                return@gate { editor.restore(before) }
-                            }
-                        },
+                        onLockedStyleTapped = { style -> lockedItem = LockedItem.Style(style) },
                         shortEdgePx = shortEdgePx,
                     )
 
@@ -524,6 +585,27 @@ fun EditorScreen(
 
         // Last, so it covers the overlay too.
         SleepFade(display.sleepFade)
+
+        lockedItem?.let { item ->
+            LockedPreviewSheet(
+                title = stringResource(item.label),
+                canDemo = viewModel.featureTrial.isAvailable(item.control),
+                onDemo = {
+                    lockedItem = null
+                    gate(viewModel, router, item.control) {
+                        val before = editor.snapshot()
+                        item.apply(editor)
+                        return@gate { editor.restore(before) }
+                    }
+                },
+                onUnlock = {
+                    lockedItem = null
+                    router.navigate(PaywallRoute(item.control.paywallTrigger))
+                },
+                onDismiss = { lockedItem = null },
+                preview = { item.Preview() },
+            )
+        }
 
         if (showMicExplanation) {
             MicrophoneExplanationDialog(
@@ -874,6 +956,13 @@ private fun readoutText(
 }
 
 private val ToolbarClearance = 88.dp
+
+/** Breathing room around the scaled canvas, so its edge reads as an edge. */
+private val CanvasInset = 12.dp
+
+/** Below this the scene is too small to work with; better to let the panel
+ *  cover a little than to shrink to a postage stamp. */
+private const val MinCanvasScale = 0.35f
 
 /** Long enough that a slider drag writes once, short enough that a kill a
  *  second later still keeps the edit. */

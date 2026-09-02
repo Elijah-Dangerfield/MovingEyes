@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import com.dangerfield.movingeyes.libraries.eyes.BehaviorConfig
 import com.dangerfield.movingeyes.libraries.eyes.EyeStyle
+import com.dangerfield.movingeyes.libraries.eyes.GazeDirector
 import com.dangerfield.movingeyes.libraries.eyes.Mood
 import com.dangerfield.movingeyes.libraries.eyes.Moods
 import com.dangerfield.movingeyes.libraries.eyes.reducedFlashing
@@ -70,6 +71,7 @@ class EditorState(
     eyes: List<RenderedEye>,
     moods: List<Mood>,
     canvas: CanvasSettings = CanvasSettings(),
+    private val gaze: GazeDirector? = null,
 ) {
 
     private val _eyes = mutableStateListOf<RenderedEye>().apply { addAll(eyes) }
@@ -97,11 +99,18 @@ class EditorState(
             _eyes.forEachIndexed { index, eye ->
                 eye.runtime.behavior = behaviorFor(_moods.getOrElse(index) { Mood.IdleScan })
             }
+            syncGaze()
             transformChanged()
         }
 
     private fun behaviorFor(mood: Mood): BehaviorConfig =
         Moods.forMood(mood).let { if (reduceFlashing) it.reducedFlashing() else it }
+
+    /** The scene looks with whatever the first eye is doing; a mood applied to
+     *  a subset shouldn't leave the gaze on the old one. */
+    private fun syncGaze() {
+        gaze?.behavior = _eyes.firstOrNull()?.runtime?.behavior ?: return
+    }
 
     private val _selection = mutableStateListOf<Int>()
 
@@ -316,6 +325,7 @@ class EditorState(
             _moods[index] = mood
             _eyes[index].runtime.behavior = behaviorFor(mood)
         }
+        syncGaze()
         transformChanged()
     }
 
@@ -328,6 +338,7 @@ class EditorState(
             _eyes[index].runtime.behavior =
                 if (reduceFlashing) behavior.reducedFlashing() else behavior
         }
+        syncGaze()
         transformChanged()
     }
 
@@ -375,9 +386,13 @@ class EditorState(
         mode: RotationMode,
         canvasWidthPx: Float,
         canvasHeightPx: Float,
+        /** False during a drag, which already opened one undo step of its own. */
+        recordUndo: Boolean = true,
     ) {
         val active = activeIndices()
-        if (active.isEmpty() || !beginEdit()) return
+        if (active.isEmpty()) return
+        if (recordUndo && !beginEdit()) return
+        if (!recordUndo && isLocked) return
 
         if (mode == RotationMode.Group && active.size > 1) {
             val points = active.map { pixelPointOf(it, canvasWidthPx, canvasHeightPx) }
@@ -389,6 +404,25 @@ class EditorState(
         }
 
         active.forEach { _eyes[it].rotationDegrees += degrees }
+        transformChanged()
+    }
+
+    /** Scale the active eyes about [anchor], the corner opposite the one held. */
+    fun scaleAbout(factor: Float, anchor: CanvasPoint, canvasWidthPx: Float, canvasHeightPx: Float) {
+        val active = activeIndices()
+        if (active.isEmpty()) return
+
+        active.forEach { index ->
+            _eyes[index].apply {
+                sizePx = (sizePx * factor).coerceIn(MinEyeSizePx, MaxEyeSizePx)
+                // Positions scale about the anchor too, so a group keeps its
+                // spacing rather than every eye growing in place.
+                val x = centerX * canvasWidthPx
+                val y = centerY * canvasHeightPx
+                centerX = ((anchor.x + (x - anchor.x) * factor) / canvasWidthPx).coerceIn(0f, 1f)
+                centerY = ((anchor.y + (y - anchor.y) * factor) / canvasHeightPx).coerceIn(0f, 1f)
+            }
+        }
         transformChanged()
     }
 
@@ -479,11 +513,6 @@ class EditorState(
     fun setReactivityEnabled(enabled: Boolean) {
         if (!beginEdit()) return
         canvas = canvas.copy(reactivityEnabled = enabled)
-    }
-
-    /** A sound in the room. Every eye reacts, but not identically. */
-    fun startle(direction: Float, intensity: Float) {
-        _eyes.forEach { it.runtime.startle(direction, intensity) }
     }
 
     /** Not undoable: brightness is a live comfort control, not an edit. */

@@ -15,6 +15,9 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.dangerfield.movingeyes.libraries.render.RenderedEye
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 
 /**
  * The selection box and snap guides, drawn in their own Canvas **above** the
@@ -36,12 +39,22 @@ fun SelectionOverlay(
     accent: Color,
     modifier: Modifier = Modifier,
     revision: Int = 0,
+    /** Draws the device edge while the canvas is scaled down, so the scene has
+     *  a boundary to read against instead of floating in black. */
+    showCanvasEdge: Boolean = false,
 ) {
     Canvas(modifier = modifier) {
         // Read so the overlay redraws while a drag is moving eyes that aren't
         // Compose state.
         @Suppress("UNUSED_EXPRESSION")
         revision
+
+        if (showCanvasEdge) {
+            drawRect(
+                color = accent.copy(alpha = 0.25f),
+                style = Stroke(width = 1.dp.toPx()),
+            )
+        }
 
         guides.forEach { drawGuide(it, accent) }
 
@@ -83,7 +96,7 @@ private fun DrawScope.drawSelectionBox(bounds: Rect, accent: Color) {
     }
 
     // The rotate handle, on a stalk above the box.
-    val stalkTop = Offset(bounds.center.x, bounds.top - RotateHandleGap.toPx())
+    val stalkTop = rotateHandleCenter(bounds, RotateHandleGap.toPx())
     drawLine(
         color = accent.copy(alpha = 0.7f),
         start = Offset(bounds.center.x, bounds.top),
@@ -173,10 +186,25 @@ fun selectionBounds(
         val cy = eye.centerY * canvasHeight
         val halfWidth = eye.sizePx / 2f
         val halfHeight = eye.sizePx * eye.style.aspectRatio / 2f
-        left = minOf(left, cx - halfWidth)
-        top = minOf(top, cy - halfHeight)
-        right = maxOf(right, cx + halfWidth)
-        bottom = maxOf(bottom, cy + halfHeight)
+
+        // The rotated extent, not the upright one: a turned eye whose box still
+        // hugged its unrotated shape would sit visibly off it.
+        val radians = eye.rotationDegrees * PI.toFloat() / 180f
+        val cosine = cos(radians)
+        val sine = sin(radians)
+        listOf(
+            -halfWidth to -halfHeight,
+            halfWidth to -halfHeight,
+            -halfWidth to halfHeight,
+            halfWidth to halfHeight,
+        ).forEach { (dx, dy) ->
+            val x = cx + dx * cosine - dy * sine
+            val y = cy + dx * sine + dy * cosine
+            left = minOf(left, x)
+            top = minOf(top, y)
+            right = maxOf(right, x)
+            bottom = maxOf(bottom, y)
+        }
     }
 
     return Rect(
@@ -188,6 +216,5 @@ fun selectionBounds(
 }
 
 private val HandleSize: Dp = 14.dp
-private val RotateHandleGap: Dp = 40.dp
 private val RotateHandleRadius: Dp = 13.dp
 private val MeasureCapLength: Dp = 14.dp

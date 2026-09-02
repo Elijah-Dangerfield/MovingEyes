@@ -50,6 +50,11 @@ class EyeRuntime(
     behavior: BehaviorConfig,
     private val random: Random = Random.Default,
     /**
+     * Where the whole scene is looking. Null leaves the eye to wander on its
+     * own, which is only right for a lone preview.
+     */
+    private val gazeDirector: GazeDirector? = null,
+    /**
      * Seconds of head start. Randomised per eye so nothing syncs by accident,
      * across eyes or across devices.
      */
@@ -138,6 +143,7 @@ class EyeRuntime(
     }
 
     private fun advanceGaze(delta: Float) {
+        if (gazeDirector != null) return
         if (saccadeElapsed < saccadeDuration) {
             saccadeElapsed += delta
             return
@@ -197,16 +203,18 @@ class EyeRuntime(
     }
 
     private fun currentGaze(startle: Float): EyeVector {
-        val progress = if (saccadeDuration <= 0f) {
-            1f
-        } else {
-            (saccadeElapsed / saccadeDuration).coerceIn(0f, 1f)
+        val wandered = gazeDirector?.gaze ?: run {
+            val progress = if (saccadeDuration <= 0f) {
+                1f
+            } else {
+                (saccadeElapsed / saccadeDuration).coerceIn(0f, 1f)
+            }
+            val eased = overshoot(progress)
+            EyeVector(
+                x = gazeFrom.x + (gazeTo.x - gazeFrom.x) * eased,
+                y = gazeFrom.y + (gazeTo.y - gazeFrom.y) * eased,
+            )
         }
-        val eased = overshoot(progress)
-        val wandered = EyeVector(
-            x = gazeFrom.x + (gazeTo.x - gazeFrom.x) * eased,
-            y = gazeFrom.y + (gazeTo.y - gazeFrom.y) * eased,
-        )
 
         // A startle drags the gaze toward the sound and releases it as it decays.
         return EyeVector(
@@ -249,11 +257,11 @@ class EyeRuntime(
     }
 
     private fun scheduleNextSaccade() {
-        nextSaccadeAt = elapsed + behavior.saccadeIntervalSeconds.sample(random)
+        nextSaccadeAt = elapsed + behavior.saccadeIntervalSeconds.sampleIn(random)
     }
 
     private fun scheduleNextBlink() {
-        nextBlinkAt = elapsed + behavior.blinkIntervalSeconds.sample(random)
+        nextBlinkAt = elapsed + behavior.blinkIntervalSeconds.sampleIn(random)
     }
 
     /**
@@ -300,5 +308,4 @@ class EyeRuntime(
     }
 }
 
-private fun ClosedFloatingPointRange<Float>.sample(random: Random): Float =
-    if (endInclusive <= start) start else random.nextFloat() * (endInclusive - start) + start
+

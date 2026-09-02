@@ -218,6 +218,15 @@
     <string name="reactivity_denied">Microphone access is off. Everything else still works.</string>
     <string name="reactivity_denied_settings">Open settings</string>
 
+    <!--
+      The sheet a locked control opens: a live preview of the thing you just
+      tapped, then the choice. Better than a full-screen paywall, which
+      throws away the context of what you were reaching for.
+    -->
+    <string name="locked_try">Try it for 30 seconds</string>
+    <string name="locked_unlock">Unlock everything</string>
+    <string name="locked_spent">You have already tried this one.</string>
+
     <!-- Errors -->
     <string name="error_generic_title">Something went wrong</string>
     <string name="error_generic_body">Please try again.</string>
