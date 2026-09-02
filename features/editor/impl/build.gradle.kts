@@ -22,6 +22,7 @@ kotlin {
             implementation(projects.libraries.scene)
             implementation(projects.libraries.billing)
             implementation(projects.libraries.review)
+            implementation(projects.libraries.reactivity)
             implementation(projects.features.paywall)
             implementation(projects.features.settings)
             implementation(projects.libraries.movingeyes)

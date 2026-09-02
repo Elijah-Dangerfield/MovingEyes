@@ -205,6 +205,19 @@
     <string name="flashing_continue">Continue</string>
     <string name="flashing_reduce">Reduce flashing</string>
 
+    <!--
+      Sound reactivity. The explanation is shown BEFORE the OS dialog, because
+      the system prompt gives one line and no way back — someone who taps Deny
+      there has to go to Settings to change their mind.
+    -->
+    <string name="reactivity_title">Eyes that react to sound</string>
+    <string name="reactivity_body">The eyes will look toward doors, voices and footsteps.</string>
+    <string name="reactivity_privacy">Audio is analysed on this device and never recorded, saved, or sent anywhere.</string>
+    <string name="reactivity_allow">Use the microphone</string>
+    <string name="reactivity_not_now">Not now</string>
+    <string name="reactivity_denied">Microphone access is off. Everything else still works.</string>
+    <string name="reactivity_denied_settings">Open settings</string>
+
     <!-- Errors -->
     <string name="error_generic_title">Something went wrong</string>
     <string name="error_generic_body">Please try again.</string>

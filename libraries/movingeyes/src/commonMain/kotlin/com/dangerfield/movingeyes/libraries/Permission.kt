@@ -9,6 +9,9 @@ import kotlin.native.ObjCName
 sealed class Permission {
     @ObjCName("PermissionNotifications", exact = true)
     data object Notifications : Permission()
+
+    @ObjCName("PermissionMicrophone", exact = true)
+    data object Microphone : Permission()
 }
 
 @ObjCName("PermissionStatus", exact = true)

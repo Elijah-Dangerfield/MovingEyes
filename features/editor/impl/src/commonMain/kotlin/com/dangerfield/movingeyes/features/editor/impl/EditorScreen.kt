@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -97,7 +99,11 @@ import movingeyes.libraries.resources.generated.resources.scenes_open
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.min
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.drop
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import kotlin.math.roundToInt
 
 /**
@@ -110,7 +116,7 @@ import kotlin.math.roundToInt
  */
 // BackHandler is the only supported way to intercept the system back gesture,
 // which is the sole exit from display mode.
-@OptIn(ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalComposeUiApi::class, FlowPreview::class)
 @Composable
 fun EditorScreen(
     viewModel: EditorViewModel,
@@ -149,6 +155,7 @@ fun EditorScreen(
                     color = scene.canvasColor,
                     brightness = scene.brightness,
                     sleepTimer = scene.sleepTimerMinutes?.minutes,
+                    reactivityEnabled = scene.reactivityEnabled,
                 ),
             )
         }
@@ -193,6 +200,50 @@ fun EditorScreen(
 
         // A strobing mood waits behind its warning until the user has chosen.
         var pendingStrobingMood by remember { mutableStateOf<Mood?>(null) }
+        var showMicExplanation by remember { mutableStateOf(false) }
+        var showMicDenied by remember { mutableStateOf(false) }
+
+        LaunchedEffect(viewModel) {
+            viewModel.eventFlow.collect { event ->
+                when (event) {
+                    EditorEvent.MicrophoneGranted -> editor.setReactivityEnabled(true)
+                    EditorEvent.MicrophoneUnavailable -> {
+                        editor.setReactivityEnabled(false)
+                        showMicDenied = true
+                    }
+                    else -> Unit
+                }
+            }
+        }
+
+        // Reactivity follows the scene's own setting and only runs while
+        // display mode does — a microphone open on the editor screen would be
+        // both pointless and alarming.
+        val reactivityWanted = editor.canvas.reactivityEnabled && display.isActive
+        LaunchedEffect(reactivityWanted) {
+            viewModel.takeAction(
+                if (reactivityWanted) EditorAction.StartReactivity else EditorAction.StopReactivity,
+            )
+        }
+
+        LaunchedEffect(reactivityWanted) {
+            if (!reactivityWanted) return@LaunchedEffect
+            viewModel.reactivity.events.collect { event ->
+                editor.startle(event.direction, event.intensity)
+            }
+        }
+
+        fun enableReactivity(enabled: Boolean) {
+            if (!enabled) {
+                editor.setReactivityEnabled(false)
+                return
+            }
+            if (viewModel.needsMicrophoneExplanation()) {
+                showMicExplanation = true
+            } else {
+                editor.setReactivityEnabled(true)
+            }
+        }
 
         // Every route to a mood ends here, so neither the paywall gate nor the
         // photosensitivity warning can be stepped around.
@@ -216,17 +267,25 @@ fun EditorScreen(
             }
         }
 
-        fun autosave() {
-            viewModel.takeAction(
-                EditorAction.Autosave(
-                    editor.toScene(
-                        id = "autosave",
-                        name = openScene?.name.orEmpty(),
-                        canvasWidthPx = canvasWidthPx,
-                        canvasHeightPx = canvasHeightPx,
-                    ),
-                ),
-            )
+        // Watches every edit rather than only gesture ends, so panel changes —
+        // a colour, a mood, the sleep timer — survive a kill too. Debounced, so
+        // a slider drag writes once when it stops rather than per frame.
+        LaunchedEffect(editor, openScene) {
+            snapshotFlow { editor.transformRevision to editor.canvas }
+                .drop(1)
+                .debounce(AutosaveDebounce)
+                .collect {
+                    viewModel.takeAction(
+                        EditorAction.Autosave(
+                            editor.toScene(
+                                id = "autosave",
+                                name = openScene?.name.orEmpty(),
+                                canvasWidthPx = canvasWidthPx,
+                                canvasHeightPx = canvasHeightPx,
+                            ),
+                        ),
+                    )
+                }
         }
 
         // Rotates eyes and overlay together rather than baking degrees into
@@ -285,7 +344,6 @@ fun EditorScreen(
                             guides = emptyList()
                             wasSnapped = false
                             dragSession = null
-                            autosave()
                         },
                         onUndo = { editor.undo() },
                         onRedo = { editor.redo() },
@@ -387,6 +445,16 @@ fun EditorScreen(
                         editor = editor,
                         isUnlocked = isUnlocked,
                         onMoodPicked = { applyMood(it) },
+                        onReactivityChange = { enabled ->
+                            if (isUnlocked) {
+                                enableReactivity(enabled)
+                            } else {
+                                gate(viewModel, router, DemoControl.Reactivity) {
+                                    enableReactivity(enabled)
+                                    return@gate { editor.setReactivityEnabled(false) }
+                                }
+                            }
+                        },
                         onLockedControl = { control, apply ->
                             gate(viewModel, router, control) {
                                 val before = editor.snapshot()
@@ -456,6 +524,28 @@ fun EditorScreen(
 
         // Last, so it covers the overlay too.
         SleepFade(display.sleepFade)
+
+        if (showMicExplanation) {
+            MicrophoneExplanationDialog(
+                onAllow = {
+                    showMicExplanation = false
+                    // Straight to the OS prompt, so the explanation the user
+                    // just read is what the system dialog is answering.
+                    viewModel.takeAction(EditorAction.RequestMicrophone)
+                },
+                onDismiss = { showMicExplanation = false },
+            )
+        }
+
+        if (showMicDenied) {
+            MicrophoneDeniedDialog(
+                onOpenSettings = {
+                    showMicDenied = false
+                    viewModel.takeAction(EditorAction.OpenAppSettings)
+                },
+                onDismiss = { showMicDenied = false },
+            )
+        }
 
         pendingStrobingMood?.let { mood ->
             FlashingWarningDialog(
@@ -784,6 +874,10 @@ private fun readoutText(
 }
 
 private val ToolbarClearance = 88.dp
+
+/** Long enough that a slider drag writes once, short enough that a kill a
+ *  second later still keeps the edit. */
+private val AutosaveDebounce = 1.seconds
 
 private const val MinEyeSizePx = 24f
 private const val MaxEyeSizePx = 2000f

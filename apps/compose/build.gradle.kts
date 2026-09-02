@@ -36,6 +36,8 @@ kotlin {
             implementation(projects.libraries.scene.storage)
             implementation(projects.libraries.device)
             implementation(projects.libraries.device.impl)
+            implementation(projects.libraries.reactivity)
+            implementation(projects.libraries.reactivity.impl)
             implementation(projects.libraries.eyes)
             implementation(projects.libraries.render)
             implementation(projects.libraries.billing)

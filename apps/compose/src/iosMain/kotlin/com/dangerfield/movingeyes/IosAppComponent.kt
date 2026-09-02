@@ -2,6 +2,7 @@ package com.dangerfield.movingeyes
 
 import com.dangerfield.movingeyes.libraries.billing.StoreKitCoordinator
 import com.dangerfield.movingeyes.libraries.device.DisplayHost
+import com.dangerfield.movingeyes.libraries.reactivity.AudioCaptureHost
 import com.dangerfield.movingeyes.libraries.movingeyes.PermissionManager
 import com.dangerfield.movingeyes.libraries.review.ReviewLauncher
 import me.tatarka.inject.annotations.Provides
@@ -23,6 +24,8 @@ abstract class IosAppComponent(
     // imperative UIKit equivalent, so they can't be reached from Kotlin/Native.
     // Android binds a no-op via anvil. See `DisplayHost`.
     private val displayHost: DisplayHost,
+    // The Swift `IOSAudioCapture`. See `AudioCaptureHost`.
+    private val audioCaptureHost: AudioCaptureHost,
 ) : AppComponent {
 
     @Provides
@@ -36,6 +39,9 @@ abstract class IosAppComponent(
 
     @Provides
     fun provideDisplayHost(): DisplayHost = displayHost
+
+    @Provides
+    fun provideAudioCaptureHost(): AudioCaptureHost = audioCaptureHost
 }
 
 
@@ -45,4 +51,5 @@ expect fun create(
     reviewLauncher: ReviewLauncher,
     storeKitCoordinator: StoreKitCoordinator,
     displayHost: DisplayHost,
+    audioCaptureHost: AudioCaptureHost,
 ): IosAppComponent

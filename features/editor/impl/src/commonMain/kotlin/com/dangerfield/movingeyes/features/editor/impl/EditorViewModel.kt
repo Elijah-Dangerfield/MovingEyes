@@ -5,9 +5,15 @@ import com.dangerfield.movingeyes.libraries.billing.FeatureTrial
 import com.dangerfield.movingeyes.libraries.core.logging.KLog
 import com.dangerfield.movingeyes.libraries.device.BatteryStatus
 import com.dangerfield.movingeyes.libraries.device.DisplayController
+import com.dangerfield.movingeyes.libraries.device.SystemAccessibility
 import com.dangerfield.movingeyes.libraries.eyes.Mood
 import com.dangerfield.movingeyes.libraries.core.logging.logEvent
 import com.dangerfield.movingeyes.libraries.movingeyes.AppCache
+import com.dangerfield.movingeyes.libraries.movingeyes.Permission
+import com.dangerfield.movingeyes.libraries.movingeyes.PermissionManager
+import com.dangerfield.movingeyes.libraries.movingeyes.PermissionResult
+import com.dangerfield.movingeyes.libraries.movingeyes.PermissionStatus
+import com.dangerfield.movingeyes.libraries.reactivity.ReactivitySource
 import com.dangerfield.movingeyes.libraries.review.ReviewPromptCoordinator
 import com.dangerfield.movingeyes.libraries.review.ReviewTrigger
 import kotlin.time.Duration
@@ -38,6 +44,9 @@ class EditorViewModel(
     val entitlements: Entitlements,
     val featureTrial: FeatureTrial,
     private val reviewPrompts: ReviewPromptCoordinator,
+    private val permissions: PermissionManager,
+    private val accessibility: SystemAccessibility,
+    val reactivity: ReactivitySource,
     val displayController: DisplayController,
     val batteryStatus: BatteryStatus,
 ) : SEAViewModel<EditorViewState, EditorEvent, EditorAction>(
@@ -45,6 +54,10 @@ class EditorViewModel(
 ) {
 
     private val logger = KLog.withTag("Editor")
+
+    /** True when the OS will show its own prompt, so our explanation goes first. */
+    fun needsMicrophoneExplanation(): Boolean =
+        permissions.checkPermissionStatus(Permission.Microphone) != PermissionStatus.GRANTED
 
     init {
         // Routed through an action rather than updated directly: state on a
@@ -59,7 +72,10 @@ class EditorViewModel(
                 takeAction(
                     EditorAction.SettingsChanged(
                         seenHint = data.hasSeenDisplayModeHint,
-                        reduceFlashing = data.reduceFlashing,
+                        // The OS preference counts as the setting being on:
+                        // someone who set it system-wide should not have to
+                        // find it again in here.
+                        reduceFlashing = data.reduceFlashing || accessibility.isReduceMotionEnabled,
                         moodsWarnedAbout = data.flashingWarningsSeen,
                     ),
                 )
@@ -129,6 +145,25 @@ class EditorViewModel(
                 }
             }
 
+            EditorAction.RequestMicrophone -> {
+                val granted = permissions.ensurePermission(Permission.Microphone)
+                sendEvent(
+                    if (granted is PermissionResult.Granted) {
+                        EditorEvent.MicrophoneGranted
+                    } else {
+                        EditorEvent.MicrophoneUnavailable
+                    },
+                )
+            }
+
+            EditorAction.StartReactivity -> {
+                if (!reactivity.start()) sendEvent(EditorEvent.MicrophoneUnavailable)
+            }
+
+            EditorAction.StopReactivity -> reactivity.stop()
+
+            EditorAction.OpenAppSettings -> permissions.openAppSettings()
+
             EditorAction.ReduceFlashing -> {
                 appCache.update { it.copy(reduceFlashing = true) }
             }
@@ -175,6 +210,8 @@ private val ReviewWorthySession = 10.minutes
 sealed interface EditorEvent {
     data class SceneOpened(val scene: Scene) : EditorEvent
     data object SceneSaved : EditorEvent
+    data object MicrophoneGranted : EditorEvent
+    data object MicrophoneUnavailable : EditorEvent
 }
 
 sealed interface EditorAction {
@@ -193,5 +230,9 @@ sealed interface EditorAction {
     data class FlashingWarningSeen(val mood: Mood) : EditorAction
     data object ReduceFlashing : EditorAction
     data class DisplaySessionEnded(val duration: Duration) : EditorAction
+    data object RequestMicrophone : EditorAction
+    data object StartReactivity : EditorAction
+    data object StopReactivity : EditorAction
+    data object OpenAppSettings : EditorAction
     data object DisplayHintSeen : EditorAction
 }

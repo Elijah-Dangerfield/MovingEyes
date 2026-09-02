@@ -13,6 +13,7 @@ import com.dangerfield.movingeyes.features.editor.impl.label
 import com.dangerfield.movingeyes.libraries.billing.DemoControl
 import com.dangerfield.movingeyes.libraries.eyes.BehaviorConfig
 import com.dangerfield.movingeyes.libraries.eyes.Mood
+import com.dangerfield.movingeyes.libraries.ui.components.Switch
 import com.dangerfield.movingeyes.libraries.ui.components.chip.SelectChip
 import com.dangerfield.movingeyes.libraries.ui.components.text.Text
 import com.dangerfield.movingeyes.system.AppTheme
@@ -21,6 +22,7 @@ import movingeyes.libraries.resources.generated.resources.Res
 import movingeyes.libraries.resources.generated.resources.motion_blink_rate
 import movingeyes.libraries.resources.generated.resources.motion_free_caption
 import movingeyes.libraries.resources.generated.resources.motion_mood
+import movingeyes.libraries.resources.generated.resources.motion_reactivity
 import movingeyes.libraries.resources.generated.resources.motion_restlessness
 import movingeyes.libraries.resources.generated.resources.motion_wander
 import org.jetbrains.compose.resources.stringResource
@@ -36,6 +38,7 @@ fun MotionPanel(
     editor: EditorState,
     isUnlocked: Boolean,
     onMoodPicked: (Mood) -> Unit,
+    onReactivityChange: (Boolean) -> Unit,
     onLockedControl: (DemoControl, apply: () -> Unit) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -102,6 +105,17 @@ fun MotionPanel(
             },
             isLocked = !isUnlocked,
         )
+
+        PanelRow(
+            label = stringResource(Res.string.motion_reactivity),
+            isLocked = !isUnlocked,
+            trailing = {
+                Switch(
+                    checked = editor.canvas.reactivityEnabled,
+                    onCheckedChange = onReactivityChange,
+                )
+            },
+        ) {}
 
         if (!isUnlocked) {
             Text(

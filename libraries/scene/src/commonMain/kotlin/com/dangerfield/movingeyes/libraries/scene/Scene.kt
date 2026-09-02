@@ -28,6 +28,9 @@ data class Scene(
 
     /** Minutes before the scene fades to black, or null to run all night. */
     val sleepTimerMinutes: Int? = null,
+
+    /** Eyes look toward sounds. Paid, and needs the microphone permission. */
+    val reactivityEnabled: Boolean = false,
 ) {
     companion object {
         const val OpaqueBlack: Long = 0xFF000000

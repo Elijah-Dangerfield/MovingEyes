@@ -9,6 +9,7 @@ struct iOSApp: App {
     let reviewLauncher = IOSReviewLauncher()
     let storeKitCoordinator = IOSStoreKitCoordinator()
     @ObservedObject private var displayHost = IOSDisplayHost()
+    private let audioCapture = IOSAudioCapture()
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     private let iOSAppComponent: IosAppComponent
 
@@ -17,7 +18,8 @@ struct iOSApp: App {
             permissionManager: permissionManager,
             reviewLauncher: reviewLauncher,
             storeKitCoordinator: storeKitCoordinator,
-            displayHost: displayHost
+            displayHost: displayHost,
+            audioCaptureHost: audioCapture
         )
         iOSAppComponent.telemetry.initialize()
         // Construct every @AutoInit singleton up front — resolving the set is

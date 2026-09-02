@@ -28,6 +28,8 @@ data class CanvasSettings(
 
     /** Null runs all night. */
     val sleepTimer: Duration? = null,
+
+    val reactivityEnabled: Boolean = false,
 )
 
 /** One eye's full mutable state, as much of it as undo needs to restore. */
@@ -474,6 +476,16 @@ class EditorState(
         canvas = canvas.copy(sleepTimer = timer)
     }
 
+    fun setReactivityEnabled(enabled: Boolean) {
+        if (!beginEdit()) return
+        canvas = canvas.copy(reactivityEnabled = enabled)
+    }
+
+    /** A sound in the room. Every eye reacts, but not identically. */
+    fun startle(direction: Float, intensity: Float) {
+        _eyes.forEach { it.runtime.startle(direction, intensity) }
+    }
+
     /** Not undoable: brightness is a live comfort control, not an edit. */
     fun setBrightness(brightness: Float) {
         canvas = canvas.copy(brightness = brightness.coerceIn(MinBrightness, 1f))
@@ -487,6 +499,7 @@ class EditorState(
         canvasColor = canvas.color,
         brightness = canvas.brightness,
         sleepTimerMinutes = canvas.sleepTimer?.inWholeMinutes?.toInt(),
+        reactivityEnabled = canvas.reactivityEnabled,
     )
 
     /** Null unless exactly two eyes are selected. */
