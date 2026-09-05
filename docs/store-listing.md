@@ -55,26 +55,25 @@ Capitalised Halloween, which was the only edit.
 ### Full description, filled
 
 ```
-Cut two eye holes in a painting or a sheet of cardboard and tape your phone
-behind it. The eyes blink and follow people around the room. The app measures in
-real millimetres, so you can line the eyes up and mark the cardboard before you
-cut. Hit play and the controls disappear; the screen stays awake all night and
-ignores taps. Free with three eye styles, and one payment adds ten more, six
-moods, and eyes that turn toward sounds (audio is read on your device and never
-leaves it).
+Moving Eyes brings your Halloween decorations to life. Cut two holes in a
+painting, put your phone behind it, and line the eyes up with the holes. That's
+it. They blink and follow people as they walk past, and because the app measures
+in real millimetres, the eyes land exactly where you cut.
+
+Hit play and the controls disappear for the night. Free with three eye styles.
+One payment gets you ten more, six moods, and eyes that turn toward sounds
+(audio never leaves your phone).
 ```
 
-One paragraph, 80 words. It was 2,300, then 200 across nine paragraphs with
-shouty section headings, which is still a wall when it lands in a store on a
-phone. Nobody expands a description to read a feature inventory for a Halloween
-decoration.
+80 words, in the same voice as the short description: contractions, second
+person, no headings. Elijah's brief was "super casual but not cringy", and the
+line between those is mostly restraint. His own draft had "BOOM" and "sick
+decoration" in it, which work in a message and would age badly in a listing
+somebody reads next October, so the energy stays and the slang does not.
 
-The last draft's headings were the giveaway that it was too long: FREE and FULL
-VERSION, ONE PAYMENT are navigation, and a paragraph does not need navigating.
-
-The microphone note survives as a parenthesis rather than its own sentence. It
-is the one line that prevents a category of one-star review, since a Halloween
-app asking for a microphone looks alarming without it.
+Note the opening names Moving Eyes while the store name is Halloween Eyes
+Decoration. That is deliberate: the listing gets found by the store name and the
+app gets remembered by the brand.
 
 ## App Store
 
