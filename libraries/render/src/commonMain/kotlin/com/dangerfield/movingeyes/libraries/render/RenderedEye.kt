@@ -120,12 +120,6 @@ class RenderedEye(
             fibreLight = irisColor.lighten(0.30f),
             fibreDark = irisColor.shade(-0.30f),
             limbal = irisColor.shade(-0.62f),
-            // Both derived from the sclera so a green or a black eye keeps a
-            // lash and a corner that belong to it rather than to a human.
-            lashLine = scleraColor.shade(-0.78f),
-            caruncle = scleraColor.shade(-0.16f).let { base ->
-                Color(red = base.red, green = base.green * 0.82f, blue = base.blue * 0.80f)
-            },
         )
     }
 }
@@ -153,19 +147,6 @@ internal class Aperture(width: Float, height: Float, taper: Float) {
         cubicTo(-upperReach, -rise, upperReach, -rise, halfWidth, 0f)
         cubicTo(lowerReach, rise, -lowerReach, rise, -halfWidth, 0f)
         close()
-    }
-
-    /**
-     * The upper lid's own margin, as an open curve rather than a filled region.
-     *
-     * Stroked dark, this is the lash line, and it is the single largest thing
-     * separating a drawn eye from a photographed one: a real upper lid has
-     * thickness and casts its lashes as a dark band, and its absence is why an
-     * eye with a perfectly clean aperture edge reads as a vector graphic.
-     */
-    fun upperMargin(travel: Float): Path = Path().apply {
-        moveTo(-halfWidth, travel)
-        cubicTo(-upperReach, -rise + travel, upperReach, -rise + travel, halfWidth, travel)
     }
 
     /**
@@ -205,23 +186,26 @@ internal class EyeBrushes(
     val fibreLight: Color,
     val fibreDark: Color,
     val limbal: Color,
-    val lashLine: Color,
-    val caruncle: Color,
 )
 
 /**
- * The upper lid's shadow falling across the eye.
+ * A little shading toward the top of the eyeball.
  *
- * Free-standing eyes lit from nowhere look pasted on. The shadow is what puts
- * the eye *into* a socket, and it is the cheapest depth cue available: one
- * gradient over the top half.
+ * Deliberately faint. This started as an upper lid's cast shadow, which is
+ * wrong for where these actually get used: taped behind a painting with a hole
+ * cut in it, the cardboard *is* the lid, and the app has no idea where its edge
+ * falls. Drawing a second lid inside the hole fights the real one.
+ *
+ * What survives is the eyeball's own curvature — a sphere is darker where it
+ * turns away from you — which reads at any aperture and does not pretend to
+ * know about a lid it cannot see.
  */
 internal fun lidShadowBrush(height: Float): Brush = Brush.verticalGradient(
-    0f to Color.Black.copy(alpha = 0.34f),
-    0.5f to Color.Black.copy(alpha = 0.06f),
+    0f to Color.Black.copy(alpha = 0.15f),
+    0.55f to Color.Black.copy(alpha = 0.03f),
     1f to Color.Transparent,
     startY = -height / 2f,
-    endY = height * 0.15f,
+    endY = height * 0.1f,
 )
 
 /**

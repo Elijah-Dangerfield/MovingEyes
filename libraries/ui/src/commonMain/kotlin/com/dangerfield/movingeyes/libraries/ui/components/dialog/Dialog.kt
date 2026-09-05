@@ -13,6 +13,10 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.border
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -79,7 +83,18 @@ fun Dialog(
                 .fillMaxWidth(0.8f)
                 .animateContentSize()
                 .clipToBounds()
-                .background(AppTheme.colors.surfacePrimary.color, shape = Radii.Card.shape),
+                // Surface3 with a lit edge, not Surface1. A dialog is the
+                // topmost thing on screen and has to separate from a scrim over
+                // a canvas that is genuinely black — Surface1 is only four
+                // percent off black itself, so the panel and the dimmed
+                // background behind it read as one dark shape and the buttons
+                // appear to float on nothing.
+                .background(AppTheme.colors.surfaceTertiary.color, shape = Radii.Card.shape)
+                .border(
+                    width = 1.dp,
+                    color = AppTheme.colors.borderSecondary.color,
+                    shape = Radii.Card.shape,
+                ),
             contentAlignment = Alignment.Center
         ) {
             content()
@@ -222,6 +237,11 @@ internal fun DialogOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            // Insets the *content*, not the scrim: the dim should still reach
+            // the screen edges, but a dialog holding a text field has to sit
+            // above the keyboard rather than under it. Without this the field
+            // you were told to type in is the part that's covered.
+            .imeAndSafePadding()
             .semantics(mergeDescendants = true) {
                 dialog()
                 stateDescription = "Dialog"
@@ -312,3 +332,14 @@ object ModalDialogDefaults {
             )
 
 }
+
+/**
+ * Keeps dialog content clear of the keyboard and the system bars.
+ *
+ * Applied to the content box rather than the scrim so the dim still covers the
+ * whole screen — a scrim that stops at the keyboard looks like a rendering
+ * fault.
+ */
+private fun Modifier.imeAndSafePadding(): Modifier = this
+    .imePadding()
+    .systemBarsPadding()

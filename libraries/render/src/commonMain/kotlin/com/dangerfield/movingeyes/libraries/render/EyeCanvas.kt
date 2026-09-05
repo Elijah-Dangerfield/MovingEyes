@@ -17,7 +17,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.rotate
@@ -211,28 +210,6 @@ private fun DrawScope.drawEye(eye: RenderedEye, canvasColor: Color) {
                     size = Size(width, height),
                 )
 
-                // The wet inner corner. Small, warm, and asymmetric — it is the
-                // only thing on the eye that tells you which way it faces.
-                if (style.cornerTaper > 0.3f) {
-                    drawCircle(
-                        color = brushes.caruncle,
-                        radius = width * CaruncleRatio,
-                        center = Offset(-width / 2f + width * CaruncleRatio * 0.9f, 0f),
-                    )
-                }
-
-                // Inside the clip so it hugs the aperture exactly, and after
-                // everything else so the iris cannot sit on top of the lid.
-                drawPath(
-                    path = aperture.upperMargin(
-                        (1f - frame.lidOpenness) * height * UpperLidShare,
-                    ),
-                    color = brushes.lashLine,
-                    style = Stroke(
-                        width = (height * LashRatio).coerceAtLeast(1f),
-                        cap = StrokeCap.Round,
-                    ),
-                )
             }
 
             drawLids(frame.lidOpenness, aperture, height, canvasColor)
@@ -361,11 +338,6 @@ private fun DrawScope.drawGlints(glint: Brush, irisRadius: Float, radius: Float)
 /** Below this an iris is too small for fibres to be anything but noise. */
 private const val FibreVisibleRadiusPx = 14f
 
-/** Lash-line thickness, as a fraction of eye height. */
-private const val LashRatio = 0.075f
-
-/** Caruncle radius, as a fraction of eye width. */
-private const val CaruncleRatio = 0.045f
 
 /**
  * Vessels creeping in from the corners.

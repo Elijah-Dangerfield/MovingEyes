@@ -10,6 +10,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import com.dangerfield.movingeyes.libraries.ui.components.button.Button
 import com.dangerfield.movingeyes.libraries.ui.components.button.ButtonSize
 import com.dangerfield.movingeyes.libraries.ui.components.button.ButtonStyle
@@ -50,7 +51,13 @@ fun RenameSceneDialog(
     }
     val trimmed = value.trim()
 
-    LaunchedEffect(Unit) { focus.requestFocus() }
+    // Focus alone puts a cursor in the field and leaves the keyboard down on
+    // Android, which looks like the dialog ignored you. Ask for both.
+    val keyboard = LocalSoftwareKeyboardController.current
+    LaunchedEffect(Unit) {
+        focus.requestFocus()
+        keyboard?.show()
+    }
 
     BasicDialog(
         state = state,
