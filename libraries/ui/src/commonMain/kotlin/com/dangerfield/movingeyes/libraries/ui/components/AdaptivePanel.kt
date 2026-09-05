@@ -33,13 +33,13 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.dangerfield.movingeyes.libraries.ui.PhoneAndTabletPreview
 import com.dangerfield.movingeyes.libraries.ui.PreviewContent
 import com.dangerfield.movingeyes.libraries.ui.components.text.Text
 import com.dangerfield.movingeyes.system.AppTheme
 import com.dangerfield.movingeyes.system.Dimension
 import com.dangerfield.movingeyes.system.Motion
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.ui.tooling.preview.Preview
 
 /**
  * Below this width the panel is a bottom sheet; at or above it, a right rail.
@@ -225,20 +225,14 @@ private fun GrabEdge(expanded: Boolean, onToggle: () -> Unit) {
     }
 }
 
-@Preview(widthDp = 400, heightDp = 800)
+/**
+ * Both shapes at once: the sheet a phone gets, and the rail a tablet does. The
+ * whole point of this component is that those differ, so previewing one is
+ * previewing half of it.
+ */
+@PhoneAndTabletPreview
 @Composable
-private fun PreviewSheetPanel() {
-    PreviewContent {
-        AdaptivePanel(
-            state = rememberPanelState(PanelPosition.Expanded),
-            header = { SegmentedControl(listOf("Place", "Look"), "Place", {}, label = { it }) },
-        ) { layout -> PanelSample(layout) }
-    }
-}
-
-@Preview(widthDp = 1000, heightDp = 700)
-@Composable
-private fun PreviewRailPanel() {
+private fun PreviewAdaptivePanel() {
     PreviewContent {
         AdaptivePanel(
             state = rememberPanelState(PanelPosition.Expanded),

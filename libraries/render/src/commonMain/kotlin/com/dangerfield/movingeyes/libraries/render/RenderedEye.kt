@@ -52,6 +52,16 @@ class RenderedEye(
     internal val fibres = irisFibres(random)
 
     /**
+     * How far the pupil sits off the iris's centre, in iris radii.
+     *
+     * Real pupils are a little nasal and a little low, and vary between people
+     * by more than you would guess. Drawn from the same seeded source as the
+     * fibres so an eye keeps its own face across a resize or a recolour.
+     */
+    internal val pupilOffsetX = (random.nextFloat() - 0.5f) * PupilDrift
+    internal val pupilOffsetY = (random.nextFloat() - 0.5f) * PupilDrift
+
+    /**
      * The gradient brushes, built once and reused until something they depend
      * on changes.
      *
@@ -110,6 +120,12 @@ class RenderedEye(
             fibreLight = irisColor.lighten(0.30f),
             fibreDark = irisColor.shade(-0.30f),
             limbal = irisColor.shade(-0.62f),
+            // Both derived from the sclera so a green or a black eye keeps a
+            // lash and a corner that belong to it rather than to a human.
+            lashLine = scleraColor.shade(-0.78f),
+            caruncle = scleraColor.shade(-0.16f).let { base ->
+                Color(red = base.red, green = base.green * 0.82f, blue = base.blue * 0.80f)
+            },
         )
     }
 }
@@ -137,6 +153,19 @@ internal class Aperture(width: Float, height: Float, taper: Float) {
         cubicTo(-upperReach, -rise, upperReach, -rise, halfWidth, 0f)
         cubicTo(lowerReach, rise, -lowerReach, rise, -halfWidth, 0f)
         close()
+    }
+
+    /**
+     * The upper lid's own margin, as an open curve rather than a filled region.
+     *
+     * Stroked dark, this is the lash line, and it is the single largest thing
+     * separating a drawn eye from a photographed one: a real upper lid has
+     * thickness and casts its lashes as a dark band, and its absence is why an
+     * eye with a perfectly clean aperture edge reads as a vector graphic.
+     */
+    fun upperMargin(travel: Float): Path = Path().apply {
+        moveTo(-halfWidth, travel)
+        cubicTo(-upperReach, -rise + travel, upperReach, -rise + travel, halfWidth, travel)
     }
 
     /**
@@ -176,6 +205,8 @@ internal class EyeBrushes(
     val fibreLight: Color,
     val fibreDark: Color,
     val limbal: Color,
+    val lashLine: Color,
+    val caruncle: Color,
 )
 
 /**
@@ -240,6 +271,10 @@ internal fun irisFibres(random: Random): FloatArray {
 /** Of the style's declared glint width. Big enough to catch the eye, small
  *  enough that it doesn't flatten the fibres under it. */
 internal const val GlintRadiusRatio = 0.30f
+
+/** Peak pupil offset in iris radii. Big enough to break the symmetry, small
+ *  enough that nobody reads it as a lazy eye. */
+private const val PupilDrift = 0.09f
 
 private const val FibreCount = 24
 private const val TwoPi = 6.2831855f

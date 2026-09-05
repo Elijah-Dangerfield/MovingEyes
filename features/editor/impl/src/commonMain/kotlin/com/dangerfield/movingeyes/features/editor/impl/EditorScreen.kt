@@ -518,7 +518,11 @@ fun EditorScreen(
                     canvasHeightPx = canvasHeightPx,
                     screenMetrics = screenMetrics,
                 ),
-                panelClearance = with(density) { occupied.toDp() },
+                // Which edge the panel is eating depends on its shape, and the
+                // chrome has to dodge the same one. A tablet's rail sits
+                // exactly where the floating toolbar would otherwise be.
+                bottomClearance = with(density) { (if (isRail) 0f else occupied).toDp() },
+                endClearance = with(density) { (if (isRail) occupied else 0f).toDp() },
                 isPanelOpen = panel.isExpanded,
                 isRecessed = isManipulating,
                 sceneName = openScene?.name?.takeIf { it.isNotBlank() } ?: fallbackSceneName,
@@ -742,7 +746,8 @@ fun EditorScreen(
 private fun EditorChrome(
     editor: EditorState,
     readout: String,
-    panelClearance: Dp,
+    bottomClearance: Dp,
+    endClearance: Dp,
     isPanelOpen: Boolean,
     isRecessed: Boolean,
     sceneName: String,
@@ -801,6 +806,7 @@ private fun EditorChrome(
         Column(
             modifier = Modifier
                 .align(Alignment.TopEnd)
+                .padding(end = endClearance)
                 .padding(Dimension.D700)
                 .clip(RoundedCornerShape(RailCornerRadius))
                 .background(AppTheme.colors.surfacePrimary.color.copy(alpha = 0.92f))
@@ -866,7 +872,7 @@ private fun EditorChrome(
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(start = Dimension.D700, end = Dimension.D700, bottom = Dimension.D700)
-                .padding(bottom = panelClearance),
+                .padding(bottom = bottomClearance),
         )
     }
 }
