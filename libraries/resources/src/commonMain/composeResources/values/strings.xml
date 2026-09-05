@@ -192,6 +192,28 @@
     <string name="settings_reduce_flashing">Reduce flashing</string>
     <string name="settings_reduce_flashing_detail">Caps rapid movement and blinking in every mood.</string>
     <string name="settings_mute">Mute all sound</string>
+    <!--
+      Bug report and feedback. Both reach Sentry through Telemetry, so the copy
+      should set the expectation that a person reads them and nothing else is
+      collected beyond what the report already shows.
+    -->
+    <string name="feedback_bug_title">Report a bug</string>
+    <string name="feedback_bug_body">Tell us what went wrong and we\'ll fix it.</string>
+    <string name="feedback_captured">What we already know</string>
+    <string name="feedback_error_code">Error code</string>
+    <string name="feedback_report_id">Report id</string>
+    <string name="feedback_message">Message</string>
+    <string name="feedback_message_hint">What happened?</string>
+    <string name="feedback_bug_sent">Sent. Thank you.</string>
+    <string name="feedback_title">Send feedback</string>
+    <string name="feedback_body">Tell us what you think. A person reads these.</string>
+    <string name="feedback_hint">What is on your mind?</string>
+    <string name="feedback_sent">Sent. Thank you.</string>
+    <string name="feedback_empty">Add a note before sending.</string>
+    <string name="feedback_send">Send</string>
+    <string name="feedback_sending">Sending…</string>
+    <string name="settings_report_bug">Report a bug</string>
+    <string name="settings_send_feedback">Send feedback</string>
     <string name="settings_privacy">Privacy policy</string>
     <string name="settings_support">Support</string>
     <string name="settings_version">Version %1$s</string>

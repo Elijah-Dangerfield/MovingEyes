@@ -49,6 +49,7 @@ kotlin {
             implementation(projects.features.editor)
             implementation(projects.features.editor.impl)
             implementation(projects.features.paywall.impl)
+            implementation(projects.features.settings)
             implementation(projects.features.settings.impl)
 
             implementation(libs.atomicfu)

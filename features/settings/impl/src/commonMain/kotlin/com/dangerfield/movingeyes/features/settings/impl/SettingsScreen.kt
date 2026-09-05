@@ -28,7 +28,9 @@ import movingeyes.libraries.resources.generated.resources.settings_plan_unlocked
 import movingeyes.libraries.resources.generated.resources.settings_privacy
 import movingeyes.libraries.resources.generated.resources.settings_reduce_flashing
 import movingeyes.libraries.resources.generated.resources.settings_reduce_flashing_detail
+import movingeyes.libraries.resources.generated.resources.settings_report_bug
 import movingeyes.libraries.resources.generated.resources.settings_restore
+import movingeyes.libraries.resources.generated.resources.settings_send_feedback
 import movingeyes.libraries.resources.generated.resources.settings_support
 import movingeyes.libraries.resources.generated.resources.settings_title
 import movingeyes.libraries.resources.generated.resources.settings_unlock
@@ -47,6 +49,8 @@ fun SettingsScreen(
     onRestore: () -> Unit,
     onOpenPrivacy: () -> Unit,
     onOpenSupport: () -> Unit,
+    onReportBug: () -> Unit,
+    onSendFeedback: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -108,6 +112,11 @@ fun SettingsScreen(
         )
 
         HorizontalDivider()
+
+        // Above the outbound links, because these two stay in the app and the
+        // others leave it.
+        LinkRow(stringResource(Res.string.settings_report_bug), onReportBug)
+        LinkRow(stringResource(Res.string.settings_send_feedback), onSendFeedback)
 
         LinkRow(stringResource(Res.string.settings_privacy), onOpenPrivacy)
         LinkRow(stringResource(Res.string.settings_support), onOpenSupport)

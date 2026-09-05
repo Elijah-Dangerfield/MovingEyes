@@ -6,21 +6,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.compose.runtime.getValue
-import com.dangerfield.movingeyes.libraries.core.BuildInfo
 import com.dangerfield.movingeyes.libraries.navigation.DesignSystemRoute
 import com.dangerfield.movingeyes.libraries.navigation.FeatureEntryPoint
 import com.dangerfield.movingeyes.libraries.navigation.Router
 import com.dangerfield.movingeyes.libraries.navigation.EyeGalleryRoute
 import com.dangerfield.movingeyes.libraries.navigation.QaConfigRoute
-import com.dangerfield.movingeyes.libraries.navigation.ShakeDialogRoute
 import com.dangerfield.movingeyes.libraries.navigation.dialog
 import com.dangerfield.movingeyes.libraries.navigation.routeDeepLink
 import com.dangerfield.movingeyes.libraries.navigation.screen
 import com.dangerfield.movingeyes.libraries.navigation.toRouteOrNull
 import com.dangerfield.movingeyes.libraries.ui.catalog.CatalogScreen
 import com.dangerfield.movingeyes.libraries.ui.components.Screen
-import com.dangerfield.movingeyes.libraries.ui.components.dialog.ShakeAction
-import com.dangerfield.movingeyes.libraries.ui.components.dialog.ShakeDialog
 import me.tatarka.inject.annotations.Inject
 import software.amazon.lastmile.kotlin.inject.anvil.AppScope
 import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
@@ -40,46 +36,9 @@ class ShakeDialogEntryPoint(
 ) : FeatureEntryPoint {
 
     override fun NavGraphBuilder.buildNavGraph(router: Router) {
-        dialog<ShakeDialogRoute> { backStackEntry, dialogState ->
-            val route = backStackEntry.toRouteOrNull<ShakeDialogRoute>()
-
-            ShakeDialog(
-                state = dialogState,
-                headline = route?.headline ?: "I felt that.",
-                subtext = route?.subtext,
-                onDismiss = { router.goBack() },
-                actions = if (BuildInfo.isDebug) {
-                    listOf(
-                        ShakeAction(
-                            label = "Design system",
-                            onSelect = {
-                                router.goBack()
-                                router.navigate(DesignSystemRoute())
-                            },
-                        ),
-                        ShakeAction(
-                            label = "Config",
-                            onSelect = {
-                                router.goBack()
-                                router.navigate(QaConfigRoute())
-                            },
-                        ),
-                        ShakeAction(
-                            label = "Eyes",
-                            onSelect = {
-                                router.goBack()
-                                router.navigate(EyeGalleryRoute())
-                            },
-                        ),
-                    )
-                } else {
-                    emptyList()
-                },
-            )
-        }
-
-        // Also reachable without shaking, which matters on an emulator and in
-        // scripted screenshot runs:
+        // Reached by deep link only, now that shake files a bug report instead
+        // of opening a menu. Which is also what makes them usable from a
+        // script and on a device with no accelerometer:
         //   adb shell am start -d "movingeyes://design-system"
         screen<DesignSystemRoute>(
             deepLinks = listOf(routeDeepLink<DesignSystemRoute>("movingeyes://design-system")),
