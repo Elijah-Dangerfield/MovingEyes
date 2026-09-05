@@ -1,263 +1,190 @@
 # Store listings
 
-Copy for both stores, plus the answers to the forms that sit alongside them.
-Kept here rather than only in the consoles so it is reviewable, versioned, and
-recoverable when a listing gets edited by hand and nobody remembers why.
+Copy for both stores, plus the answers to the forms beside them. Kept here so it
+is versioned and recoverable when a listing gets edited by hand and nobody
+remembers why.
 
-Character limits are enforced by the stores and noted per field. Counts below
-are current as of writing; re-check before pasting.
+## The one thing this has to say
 
----
+You cut the eyes out of a painting and put a screen behind it.
 
-## The pitch, in one paragraph
-
-Everything here is trying to say one thing: this is not a screensaver of eyes.
-It is a physical trick. You tape a tablet behind a painting or a sheet of
-cardboard, cut two holes, and the eyes look at people who walk past. The app's
-job is to make the alignment easy and then get out of the way for five hours.
-
-Lead with the trick, not the feature list. Somebody scrolling a store does not
-want "12 animated eye styles"; they want to know what happens when their
-neighbour walks up the path.
-
----
+That is the product. Everything else is detail, and the first draft of this
+listing buried it under nine hundred words about snapping and millimetres.
+Somebody scrolling a store gives you one sentence. Spend it on the trick.
 
 ## Google Play
 
-### App name (30) — FILLED
+### App name (30), filled
 
 ```
 Halloween Eyes Decoration
 ```
 
-*25 characters. The store name is deliberately keyword-rich and differs from the
-in-app name, which stays "Moving Eyes". This is a normal split: the listing is
-found by search, the app is remembered by brand.*
+25 characters. Keyword-rich on purpose, and different from the in-app name,
+which stays "Moving Eyes". The listing gets found by search; the app gets
+remembered by brand.
 
-### Short description (80) — FILLED
-
-```
-Hide a tablet behind a painting. The eyes follow whoever walks past.
-```
-
-*68 characters.*
-
-### Full description (4000) — FILLED
+### Short description (80), filled
 
 ```
-Tape a tablet behind a painting, cut two eye holes, and let it watch the room.
-
-Halloween Eyes turns any phone or tablet into a pair of eyes that blink, glance
-around, and react to what is happening in front of them. Put it behind a
-portrait in the hallway, a sheet of cardboard in a window, or a jack-o'-lantern
-on the porch. People notice the eyes before they notice the screen, which is the
-entire point.
-
-
-BUILT FOR THE CUT, NOT FOR THE SCREEN
-
-Lining eyes up with holes you cut by hand is the hard part, so the app measures
-in millimetres, not pixels. Drag an eye and it snaps to the middle of the canvas
-or to another eye's edges. Turn on measurements and it draws the gap between
-each pair and the width of each eye, so you can mark cardboard before you cut
-it. Resize one eye near another and it locks to the same size.
-
-The canvas is the screen at actual size. A millimetre in the app is a millimetre
-on the cardboard.
-
-
-THEN IT GETS OUT OF THE WAY
-
-Hit play and every control disappears. The screen stays awake all night, the
-brightness goes lower than Android normally allows so it does not glow through
-thin paper, and taps do nothing so a curious guest cannot drag an eye out of its
-hole. Set a sleep timer if you want it to fade out after the trick-or-treaters
-stop coming.
-
-The canvas is true black, so on an OLED screen the area around the eyes is
-genuinely switched off. That is what makes the illusion work in a dark hallway.
-
-
-WHAT YOU GET FOR FREE
-
-Unlimited eyes, three eye styles, and every placement tool: drag, pinch,
-rotate, snap, align, measure, undo. Save as many scenes as you like. Display
-mode, the sleep timer and the brightness control are all included. The eyes
-blink and look around on their own.
-
-You can set up the whole trick and run it all night without paying anything.
-
-
-WHAT THE FULL VERSION ADDS
-
-One payment, no subscription:
-
-- Ten more eye styles: bloodshot, feline, reptile, demon, spider, doll, bat,
-  ghoul and more
-- Six moods, from a slow idle scan to Suspicious, Sleepy, Frantic and Possessed,
-  with blink rate, wander and restlessness under each one
-- Sound reactivity: the eyes turn toward a door opening and look at whoever
-  came in
-
-
-NO ACCOUNT, NO INTERNET, NO ADS
-
-There is no sign-up and no server. Your scenes live on your device. The app
-works with the wifi off, which matters on a porch.
-
-If you turn on sound reactivity, audio is analysed on your device moment to
-moment and immediately discarded. Nothing is recorded, nothing is stored,
-nothing is uploaded. The app reads how loud the room is and which microphone
-heard a sound first. It cannot recognise speech.
-
-
-A NOTE ON FLASHING
-
-Some moods blink quickly by design. There is a Reduce flashing setting that caps
-rapid movement in every mood, and the app respects your system's reduce-motion
-setting automatically.
+Put a tablet behind a painting, cut out the eyes, and watch people notice.
 ```
 
-*Roughly 2,300 characters.*
+74 characters.
 
----
+### Full description, filled
+
+```
+Cut two eye holes in a painting, a poster, or a sheet of cardboard. Tape a phone
+or tablet behind it. The eyes blink, look around the room, and follow whoever
+walks past.
+
+That is the whole app.
+
+Lining the eyes up with the holes is the fiddly part, so the app measures in real
+millimetres and snaps the eyes into line with each other. Mark the cardboard,
+then cut it.
+
+When it's set up, hit play. The controls disappear, the screen stays awake all
+night, and taps do nothing, so nobody can drag an eye out of its hole by
+touching the painting.
+
+FREE
+
+Three eye styles, as many eyes as you want, and everything above.
+
+FULL VERSION, ONE PAYMENT
+
+Ten more eyes: bloodshot, cat, reptile, demon, spider, doll and more. Six moods,
+from a slow scan to Possessed. And eyes that turn toward a sound and look at
+whoever just came in.
+
+No subscription, no ads, no account, no internet needed.
+
+If you switch on sound reactivity, audio is read on your device and thrown away
+immediately. Nothing is recorded or uploaded, and it cannot understand speech.
+```
+
+About 200 words, down from 2,300. The cut list was: the OLED paragraph, the
+"built for the cut" heading, the free-tier feature inventory, and the flashing
+note. None of them survive the test of "would somebody read this before
+deciding?" The flashing setting still exists and is still disclosed in the app.
 
 ## App Store
 
 ### Name (30)
 
 ```
-Moving Eyes
+Halloween Eyes Decoration
 ```
 
 ### Subtitle (30)
 
 ```
-Eyes behind your decorations
+Cut out the eyes. Add these.
 ```
 
-*28 characters.*
+28 characters.
 
 ### Promotional text (170, editable without review)
 
 ```
-Tape a tablet behind a painting, cut two eye holes, and let it watch the
-hallway. Measures in millimetres so the eyes line up with the holes you cut.
+Cut two eye holes in a painting and tape a tablet behind it. The eyes blink,
+look around, and follow whoever walks past.
 ```
 
-*146 characters. Worth changing on 30 Oct to something seasonal, since this
-field does not need a review.*
+120 characters. Worth swapping for something seasonal on 30 Oct, since this
+field does not need a review.
 
 ### Keywords (100, comma separated, no spaces)
 
 ```
-halloween,decoration,spooky,eyes,haunted,portrait,prop,creepy,party,scare,animatronic,display,jackolantern
+halloween,decoration,spooky,eyes,haunted,portrait,prop,creepy,party,scare,animatronic,jackolantern
 ```
 
-*104 characters, trim one before pasting.* No need to repeat the app name or
-subtitle words; Apple already indexes those.
+97 characters. No need to repeat words already in the name or subtitle; Apple
+indexes those.
 
-### Description (4000)
+### Description
 
-Use the Play full description above. It needs one change: Apple does not allow
-"Android" in a description, so replace the brightness paragraph's "lower than
-Android normally allows" with "lower than the system slider normally allows".
+Use the Play description above, unchanged. It mentions no platform by name, so
+it needs no Apple-specific edit.
 
----
+## Review notes (App Store)
 
-## Review notes (App Store) — do not skip this
-
-Moving Eyes is at real risk of a **4.3 minimum functionality** rejection,
-because a reviewer opening it sees a black screen with two eyes and no obvious
-purpose. The mitigation is to show them the physical trick.
+This app is exposed to a **4.3 minimum functionality** rejection. A reviewer
+opens it, sees a black screen with two eyes, and has no way to know what it is
+for. The fix is to show them.
 
 Paste into App Review Notes:
 
 ```
-Moving Eyes is a physical decoration prop rather than a screensaver. The device
-is taped behind a painting or a sheet of cardboard with two eye holes cut in it,
-so the eyes appear to be a face watching the room.
+This app is a physical Halloween decoration rather than a screensaver. You cut
+two eye holes in a painting or a sheet of cardboard and tape the device behind
+it, so the eyes appear to belong to a face watching the room.
 
-Because of that, most of the app is an alignment tool: the canvas is rendered at
-the device's true physical size, distances are shown in millimetres, and the
-snapping and measurement tools exist so the eyes line up with holes the user
-cuts by hand.
+That is why most of the app is an alignment tool: the canvas renders at the
+device's true physical size, distances are shown in millimetres, and the
+snapping and measuring exist so the eyes line up with holes cut by hand.
 
-A 40 second video showing the finished effect is here: [LINK]
+A short video of the finished effect is here: [LINK]
 
-To review the paid features without purchasing, the unlock can be granted with
-the sandbox account provided, or we can supply a build with the entitlement
-forced on if that is easier.
+To review the paid features without buying them, use the sandbox account
+provided, or ask us for a build with the entitlement forced on.
 ```
 
-**Record that video before submitting.** It is the single highest-leverage
-thing in this document. A reviewer looking at a tablet on a desk cannot see
-what this app is for.
-
----
+**Record that video before submitting.** It is the highest-value item in this
+document. A reviewer looking at a tablet on a desk cannot see what this is.
 
 ## Data safety and privacy labels
 
-Both must match `pages/privacy.html`, which is published at
+Both must match `pages/privacy.html`, published at
 https://elijah-dangerfield.github.io/MovingEyes/privacy.html
 
 ### Google Play Data Safety
 
 | Question | Answer |
 |---|---|
-| Does your app collect or share user data? | Yes (crash logs and diagnostics only) |
-| Data types collected | App activity → Crash logs, Diagnostics |
-| Is it shared with third parties? | No |
-| Is collection optional? | No (diagnostics), but no personal data is included |
-| Is data encrypted in transit? | Yes |
-| Can users request deletion? | Yes, via the in-app Report a bug / Send feedback screens |
-| Microphone / audio | **Not collected.** Audio is processed on-device and discarded. Play's own guidance is that on-device-only processing is not collection. |
+| Collects or shares user data? | Yes, crash logs and diagnostics only |
+| Data types | App activity: crash logs, diagnostics |
+| Shared with third parties? | No |
+| Optional? | No, but no personal data is included |
+| Encrypted in transit? | Yes |
+| Deletion requests? | Yes, via Report a bug and Send feedback in the app |
+| Microphone / audio | **Not collected.** Processed on device and discarded. Play's guidance is that on-device-only processing is not collection. |
 
 ### Apple privacy labels
 
-- **Data Not Collected** for everything except:
-  - **Diagnostics → Crash Data**, not linked to identity, not used for tracking
-- **Audio Data: not collected.** Processed on device and never leaves it.
-- Tracking: **No**. There is no advertising identifier and no third-party SDK
-  that would use one.
+Everything is **Data Not Collected** except **Diagnostics: Crash Data**, not
+linked to identity, not used for tracking. Audio is not collected. Tracking: no,
+there is no advertising identifier and no third-party SDK that would use one.
 
----
+## Console state
 
-## Play console state
+Play, saved as draft on 2026-09-05: name, both descriptions, category
+(Entertainment, App not Game), contact email, website.
 
-Filled and saved as draft on 2026-09-05:
-
-- App name, short description, full description
-- App category: Entertainment. App, not Game.
-- Contact email and website (the Pages site)
-
-Still to do there, all of which are developer declarations rather than copy:
+Still to do, all of them developer declarations rather than copy:
 
 - [ ] Content rating questionnaire
-- [ ] Data safety form — answers are in the section above
+- [ ] Data safety form, answers above
 - [ ] Target audience and content
 - [ ] Privacy policy URL under App content
-- [ ] Graphics: icon, feature graphic, screenshots
+- [ ] Icon, feature graphic, screenshots
 
-## App Store Connect state
-
-**Blocked, and not by anything on the listing.** The New App dialog leads to a
-blank page. The likely cause is that the bundle identifier
-`com.dangerfield.movingeyes` does not yet exist as an App ID — iOS has never
-been built, so nothing has ever registered it.
-
-Create it first at
-developer.apple.com → Certificates, Identifiers & Profiles → Identifiers, then
-the ASC New App dialog will offer it in the Bundle ID dropdown. Everything else
-on that form is in this document.
+App Store Connect is blocked before the listing matters. New App leads to a
+blank page, most likely because the bundle identifier
+`com.dangerfield.movingeyes` was never registered as an App ID. iOS has never
+been built, so nothing has created it. Register it at developer.apple.com under
+Certificates, Identifiers and Profiles, and the dropdown will offer it.
 
 ## Assets still needed
 
-- [ ] The 40 second demo video for review notes (highest priority)
-- [ ] Screenshots. The first one should show the trick, not the UI: a photo of
-      the tablet behind a painting beats a screenshot of the editor. Both stores
-      allow a framed marketing image as the first slot.
+- [ ] The demo video, for review notes and probably the listing too
+- [ ] Screenshots. The first should be a photo of the tablet behind a painting,
+      not a screenshot of the editor. Both stores allow a framed marketing image
+      in the first slot, and the trick is the thing worth showing.
 - [ ] Feature graphic for Play, 1024x500
-- [ ] App icon, confirmed as final rather than the template's
-- [ ] IAP configured in both consoles as `moving_eyes_unlock_everything`,
-      non-consumable, $4.99
+- [ ] App icon, confirmed as yours rather than the template's
+- [ ] IAP in both consoles: `moving_eyes_unlock_everything`, non-consumable,
+      $4.99
