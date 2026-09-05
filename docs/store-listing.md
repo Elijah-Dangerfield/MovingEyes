@@ -79,23 +79,24 @@ by the brand.
 Halloween Eyes Decoration
 ```
 
-### Subtitle (30)
+### Subtitle (30), filled
 
 ```
-Cut out the eyes. Add these.
+Bring your decorations to life
 ```
 
-28 characters.
+Exactly 30, which is Elijah's own short description with "Halloween" dropped;
+the store name already carries that word twice over.
 
-### Promotional text (170, editable without review)
+### Promotional text (170, editable without review), filled
 
 ```
-Cut two eye holes in a painting and tape a tablet behind it. The eyes blink and
-follow whoever walks past.
+The final touch for your Halloween decorations. Cut two holes in a painting,
+line the eyes up with them, and let it run all night.
 ```
 
-103 characters. Worth swapping for something seasonal on 30 Oct, since this
-field does not need a review.
+128 characters, and mine rather than his, so worth a look. Worth swapping for
+something seasonal on 30 Oct, since this field does not need a review.
 
 ### Keywords (100, comma separated, no spaces)
 
@@ -106,10 +107,10 @@ halloween,decoration,spooky,eyes,haunted,portrait,prop,creepy,party,scare,animat
 97 characters. No need to repeat words already in the name or subtitle; Apple
 indexes those.
 
-### Description
+### Description, filled
 
-Use the Play description above, unchanged. It mentions no platform by name, so
-it needs no Apple-specific edit.
+The Play description above, unchanged. It names no platform, so it needed no
+Apple-specific edit.
 
 ## Review notes (App Store)
 
@@ -117,25 +118,36 @@ This app is exposed to a **4.3 minimum functionality** rejection. A reviewer
 opens it, sees a black screen with two eyes, and has no way to know what it is
 for. The fix is to show them.
 
-Paste into App Review Notes:
+Already in the App Review Notes field:
 
 ```
 This app is a physical Halloween decoration rather than a screensaver. You cut
 two eye holes in a painting or a sheet of cardboard and tape the device behind
 it, so the eyes appear to belong to a face watching the room.
 
-That is why most of the app is an alignment tool: the canvas renders at the
+That is why most of the app is an alignment tool. The canvas renders at the
 device's true physical size, distances are shown in millimetres, and the
 snapping and measuring exist so the eyes line up with holes cut by hand.
 
-A short video of the finished effect is here: [LINK]
-
-To review the paid features without buying them, use the sandbox account
-provided, or ask us for a build with the entitlement forced on.
+The paid unlock is a single non-consumable that adds extra eye styles, the
+motion controls, and microphone reactivity. Microphone audio is analysed on
+device for loudness and direction only. It is never recorded, stored, or
+transmitted, and everything else in the app works if the permission is denied.
 ```
 
-**Record that video before submitting.** It is the highest-value item in this
-document. A reviewer looking at a tablet on a desk cannot see what this is.
+The video link is deliberately not in there yet, because a review-notes field
+with a dead placeholder in it is worse than one without the sentence. Add this
+line before submitting:
+
+```
+A short video of the finished effect is here: <url>
+```
+
+**Record that video.** It is the highest-value item in this document. A reviewer
+looking at a tablet on a desk cannot see what this is.
+
+Sign-in required is unchecked, which is true and saves a round trip: there is no
+account in this app.
 
 ## Data safety and privacy labels
 
@@ -175,11 +187,35 @@ Still to do, all of them developer declarations rather than copy:
 - [ ] Privacy policy URL under App content
 - [ ] Icon, feature graphic, screenshots
 
-App Store Connect is blocked before the listing matters. New App leads to a
-blank page, most likely because the bundle identifier
-`com.dangerfield.movingeyes` was never registered as an App ID. iOS has never
-been built, so nothing has created it. Register it at developer.apple.com under
-Certificates, Identifiers and Profiles, and the dropdown will offer it.
+App Store Connect, also 2026-09-05. The blank New App page was exactly what it
+looked like: no registered App ID, so the bundle-ID dropdown had nothing to
+offer and the form never rendered. Registering the identifier fixed it in one
+step.
+
+- App ID `com.dangerfield.movingeyes.MovingEyes`, description "Moving Eyes", no
+  extra capabilities. Note this is the *iOS* bundle ID, from
+  `apps/ios/Configuration/Config.xcconfig`; Android's applicationId is
+  `com.dangerfield.movingeyes`, one component shorter. Inherited from the
+  template and harmless, since the two stores never compare them.
+- App record: Apple ID `6809042247`, SKU `movingeyes-ios-001`, iOS only,
+  English (U.S.).
+- Saved: name, subtitle, promotional text, description, keywords, support and
+  marketing URLs (both the Pages site), version 1.0, copyright
+  "2026 Nightjar Labs LLC", category Entertainment, content rights declared as
+  no third-party content, and the review notes above.
+
+Still to do on the Apple side:
+
+- [ ] Age rating questionnaire. The one real judgment call is horror and fear
+      themes: the app is animated eyes on black with no gore and no jump scares,
+      so "None" is defensible and "Infrequent/Mild" is the cautious read. The
+      cautious read costs a 9+ rating.
+- [ ] App Privacy: Diagnostics / Crash Data, not linked, not tracking.
+      Everything else Data Not Collected.
+- [ ] Pricing and Availability: free, all territories.
+- [ ] App Review contact name, phone and email.
+- [ ] Screenshots, 6.5-inch iPhone at minimum.
+- [ ] A build. Nothing here can be submitted until iOS has been run once.
 
 ## Assets still needed
 
