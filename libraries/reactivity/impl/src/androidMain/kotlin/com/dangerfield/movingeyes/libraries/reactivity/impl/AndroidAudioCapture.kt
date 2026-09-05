@@ -17,13 +17,8 @@ import kotlin.concurrent.thread
 /**
  * `AudioRecord` on its own thread.
  *
- * Stereo is requested but not required — plenty of hardware only ever gives
- * mono, and the analyser already treats an unknown direction as a first-class
- * case, so falling back is better than refusing to run.
- *
- * `UNPROCESSED` is preferred over `MIC` where the device supports it: the usual
- * voice processing chain applies AGC and noise suppression, which is exactly
- * the processing that flattens the onsets this feature exists to detect.
+ * Source and channel layout are both negotiated rather than assumed — see
+ * [openRecorder], which is where the interesting part is.
  */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
@@ -80,44 +75,75 @@ class AndroidAudioCapture : AudioCapture {
         record = null
     }
 
-    /** Tries stereo, then mono. Returns the recorder and how many channels it
-     *  actually opened with. */
+    /**
+     * Walks every source and channel layout until one actually records.
+     *
+     * Two fallbacks, both earned:
+     *
+     * **Source.** `UNPROCESSED` is preferred because the voice chain's AGC and
+     * noise suppression flatten exactly the onsets this feature detects — but a
+     * great many devices don't implement it, and the failure is not always an
+     * exception. `MIC` is the universally supported source and a processed
+     * onset beats no onset at all.
+     *
+     * **Channels.** Plenty of hardware only ever gives mono, and the analyser
+     * already treats an unknown direction as a first-class case, so falling
+     * back is better than refusing to run.
+     *
+     * Written as a loop that *continues* on failure rather than returning. The
+     * previous version used `return` inside a `forEach`, which is a non-local
+     * return from this whole function, so the first configuration that opened
+     * but failed to start took every remaining fallback down with it.
+     */
     @SuppressLint("MissingPermission")
     private fun openRecorder(): Pair<AudioRecord, Int>? {
-        listOf(
-            AudioFormat.CHANNEL_IN_STEREO to 2,
-            AudioFormat.CHANNEL_IN_MONO to 1,
-        ).forEach { (mask, channels) ->
-            val minimum = AudioRecord.getMinBufferSize(SampleRate, mask, AudioFormat.ENCODING_PCM_16BIT)
-            if (minimum <= 0) return@forEach
+        val sources = listOf(MediaRecorder.AudioSource.UNPROCESSED, MediaRecorder.AudioSource.MIC)
+        val layouts = listOf(AudioFormat.CHANNEL_IN_STEREO to 2, AudioFormat.CHANNEL_IN_MONO to 1)
 
-            val recorder = runCatching {
-                AudioRecord(
-                    MediaRecorder.AudioSource.UNPROCESSED,
-                    SampleRate,
-                    mask,
-                    AudioFormat.ENCODING_PCM_16BIT,
-                    maxOf(minimum, FramesPerBuffer * channels * BytesPerSample * 2),
-                )
-            }.getOrNull() ?: return@forEach
-
-            if (recorder.state != AudioRecord.STATE_INITIALIZED) {
-                recorder.release()
-                return@forEach
-            }
-
-            return runCatching {
-                recorder.startRecording()
-                recorder to channels
-            }.getOrElse {
-                logger.e(it) { "Could not start recording at $channels channel(s)" }
-                recorder.release()
-                null
+        for (source in sources) {
+            for ((mask, channels) in layouts) {
+                val opened = tryOpen(source, mask, channels)
+                if (opened != null) {
+                    logger.d { "Microphone open: source $source, $channels channel(s)" }
+                    return opened
+                }
             }
         }
 
         logger.e { "No usable microphone configuration" }
         return null
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun tryOpen(source: Int, mask: Int, channels: Int): Pair<AudioRecord, Int>? {
+        val minimum = AudioRecord.getMinBufferSize(SampleRate, mask, AudioFormat.ENCODING_PCM_16BIT)
+        if (minimum <= 0) return null
+
+        val recorder = runCatching {
+            AudioRecord(
+                source,
+                SampleRate,
+                mask,
+                AudioFormat.ENCODING_PCM_16BIT,
+                maxOf(minimum, FramesPerBuffer * channels * BytesPerSample * 2),
+            )
+        }.getOrNull() ?: return null
+
+        if (recorder.state != AudioRecord.STATE_INITIALIZED) {
+            recorder.release()
+            return null
+        }
+
+        return runCatching {
+            recorder.startRecording()
+            check(recorder.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+                "startRecording() returned without recording"
+            }
+            recorder to channels
+        }.getOrElse {
+            recorder.release()
+            null
+        }
     }
 
     private companion object {

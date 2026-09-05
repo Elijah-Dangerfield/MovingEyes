@@ -272,10 +272,13 @@ fun EditorScreen(
             }
         }
 
-        // Reactivity follows the scene's own setting and only runs while
-        // display mode does — a microphone open on the editor screen would be
-        // both pointless and alarming.
-        val reactivityWanted = editor.canvas.reactivityEnabled && display.isActive
+        // Runs wherever the setting is on, editor included. It used to wait for
+        // display mode, which meant switching it on did nothing you could see
+        // and there was no way to tell a working microphone from a broken one
+        // without taping the tablet to a wall first. The user has just asked
+        // for this and granted the permission; the OS shows its own mic
+        // indicator, so nothing about it is secret.
+        val reactivityWanted = editor.canvas.reactivityEnabled
         LaunchedEffect(reactivityWanted) {
             viewModel.takeAction(
                 if (reactivityWanted) EditorAction.StartReactivity else EditorAction.StopReactivity,

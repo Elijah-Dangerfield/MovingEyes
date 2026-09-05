@@ -236,4 +236,35 @@ class AudioAnalyzerTest {
         val amplitude = if (index % 2 == 0) left else right
         amplitude * sin(frame * 0.1f)
     }
+
+    /**
+     * The regression that made reactivity look broken. The floor used to adapt
+     * *before* the comparison, so a sound dragged the bar it had to clear up to
+     * meet itself and only a violent transient ever qualified. A knock at a few
+     * times the room's level has to register.
+     */
+    @Test
+    fun `a modest knock over a quiet room still fires`() {
+        val analyzer = AudioAnalyzer()
+        settle(analyzer, amplitude = 0.01f)
+
+        assertNotNull(
+            analyzer.process(mono(0.05f), channelCount = 1),
+            "a sound five times the room's level was swallowed",
+        )
+    }
+
+    /** And the thing that stops it firing constantly: a level that stays up
+     *  becomes the new normal within about a second. */
+    @Test
+    fun `a sustained noise stops firing once it becomes the room`() {
+        val analyzer = AudioAnalyzer()
+        settle(analyzer, amplitude = 0.01f)
+
+        val fired = (0 until 200).count {
+            analyzer.process(mono(0.05f), channelCount = 1) != null
+        }
+
+        assertTrue(fired in 1..3, "a constant noise fired $fired times")
+    }
 }

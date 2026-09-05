@@ -63,14 +63,18 @@ class AudioAnalyzer(private val random: Random = Random.Default) {
             return null
         }
 
-        // Rises quickly so a party stops triggering within a second or two,
+        // Tested against the floor as it stood *before* this buffer. Adapting
+        // first let the sound being tested drag the floor up to meet itself, so
+        // the real ratio a noise had to clear was far higher than [OnsetRatio]
+        // and only a violent transient ever qualified.
+        val threshold = noiseFloor * OnsetRatio + MinimumOnsetLevel
+        val isOnset = loudest > threshold && loudest > lastLevel
+
+        // Rises quickly so a sustained noise stops triggering within a second,
         // falls slowly so the room going quiet doesn't re-arm on every gap
         // between words.
         val adaptation = if (loudest > noiseFloor) FloorRiseRate else FloorFallRate
         noiseFloor += (loudest - noiseFloor) * adaptation
-
-        val threshold = noiseFloor * OnsetRatio + MinimumOnsetLevel
-        val isOnset = loudest > threshold && loudest > lastLevel
         lastLevel = loudest
 
         if (!isOnset || buffersSinceEvent < RefractoryBuffers) return null
@@ -134,8 +138,23 @@ class AudioAnalyzer(private val random: Random = Random.Default) {
 
     /** How far above the threshold, saturating so a scream and a door slam
      *  don't produce wildly different reactions. */
-    private fun intensityOf(level: Float, threshold: Float): Float =
-        ((level - threshold) / (threshold * IntensitySaturationRatio)).coerceIn(0f, 1f)
+    /**
+     * How hard to startle, as multiples of the threshold rather than an
+     * absolute level — so a quiet room and a loud one both get the full range
+     * rather than one of them living at 0 and the other pinned at 1.
+     *
+     * This used to divide by a threshold that moved with the sound being
+     * measured, which produced a plausible-looking spread only because the
+     * denominator grew with the numerator. Once the threshold stopped moving
+     * (it must, or an onset raises its own bar) that scale saturated on
+     * anything above a murmur, so the ceiling moved out to
+     * [IntensitySaturationRatio] multiples of threshold.
+     */
+    private fun intensityOf(level: Float, threshold: Float): Float {
+        if (threshold <= 0f) return 1f
+        val multiples = level / threshold
+        return ((multiples - 1f) / (IntensitySaturationRatio - 1f)).coerceIn(0f, 1f)
+    }
 
     private companion object {
         const val FloorRiseRate = 0.25f
@@ -156,6 +175,11 @@ class AudioAnalyzer(private val random: Random = Random.Default) {
          */
         const val MinDirectionConfidence = 0.06f
 
-        const val IntensitySaturationRatio = 2f
+        /**
+         * Multiples of the onset threshold at which a startle is as hard as it
+         * gets. Roughly: a door in a quiet hallway lands mid-range and a shout
+         * at arm's length saturates.
+         */
+        const val IntensitySaturationRatio = 24f
     }
 }
