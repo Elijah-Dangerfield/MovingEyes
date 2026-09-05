@@ -89,6 +89,11 @@ private fun Modifier.elevateOnScroll(
     }
 
     return this.composed {
+        // `Modifier.shadow` takes a Dp, not a lambda, so there is no
+        // phase-deferred form to move this read into. The scope is one modifier
+        // on the header container rather than anything with text in it, and the
+        // animation runs only while the list crosses the top.
+        @Suppress("AnimatedStateReadInComposition")
         val elevation by animateDpAsState(
             if (scrollState.canScrollBackward) {
                 Elevation.Header.dp

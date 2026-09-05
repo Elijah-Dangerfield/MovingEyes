@@ -108,13 +108,18 @@ class VerifyStrings(config: Config) : Rule(
         // inner Text is already covered.
         val TEXT_CALLEES = setOf("Text", "OutlinedText", "ClickableText", "BoldPrefixedText")
 
-        /** See [isDeveloperFacing]. */
+        /**
+         * See [isDeveloperFacing]. These are all animation builders, whose
+         * `label` argument names the animation in the Compose inspector and is
+         * never drawn — unlike a button's `label`, which is.
+         */
         val DEVELOPER_CALLEE_PREFIXES = listOf(
             "animate",
             "Animated",
             "updateTransition",
             "rememberInfiniteTransition",
             "rememberTransition",
+            "rememberLooping",
         )
 
         /**

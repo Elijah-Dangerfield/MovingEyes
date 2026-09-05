@@ -7,6 +7,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorProducer
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
@@ -32,6 +33,16 @@ fun Text(
     text: String,
     modifier: Modifier = Modifier,
     color: ColorResource? = null,
+    /**
+     * An animated colour, resolved in the draw phase instead of at composition.
+     *
+     * Use this rather than passing an animated colour to [color]: the latter
+     * makes this `Text` recompose — and re-lay-out its glyphs — on every frame
+     * of the animation, which is what `AnimatedStateReadInComposition` fails
+     * the build over. Pass `ColorProducer { animated.value }` and the animation
+     * only invalidates draw. Wins over [color] when both are given.
+     */
+    animatedColor: ColorProducer? = null,
     lineBreak: LineBreak? = null,
     hyphens: Hyphens? = null,
     allCaps: Boolean? = LocalTextConfig.current.allCaps ?: false,
@@ -55,7 +66,8 @@ fun Text(
         onTextLayout = onTextLayout,
         softWrap = softWrap,
         maxLines = maxLines,
-        minLines = minLines
+        minLines = minLines,
+        color = animatedColor,
     )
 }
 

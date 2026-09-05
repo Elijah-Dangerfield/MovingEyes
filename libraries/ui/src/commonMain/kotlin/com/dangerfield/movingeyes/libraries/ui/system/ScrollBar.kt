@@ -37,7 +37,10 @@ fun Modifier.scrollbar(
     ),
     padding: PaddingValues = PaddingValues(all = 0.dp)
 ): Modifier = composed {
-    val scrollbarAlpha by animateFloatAsState(
+    // No `by`: the value is only ever needed inside the drawWithContent lambda
+    // below, and unwrapping it here subscribes every scrolling list in the app
+    // to a value that changes on every frame of the fade.
+    val scrollbarAlpha = animateFloatAsState(
         targetValue = alpha,
         animationSpec = alphaAnimationSpec
     )
@@ -47,7 +50,7 @@ fun Modifier.scrollbar(
     drawWithContent {
         drawContent()
 
-        val showScrollBar = state.isScrollInProgress || scrollbarAlpha > 0.0f
+        val showScrollBar = state.isScrollInProgress || scrollbarAlpha.value > 0.0f
 
         // Draw scrollbar only if currently scrolling or if scroll animation is ongoing.
         if (showScrollBar) {
@@ -96,7 +99,7 @@ fun Modifier.scrollbar(
                 indicatorThicknessPx = indicatorThicknessPx,
                 scrollbarPositionWithoutInsets = scrollbarPositionWithoutInsets,
                 scrollbarSizeWithoutInsets = scrollbarSizeWithoutInsets,
-                scrollbarAlpha = scrollbarAlpha
+                scrollbarAlpha = scrollbarAlpha.value
             )
         }
     }
@@ -113,7 +116,10 @@ fun Modifier.scrollbar(
     ),
     padding: PaddingValues = PaddingValues(all = 0.dp)
 ): Modifier = composed {
-    val scrollbarAlpha by animateFloatAsState(
+    // No `by`: the value is only ever needed inside the drawWithContent lambda
+    // below, and unwrapping it here subscribes every scrolling list in the app
+    // to a value that changes on every frame of the fade.
+    val scrollbarAlpha = animateFloatAsState(
         targetValue = alpha,
         animationSpec = alphaAnimationSpec
     )
@@ -123,7 +129,7 @@ fun Modifier.scrollbar(
     drawWithContent {
         drawContent()
 
-        val showScrollBar = state.isScrollInProgress || scrollbarAlpha > 0.0f
+        val showScrollBar = state.isScrollInProgress || scrollbarAlpha.value > 0.0f
         if (showScrollBar) {
             val layoutInfo = state.layoutInfo
             val totalItemCount = layoutInfo.totalItemsCount
@@ -170,7 +176,7 @@ fun Modifier.scrollbar(
                 indicatorThicknessPx = indicatorThicknessPx,
                 scrollbarPositionWithoutInsets = scrollbarPositionWithoutInsets,
                 scrollbarSizeWithoutInsets = scrollbarSizeWithoutInsets,
-                scrollbarAlpha = scrollbarAlpha
+                scrollbarAlpha = scrollbarAlpha.value
             )
         }
     }

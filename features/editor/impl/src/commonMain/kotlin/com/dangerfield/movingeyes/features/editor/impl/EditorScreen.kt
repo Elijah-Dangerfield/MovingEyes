@@ -692,13 +692,17 @@ private fun EditorChrome(
     onEnterDisplay: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val chromeAlpha by animateFloatAsState(
+    // Kept as State and read in the draw phase. Unwrapped with `by` it would
+    // recompose the whole rail — five icon buttons and their labels — on every
+    // frame of the fade, which is exactly the wrong thing to be doing while the
+    // user is dragging an eye.
+    val chromeAlpha = animateFloatAsState(
         targetValue = if (isRecessed) RecessedAlpha else 1f,
         animationSpec = Motion.Chrome.dissolve(),
         label = "chromeAlpha",
     )
 
-    Box(modifier = modifier.alpha(chromeAlpha)) {
+    Box(modifier = modifier.graphicsLayer { alpha = chromeAlpha.value }) {
         Box(
             modifier = Modifier
                 .align(Alignment.TopStart)

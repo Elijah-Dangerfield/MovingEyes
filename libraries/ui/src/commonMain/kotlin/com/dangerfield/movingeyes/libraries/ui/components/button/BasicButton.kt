@@ -113,7 +113,10 @@ internal fun BasicButton(
             // on press — no soft Material shadow, no scale bounce.
             val depthAtRest = size.pressDepth()
             val pressed by interactionSource.collectIsPressedAsState()
-            val drop by animateDpAsState(
+            // Read inside `offset`'s lambda, which runs in layout. With `by`
+            // the whole button — face, label, lip band — recomposed on every
+            // frame of the press animation.
+            val drop = animateDpAsState(
                 targetValue = if (pressed) depthAtRest else 0.dp,
                 animationSpec = spring(stiffness = Spring.StiffnessHigh),
                 label = "ButtonLip",
@@ -138,7 +141,7 @@ internal fun BasicButton(
                     propagateMinConstraints = true,
                     modifier = Modifier
                         .padding(bottom = depthAtRest)
-                        .offset { IntOffset(x = 0, y = drop.roundToPx()) },
+                        .offset { IntOffset(x = 0, y = drop.value.roundToPx()) },
                 ) { face() }
             }
         }

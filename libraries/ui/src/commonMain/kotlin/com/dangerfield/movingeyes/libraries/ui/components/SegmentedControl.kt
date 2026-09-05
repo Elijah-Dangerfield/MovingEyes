@@ -3,6 +3,7 @@ package com.dangerfield.movingeyes.libraries.ui.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -81,7 +82,10 @@ private fun RowScope.Segment(
     isSelected: Boolean,
     onClick: () -> Unit,
 ) {
-    val background by animateColorAsState(
+    // Both kept as State and read in the draw phase. Unwrapped, the label's
+    // glyphs were rebuilt on every frame of the 120ms crossfade, for every
+    // segment, every time you changed tab.
+    val background = animateColorAsState(
         targetValue = if (isSelected) {
             AppTheme.colors.surfaceTertiary.color
         } else {
@@ -90,7 +94,7 @@ private fun RowScope.Segment(
         animationSpec = Motion.Panel.contentFade(),
         label = "segmentBackground",
     )
-    val foreground by animateColorAsState(
+    val foreground = animateColorAsState(
         targetValue = if (isSelected) {
             AppTheme.colors.text.color
         } else {
@@ -105,7 +109,7 @@ private fun RowScope.Segment(
             .weight(1f)
             .fillMaxHeight()
             .clip(RoundedCornerShape(SegmentCornerRadius))
-            .background(background)
+            .drawBehind { drawRect(background.value) }
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -116,7 +120,7 @@ private fun RowScope.Segment(
         Text(
             text = label,
             typography = AppTheme.typography.Label.L500.SemiBold,
-            color = ColorResource.FromColor(foreground, "segment-foreground"),
+            animatedColor = { foreground.value },
         )
     }
 }

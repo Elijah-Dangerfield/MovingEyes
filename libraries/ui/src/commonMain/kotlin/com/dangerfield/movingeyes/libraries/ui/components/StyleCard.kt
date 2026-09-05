@@ -17,6 +17,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -60,7 +65,10 @@ fun StyleCard(
     modifier: Modifier = Modifier,
     preview: @Composable () -> Unit,
 ) {
-    val borderColor by animateColorAsState(
+    // Read in the draw phase: this card holds a live-animating eye and twelve
+    // of them sit in one row, so recomposing the card per frame of a border
+    // crossfade restarts twelve renderers at once.
+    val borderColor = animateColorAsState(
         targetValue = if (isSelected) {
             AppTheme.colors.accentPrimary.color
         } else {
@@ -83,11 +91,17 @@ fun StyleCard(
                 // True black behind the eye, matching the canvas — a style has
                 // to be judged against the surface it will actually sit on.
                 .background(AppTheme.colors.background.color)
-                .border(
-                    width = if (isSelected) 2.dp else 1.dp,
-                    color = borderColor,
-                    shape = RoundedCornerShape(CardCornerRadius),
-                )
+                .drawWithContent {
+                    drawContent()
+                    val stroke = if (isSelected) 2.dp.toPx() else 1.dp.toPx()
+                    drawRoundRect(
+                        color = borderColor.value,
+                        topLeft = Offset(stroke / 2f, stroke / 2f),
+                        size = Size(size.width - stroke, size.height - stroke),
+                        cornerRadius = CornerRadius(CardCornerRadius.toPx()),
+                        style = Stroke(stroke),
+                    )
+                }
                 .clickable(onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {

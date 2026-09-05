@@ -23,7 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.dropShadow
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.Dp
@@ -148,7 +148,10 @@ private fun MagnifyingBottomBarItem(
     isSelected: Boolean,
     modifier: Modifier
 ) {
-    val scale by animateFloatAsState(
+    // Read in graphicsLayer rather than unwrapped: a bottom-bar item holds an
+    // icon and a label, and rebuilding that text on every frame of the bounce
+    // is the glyph-cache thrash this rule exists to stop.
+    val scale = animateFloatAsState(
         targetValue = if (isSelected) 1.2f else 1f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
@@ -172,7 +175,10 @@ private fun MagnifyingBottomBarItem(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
-            modifier = Modifier.scale(scale),
+            modifier = Modifier.graphicsLayer {
+                scaleX = scale.value
+                scaleY = scale.value
+            },
             contentAlignment = Alignment.Center
         ) {
             BadgedBox(
