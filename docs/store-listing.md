@@ -55,25 +55,21 @@ Capitalised Halloween, which was the only edit.
 ### Full description, filled
 
 ```
-Moving Eyes brings your Halloween decorations to life. Cut two holes in a
-painting, put your phone behind it, and line the eyes up with the holes. That's
-it. They blink and follow people as they walk past, and because the app measures
-in real millimetres, the eyes land exactly where you cut.
+Moving Eyes brings your Halloween decorations to life. All you have to do is cut
+two holes in a painting, line the eyes up with the holes, and then put this app
+behind it. It's the final touch you need to make your Halloween decorations POP.
 
-Hit play and the controls disappear for the night. Free with three eye styles.
-One payment gets you ten more, six moods, and eyes that turn toward sounds
-(audio never leaves your phone).
+Paid users get access to more eye styles & behaviors, including eyes that react
+to sound!
 ```
 
-80 words, in the same voice as the short description: contractions, second
-person, no headings. Elijah's brief was "super casual but not cringy", and the
-line between those is mostly restraint. His own draft had "BOOM" and "sick
-decoration" in it, which work in a message and would age badly in a listing
-somebody reads next October, so the energy stays and the slang does not.
+Elijah's, written and chosen by him. Two short paragraphs, 57 words. Everything I
+drafted before this was longer and more explanatory, and none of it was better:
+the product is one physical trick and it takes one sentence to describe.
 
 Note the opening names Moving Eyes while the store name is Halloween Eyes
-Decoration. That is deliberate: the listing gets found by the store name and the
-app gets remembered by the brand.
+Decoration. The listing gets found by the store name and the app gets remembered
+by the brand.
 
 ## App Store
 
@@ -166,8 +162,10 @@ there is no advertising identifier and no third-party SDK that would use one.
 
 ## Console state
 
-Play, saved as draft on 2026-09-05: name, both descriptions, category
-(Entertainment, App not Game), contact email, website.
+Play, saved as draft on 2026-09-05: name, both descriptions exactly as they
+appear above, category (Entertainment, App not Game), contact email, website.
+The listing page still reports errors because the graphics are missing, but
+"Save as draft" goes through regardless, so the copy is safe.
 
 Still to do, all of them developer declarations rather than copy:
 
