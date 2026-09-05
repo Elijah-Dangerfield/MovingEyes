@@ -25,6 +25,9 @@ data class ScenePreset(
     val id: ScenePresetId,
     val eyes: List<SceneEye>,
     val canvasColor: Long = Scene.OpaqueBlack,
+    /** Off for a crowd: fourteen eyes blinking as one reads as a single
+     *  enormous creature rather than a room full of watchers. */
+    val blinkTogether: Boolean = true,
 ) {
     /** Shown anyway, animating: a live locked preset is an advert, a greyed
      *  one is a nag. */
@@ -37,6 +40,7 @@ data class ScenePreset(
         name = name,
         eyes = eyes,
         canvasColor = canvasColor,
+        blinkTogether = blinkTogether,
     )
 }
 
@@ -87,6 +91,7 @@ object ScenePresets {
             depthPair(centerX = 0.35f, y = 0.29f, separation = 0.071f, depth = 0.79f),
             depthPair(centerX = 0.64f, y = 0.21f, separation = 0.059f, depth = 0.91f),
         ).flatten(),
+        blinkTogether = false,
     )
 
     /**

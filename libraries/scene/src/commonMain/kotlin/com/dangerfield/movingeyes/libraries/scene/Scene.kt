@@ -31,6 +31,16 @@ data class Scene(
 
     /** Eyes look toward sounds. Paid, and needs the microphone permission. */
     val reactivityEnabled: Boolean = false,
+
+    /**
+     * One blink for the whole scene rather than a timer per eye.
+     *
+     * On by default because the common scene is a pair, and a pair whose lids
+     * drift apart stops reading as a face — and drift is one-way, since two
+     * independent timers only ever separate further. Off suits a crowd, where
+     * unison reads as one enormous creature instead of many watchers.
+     */
+    val blinkTogether: Boolean = true,
 ) {
     companion object {
         const val OpaqueBlack: Long = 0xFF000000

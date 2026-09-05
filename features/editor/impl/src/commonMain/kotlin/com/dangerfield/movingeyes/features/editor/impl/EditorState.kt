@@ -9,7 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import com.dangerfield.movingeyes.libraries.eyes.BehaviorConfig
 import com.dangerfield.movingeyes.libraries.eyes.EyeStyle
-import com.dangerfield.movingeyes.libraries.eyes.GazeDirector
+import com.dangerfield.movingeyes.libraries.eyes.SceneDirector
 import com.dangerfield.movingeyes.libraries.eyes.EyeStyles
 import com.dangerfield.movingeyes.libraries.eyes.Mood
 import com.dangerfield.movingeyes.libraries.eyes.Moods
@@ -32,6 +32,7 @@ data class CanvasSettings(
     val sleepTimer: Duration? = null,
 
     val reactivityEnabled: Boolean = false,
+    val blinkTogether: Boolean = true,
 )
 
 /** One eye's full mutable state, as much of it as undo needs to restore. */
@@ -72,7 +73,7 @@ class EditorState(
     eyes: List<RenderedEye>,
     moods: List<Mood>,
     canvas: CanvasSettings = CanvasSettings(),
-    private val gaze: GazeDirector? = null,
+    private val gaze: SceneDirector? = null,
 ) {
 
     private val _eyes = mutableStateListOf<RenderedEye>().apply { addAll(eyes) }
@@ -537,6 +538,11 @@ class EditorState(
         canvas = canvas.copy(reactivityEnabled = enabled)
     }
 
+    fun setBlinkTogether(together: Boolean) {
+        beginEdit()
+        canvas = canvas.copy(blinkTogether = together)
+    }
+
     /** Not undoable: brightness is a live comfort control, not an edit. */
     fun setBrightness(brightness: Float) {
         canvas = canvas.copy(brightness = brightness.coerceIn(MinBrightness, 1f))
@@ -551,6 +557,7 @@ class EditorState(
         brightness = canvas.brightness,
         sleepTimerMinutes = canvas.sleepTimer?.inWholeMinutes?.toInt(),
         reactivityEnabled = canvas.reactivityEnabled,
+        blinkTogether = canvas.blinkTogether,
     )
 
     /** Null unless exactly two eyes are selected. */

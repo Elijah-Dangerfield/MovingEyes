@@ -7,26 +7,51 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 /**
- * Where the scene is looking.
+ * The scene's shared nervous system: where it is looking, and when it blinks.
  *
- * Eyes in one composition are a face, and a face looks at one thing. Left to
- * sample their own targets they drift apart and read as a bag of unrelated
- * eyeballs — the giveaway that this is a screensaver rather than something
- * watching you.
+ * Eyes in one composition are a face, and a face looks at one thing and blinks
+ * with both lids at once. Left to sample their own timers they drift apart,
+ * which is the giveaway that this is a screensaver rather than something
+ * watching you — and desync is a one-way door, since two independent timers
+ * only ever get further apart.
  *
- * Blinking stays per-eye: two eyes blinking in lockstep looks mechanical, but
- * two eyes looking in different directions looks broken. Opposite problems,
- * opposite answers.
+ * Blink sync is a scene property rather than a law, because it stops being
+ * right at scale: two eyes blinking separately looks broken, but fourteen eyes
+ * in seven pairs blinking in unison looks like one enormous creature rather
+ * than a crowd. Pairs want [blinksTogether] on, which is the default; a wall
+ * may want it off.
  */
-class GazeDirector(
+class SceneDirector(
     behavior: BehaviorConfig,
+    var blinksTogether: Boolean = true,
     private val random: Random = Random.Default,
 ) {
+
+    /**
+     * Bumped when the scene should blink. Runtimes watch it rather than being
+     * pushed to, so an eye added mid-scene joins the rhythm on the next blink
+     * instead of firing one immediately.
+     */
+    var blinkTick: Int = 0
+        private set
+
+    /**
+     * Whether the blink [blinkTick] just announced is a double.
+     *
+     * Rolled here rather than per eye. Left to the eyes, one of a synced pair
+     * would occasionally blink twice while the other blinked once — a face
+     * winking at itself, and the exact desync the director exists to prevent.
+     */
+    var blinkIsDouble: Boolean = false
+        private set
+
+    private var nextBlinkAt = 0f
 
     var behavior: BehaviorConfig = behavior
         set(value) {
             field = value
             scheduleNext()
+            scheduleNextBlink()
         }
 
     /** Current gaze in -1..1 on each axis. */
@@ -42,10 +67,17 @@ class GazeDirector(
 
     init {
         scheduleNext()
+        scheduleNextBlink()
     }
 
     fun advance(deltaSeconds: Float) {
         elapsed += deltaSeconds
+
+        if (elapsed >= nextBlinkAt) {
+            blinkTick += 1
+            blinkIsDouble = random.nextFloat() < behavior.doubleBlinkChance
+            scheduleNextBlink()
+        }
 
         if (saccadeElapsed < saccadeDuration) {
             saccadeElapsed += deltaSeconds
@@ -105,6 +137,10 @@ class GazeDirector(
         const val BaseSaccadeSeconds = 0.09f
         const val SaccadeOvershoot = 0.06f
         const val VerticalGazeDamping = 0.55f
+    }
+
+    private fun scheduleNextBlink() {
+        nextBlinkAt = elapsed + behavior.blinkIntervalSeconds.sampleIn(random)
     }
 }
 

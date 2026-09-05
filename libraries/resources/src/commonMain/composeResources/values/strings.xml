@@ -88,6 +88,7 @@
 
     <!-- Scene tab -->
     <string name="scene_canvas_color">Canvas colour</string>
+    <string name="scene_blink_together">Blink together</string>
     <string name="scene_brightness">Brightness</string>
 
     <!--

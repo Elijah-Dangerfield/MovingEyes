@@ -2,6 +2,7 @@ package com.dangerfield.movingeyes.features.editor.impl.panels
 
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.input.pointer.pointerInput
 import com.dangerfield.movingeyes.libraries.ui.components.LockBadge
@@ -100,12 +102,18 @@ fun PanelSlider(
             )
         },
     ) {
+        // Inset from the panel's own edges. The panel is already only 16dp off
+        // the screen, and Android reserves roughly 20dp either side for the
+        // back gesture — so a thumb at 0% or 100% sat inside the strip that
+        // swipes you out of the app, and grabbing it navigated back instead.
         Slider(
             value = value,
             onValueChange = onValueChange,
             onValueChangeFinished = onValueChangeFinished,
             valueRange = valueRange,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = SliderEdgeInset),
         )
     }
 }
@@ -120,3 +128,6 @@ private fun Modifier.sealed(onTap: () -> Unit): Modifier = this
     .pointerInput(onTap) { detectTapGestures { onTap() } }
 
 private const val SealedAlpha = 0.55f
+
+/** Keeps a slider's travel clear of the system's edge-swipe zone. */
+private val SliderEdgeInset = 12.dp

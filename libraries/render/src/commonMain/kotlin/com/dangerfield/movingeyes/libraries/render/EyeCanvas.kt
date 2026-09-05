@@ -22,7 +22,7 @@ import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
-import com.dangerfield.movingeyes.libraries.eyes.GazeDirector
+import com.dangerfield.movingeyes.libraries.eyes.SceneDirector
 import com.dangerfield.movingeyes.libraries.eyes.Moods
 import kotlin.math.abs
 
@@ -376,10 +376,10 @@ class EyeSceneState(
     frameIntervalSeconds: Float = 1f / 30f,
     /**
      * Shared so every eye in the scene looks at the same thing. See
-     * [GazeDirector] — a face looks at one thing, and eyes that each wander
+     * [SceneDirector] — a face looks at one thing, and eyes that each wander
      * separately read as a bag of unrelated eyeballs.
      */
-    val gaze: GazeDirector = GazeDirector(eyes.firstOrNull()?.runtime?.behavior ?: Moods.FreeDefault),
+    val gaze: SceneDirector = SceneDirector(eyes.firstOrNull()?.runtime?.behavior ?: Moods.FreeDefault),
 ) {
     var eyes: List<RenderedEye> = eyes
     var frameIntervalSeconds: Float = frameIntervalSeconds

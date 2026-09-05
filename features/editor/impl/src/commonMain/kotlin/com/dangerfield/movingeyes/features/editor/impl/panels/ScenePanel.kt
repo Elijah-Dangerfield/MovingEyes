@@ -16,6 +16,8 @@ import com.dangerfield.movingeyes.libraries.ui.components.ColorField
 import com.dangerfield.movingeyes.libraries.ui.components.text.Text
 import com.dangerfield.movingeyes.system.Dimension
 import movingeyes.libraries.resources.generated.resources.Res
+import com.dangerfield.movingeyes.libraries.ui.components.Switch
+import movingeyes.libraries.resources.generated.resources.scene_blink_together
 import movingeyes.libraries.resources.generated.resources.scene_brightness
 import movingeyes.libraries.resources.generated.resources.scene_canvas_color
 import movingeyes.libraries.resources.generated.resources.scene_sleep_hours
@@ -52,6 +54,16 @@ fun ScenePanel(
             onValueChange = { editor.setBrightness(it) },
             valueRange = MinBrightness..1f,
         )
+
+        PanelRow(
+            label = stringResource(Res.string.scene_blink_together),
+            trailing = {
+                Switch(
+                    checked = editor.canvas.blinkTogether,
+                    onCheckedChange = { editor.setBlinkTogether(it) },
+                )
+            },
+        ) {}
 
         // Options, not a slider: nobody wants "forty-seven minutes".
         PanelRow(label = stringResource(Res.string.scene_sleep_timer)) {

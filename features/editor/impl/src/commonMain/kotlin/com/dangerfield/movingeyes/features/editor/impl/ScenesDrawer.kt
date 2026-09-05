@@ -39,6 +39,8 @@ import com.dangerfield.movingeyes.libraries.ui.components.button.ButtonType
 import com.dangerfield.movingeyes.libraries.ui.components.text.Text
 import com.dangerfield.movingeyes.system.AppTheme
 import com.dangerfield.movingeyes.system.Dimension
+import com.dangerfield.movingeyes.libraries.ui.components.icon.IconButton
+import com.dangerfield.movingeyes.libraries.ui.components.icon.Icons
 import movingeyes.libraries.resources.generated.resources.Res
 import movingeyes.libraries.resources.generated.resources.scenes_delete
 import movingeyes.libraries.resources.generated.resources.scenes_mine
@@ -100,13 +102,10 @@ fun ScenesDrawer(
                 )
                 // App-level, so it lives here rather than in the canvas
                 // toolbar, which holds only canvas actions.
-                Button(
+                IconButton(
+                    icon = Icons.Settings(stringResource(Res.string.settings_open)),
                     onClick = onOpenSettings,
-                    size = ButtonSize.Small,
-                    style = ButtonStyle.Text,
-                ) {
-                    Text(stringResource(Res.string.settings_open))
-                }
+                )
             }
 
             Button(

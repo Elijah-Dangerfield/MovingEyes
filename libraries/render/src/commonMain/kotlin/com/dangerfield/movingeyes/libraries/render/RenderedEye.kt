@@ -13,7 +13,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import com.dangerfield.movingeyes.libraries.eyes.BehaviorConfig
 import com.dangerfield.movingeyes.libraries.eyes.EyeRuntime
 import com.dangerfield.movingeyes.libraries.eyes.EyeStyle
-import com.dangerfield.movingeyes.libraries.eyes.GazeDirector
+import com.dangerfield.movingeyes.libraries.eyes.SceneDirector
 import com.dangerfield.movingeyes.libraries.eyes.Moods
 import kotlin.math.cos
 import kotlin.math.sin
@@ -42,9 +42,9 @@ class RenderedEye(
     glowFraction: Float = style.defaultGlow / 100f,
     behavior: BehaviorConfig = Moods.FreeDefault,
     random: Random = Random.Default,
-    gazeDirector: GazeDirector? = null,
+    sceneDirector: SceneDirector? = null,
 ) {
-    val runtime = EyeRuntime(behavior, random, gazeDirector)
+    val runtime = EyeRuntime(behavior, random, sceneDirector)
 
     /** Fixed at construction so an eye's iris texture doesn't reshuffle when it
      *  is recoloured or resized. Two eyes on one face have different irises;

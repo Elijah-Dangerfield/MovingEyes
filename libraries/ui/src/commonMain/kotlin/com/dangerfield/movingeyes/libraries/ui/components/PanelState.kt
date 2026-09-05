@@ -10,7 +10,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.dangerfield.movingeyes.system.Motion
 import kotlin.math.abs
-import kotlin.math.roundToInt
 
 /** Where a panel can come to rest. */
 enum class PanelPosition { Hidden, Collapsed, Expanded }
@@ -56,8 +55,6 @@ class PanelState internal constructor(initial: PanelPosition) {
     val isExpanded: Boolean get() = extentPx > 0 && occupiedPx > (extentPx + headerPx) / 2f
 
     val isVisible: Boolean get() = occupiedPx > 0f || pending != PanelPosition.Hidden
-
-    internal fun offsetPx(): Int = (extentPx - exposure.value).roundToInt()
 
     internal fun restingPx(position: PanelPosition): Float = when (position) {
         PanelPosition.Hidden -> 0f

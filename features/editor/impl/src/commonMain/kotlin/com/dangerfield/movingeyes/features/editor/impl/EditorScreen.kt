@@ -16,6 +16,12 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import com.dangerfield.movingeyes.libraries.ui.fadingEdge
+import androidx.compose.foundation.layout.size
+import com.dangerfield.movingeyes.libraries.ui.components.icon.Icon
+import com.dangerfield.movingeyes.libraries.ui.components.icon.IconSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.requiredSize
@@ -53,7 +59,7 @@ import com.dangerfield.movingeyes.features.paywall.PaywallRoute
 import com.dangerfield.movingeyes.features.paywall.PaywallTrigger
 import com.dangerfield.movingeyes.features.settings.SettingsRoute
 import com.dangerfield.movingeyes.libraries.eyes.Mood
-import com.dangerfield.movingeyes.libraries.eyes.GazeDirector
+import com.dangerfield.movingeyes.libraries.eyes.SceneDirector
 import com.dangerfield.movingeyes.libraries.eyes.Moods
 import com.dangerfield.movingeyes.libraries.eyes.isStrobing
 import com.dangerfield.movingeyes.libraries.navigation.Router
@@ -98,6 +104,7 @@ import movingeyes.libraries.resources.generated.resources.panel_look
 import movingeyes.libraries.resources.generated.resources.panel_motion
 import movingeyes.libraries.resources.generated.resources.panel_place
 import movingeyes.libraries.resources.generated.resources.place_add_eye
+import movingeyes.libraries.resources.generated.resources.place_delete
 import movingeyes.libraries.resources.generated.resources.place_duplicate
 import movingeyes.libraries.resources.generated.resources.panel_scene
 import movingeyes.libraries.resources.generated.resources.scenes_default_name
@@ -155,7 +162,7 @@ fun EditorScreen(
         val openScene = state.openScene
         // One director for the scene, so every eye looks at the same thing.
         val gaze = remember(openScene) {
-            GazeDirector((openScene ?: blankScene("")).eyes.firstOrNull()?.behavior() ?: Moods.FreeDefault)
+            SceneDirector((openScene ?: blankScene("")).eyes.firstOrNull()?.behavior() ?: Moods.FreeDefault)
         }
         val editor = remember(openScene, displayWidthPx, displayHeightPx) {
             val scene = openScene ?: blankScene("")
@@ -169,10 +176,15 @@ fun EditorScreen(
                     brightness = scene.brightness,
                     sleepTimer = scene.sleepTimerMinutes?.minutes,
                     reactivityEnabled = scene.reactivityEnabled,
+                    blinkTogether = scene.blinkTogether,
                 ),
             )
         }
         val sceneState = remember(editor) { EyeSceneState(eyes = editor.eyes, gaze = gaze) }
+
+        // Pushed rather than passed at construction: the toggle has to take
+        // effect on a running scene, not only on the next one built.
+        gaze.blinksTogether = editor.canvas.blinkTogether
 
         // A quarter turn swaps what "across" and "down" mean, so gestures,
         // snapping and the readout all work in these rather than the display's
@@ -186,6 +198,7 @@ fun EditorScreen(
         var wasSnapped by remember { mutableStateOf(false) }
         var dragSession by remember { mutableStateOf<DragSession?>(null) }
         var isManipulating by remember { mutableStateOf(false) }
+        var isOverTrash by remember { mutableStateOf(false) }
         var snappingEnabled by remember { mutableStateOf(true) }
         val panel = rememberPanelState()
         var tab by remember { mutableStateOf(PanelTab.Place) }
@@ -407,6 +420,18 @@ fun EditorScreen(
                                 },
                                 onGuides = { guides = it },
                             )
+                            val overTrashNow = isOverTrash(
+                                editor = editor,
+                                canvasHeightPx = canvasHeightPx,
+                                thresholdFraction = TrashCatchFraction,
+                            )
+                            if (overTrashNow != isOverTrash) {
+                                isOverTrash = overTrashNow
+                                if (overTrashNow) {
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                }
+                            }
+
                             // On capture only: a tick in both directions turns
                             // a careful nudge into a buzzing mess.
                             if (snappedNow && !wasSnapped) {
@@ -440,6 +465,12 @@ fun EditorScreen(
                             wasSnapped = false
                             dragSession = null
                             isManipulating = false
+                            if (isOverTrash) {
+                                editor.deleteSelection()
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                isOverTrash = false
+                                scope.launch { panel.hide() }
+                            }
                         },
                         onUndo = { editor.undo() },
                         onRedo = { editor.redo() },
@@ -502,6 +533,15 @@ fun EditorScreen(
             )
         }
 
+        TrashTarget(
+            visible = isManipulating && editor.selection.isNotEmpty(),
+            isArmed = isOverTrash,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .safeDrawingPadding()
+                .padding(bottom = Dimension.D1000),
+        )
+
         AnimatedVisibility(
             visible = !display.isActive,
             enter = fadeIn(Motion.Chrome.restore()),
@@ -531,14 +571,12 @@ fun EditorScreen(
                 )
             },
         ) {
+            val panelScroll = rememberScrollState()
             Column(
                 modifier = Modifier
-                    .padding(
-                        start = Dimension.D700,
-                        end = Dimension.D700,
-                        bottom = Dimension.D700,
-                    )
-                    .verticalScroll(rememberScrollState()),
+                    .padding(start = Dimension.D700, end = Dimension.D700)
+                    .fadingEdge(panelScroll)
+                    .verticalScroll(panelScroll),
                 verticalArrangement = Arrangement.spacedBy(Dimension.D600),
             ) {
                 when (tab) {
@@ -569,6 +607,11 @@ fun EditorScreen(
 
                     PanelTab.Scene -> ScenePanel(editor = editor)
                 }
+
+                // The sheet is capped at half the screen, so without this the
+                // last control sits flush against the bottom edge and there is
+                // nothing left to drag against to reach it.
+                Spacer(modifier = Modifier.height(PanelBottomReach))
             }
         }
         }
@@ -793,6 +836,81 @@ private fun EditorChrome(
 }
 
 /**
+ * Where a dragged eye goes to die.
+ *
+ * **Only while dragging.** A delete button sitting on screen permanently is a
+ * button someone eventually hits by accident, and an eye deleted by accident is
+ * an alignment destroyed.
+ *
+ * **Deliberately hard to reach.** It arms only in the bottom [TrashCatchFraction]
+ * of the canvas, which is further than any normal placement drag travels, and
+ * it takes a release to commit — sliding back out disarms it. Undo still
+ * catches the rest.
+ *
+ * Haptics on arming and again on delete, because by then the eye is under a
+ * finger and cannot be seen.
+ */
+@Composable
+private fun TrashTarget(visible: Boolean, isArmed: Boolean, modifier: Modifier = Modifier) {
+    AnimatedVisibility(
+        visible = visible,
+        modifier = modifier,
+        enter = fadeIn(Motion.Chrome.restore()),
+        exit = fadeOut(Motion.Chrome.dissolve()),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(TrashSize)
+                .clip(RoundedCornerShape(percent = 50))
+                .background(
+                    if (isArmed) {
+                        AppTheme.colors.danger.color
+                    } else {
+                        AppTheme.colors.surfacePrimary.color.copy(alpha = 0.92f)
+                    },
+                )
+                .border(
+                    width = if (isArmed) 2.dp else 1.dp,
+                    color = if (isArmed) {
+                        AppTheme.colors.danger.color
+                    } else {
+                        AppTheme.colors.border.color
+                    },
+                    shape = RoundedCornerShape(percent = 50),
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                icon = Icons.Delete(stringResource(Res.string.place_delete)),
+                size = IconSize.Medium,
+                color = if (isArmed) AppTheme.colors.onAccentPrimary else AppTheme.colors.text,
+            )
+        }
+    }
+}
+
+/**
+ * True when every selected eye has been dragged into the bottom band.
+ *
+ * Every, not any: dragging a pair should not delete it because one eye's edge
+ * strayed low.
+ */
+private fun isOverTrash(
+    editor: EditorState,
+    canvasHeightPx: Float,
+    thresholdFraction: Float,
+): Boolean {
+    val active = editor.activeIndices()
+    if (active.isEmpty() || canvasHeightPx <= 0f) return false
+    return active.all { editor.eyes[it].centerY >= thresholdFraction }
+}
+
+/** How far down the canvas an eye must be dragged to arm the trash. */
+private const val TrashCatchFraction = 0.88f
+
+private val TrashSize = 64.dp
+
+/**
  * Icon-only, so the rail stays one thumb wide, which is the whole reason it can
  * float over the canvas instead of eating a strip of it. The label survives as
  * the content description rather than being dropped.
@@ -823,6 +941,10 @@ private fun RailButton(
         },
     )
 }
+
+/** Room past the last control, so the bottom of a long tab is reachable
+ *  rather than pinned under the screen edge. */
+private val PanelBottomReach = 72.dp
 
 private val RailCornerRadius = 18.dp
 private val RailPadding = 6.dp

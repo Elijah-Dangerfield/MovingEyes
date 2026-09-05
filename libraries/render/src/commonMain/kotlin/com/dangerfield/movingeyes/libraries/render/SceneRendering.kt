@@ -3,7 +3,7 @@ package com.dangerfield.movingeyes.libraries.render
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.dangerfield.movingeyes.libraries.eyes.EyeStyles
-import com.dangerfield.movingeyes.libraries.eyes.GazeDirector
+import com.dangerfield.movingeyes.libraries.eyes.SceneDirector
 import com.dangerfield.movingeyes.libraries.eyes.Mood
 import com.dangerfield.movingeyes.libraries.scene.Scene
 import com.dangerfield.movingeyes.libraries.scene.SceneEye
@@ -23,7 +23,7 @@ import kotlin.random.Random
 fun Scene.toRenderedEyes(
     canvasWidthPx: Float,
     canvasHeightPx: Float,
-    gaze: GazeDirector? = null,
+    gaze: SceneDirector? = null,
 ): List<RenderedEye> {
     val shortEdge = min(canvasWidthPx, canvasHeightPx)
     return eyes.mapIndexed { index, eye ->
@@ -40,7 +40,7 @@ fun Scene.toRenderedEyes(
             glowFraction = eye.glowFraction,
             behavior = eye.behavior(),
             random = Random(index),
-            gazeDirector = gaze,
+            sceneDirector = gaze,
         )
     }
 }

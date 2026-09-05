@@ -53,7 +53,7 @@ class EyeRuntime(
      * Where the whole scene is looking. Null leaves the eye to wander on its
      * own, which is only right for a lone preview.
      */
-    private val gazeDirector: GazeDirector? = null,
+    private val sceneDirector: SceneDirector? = null,
     /**
      * Seconds of head start. Randomised per eye so nothing syncs by accident,
      * across eyes or across devices.
@@ -84,6 +84,10 @@ class EyeRuntime(
 
     private var blinkElapsed = Float.MAX_VALUE
     private var nextBlinkAt = 0f
+
+    /** Starts level with the director so joining a scene doesn't fire a blink
+     *  on the first frame. */
+    private var lastBlinkTick = sceneDirector?.blinkTick ?: 0
     private var queuedBlinks = 0
 
     private var startleElapsed = Float.MAX_VALUE
@@ -143,7 +147,7 @@ class EyeRuntime(
     }
 
     private fun advanceGaze(delta: Float) {
-        if (gazeDirector != null) return
+        if (sceneDirector != null) return
         if (saccadeElapsed < saccadeDuration) {
             saccadeElapsed += delta
             return
@@ -157,6 +161,12 @@ class EyeRuntime(
         scheduleNextSaccade()
     }
 
+    /**
+     * The scene decides *when* to blink, and whether it is a double, when it is
+     * directing. This eye always owns *how long*, which comes from its own
+     * mood — so a pair on different moods still blinks at the same moments at
+     * its own speed.
+     */
     private fun advanceBlink(delta: Float) {
         if (blinkElapsed < behavior.blinkDurationSeconds) {
             blinkElapsed += delta
@@ -167,11 +177,20 @@ class EyeRuntime(
             blinkElapsed = 0f
             return
         }
-        if (elapsed < nextBlinkAt) return
 
+        val director = sceneDirector
+        if (director != null && director.blinksTogether) {
+            if (director.blinkTick == lastBlinkTick) return
+            lastBlinkTick = director.blinkTick
+            blinkElapsed = 0f
+            if (director.blinkIsDouble) queuedBlinks = 1
+            return
+        }
+
+        if (elapsed < nextBlinkAt) return
+        scheduleNextBlink()
         blinkElapsed = 0f
         if (random.nextFloat() < behavior.doubleBlinkChance) queuedBlinks = 1
-        scheduleNextBlink()
     }
 
     private fun advanceJitter(delta: Float) {
@@ -203,7 +222,7 @@ class EyeRuntime(
     }
 
     private fun currentGaze(startle: Float): EyeVector {
-        val wandered = gazeDirector?.gaze ?: run {
+        val wandered = sceneDirector?.gaze ?: run {
             val progress = if (saccadeDuration <= 0f) {
                 1f
             } else {

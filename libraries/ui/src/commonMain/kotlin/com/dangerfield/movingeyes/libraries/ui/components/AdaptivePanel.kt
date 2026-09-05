@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -29,10 +28,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.dangerfield.movingeyes.libraries.ui.PreviewContent
 import com.dangerfield.movingeyes.libraries.ui.components.text.Text
@@ -117,7 +116,7 @@ fun AdaptivePanel(
 
         Panel(
             layout = layout,
-            offsetPx = state.offsetPx(),
+            occupiedPx = { state.occupiedPx },
             onExtentMeasured = { state.extentPx = it },
             onHeaderMeasured = { state.headerPx = it },
             expanded = state.isExpanded,
@@ -135,7 +134,7 @@ fun AdaptivePanel(
 @Composable
 private fun BoxScope.Panel(
     layout: PanelLayout,
-    offsetPx: Int,
+    occupiedPx: () -> Float,
     onExtentMeasured: (Int) -> Unit,
     onHeaderMeasured: (Int) -> Unit,
     expanded: Boolean,
@@ -159,18 +158,23 @@ private fun BoxScope.Panel(
     }
 
     val placement = when (layout) {
+        // Slid by its *own* height, read inside graphicsLayer where the layout
+        // size is already known. Offsetting by the measured extent instead
+        // meant that on the frame before the first measurement the extent was
+        // zero, so the panel drew fully in place and then jumped — it popped
+        // into existence rather than arriving.
         PanelLayout.Sheet -> Modifier
             .align(Alignment.BottomCenter)
             .fillMaxWidth()
             .heightIn(max = maxSheetHeight)
-            .offset { IntOffset(x = 0, y = offsetPx) }
+            .graphicsLayer { translationY = size.height - occupiedPx() }
             .onSizeChanged { onExtentMeasured(it.height) }
 
         PanelLayout.Rail -> Modifier
             .align(Alignment.CenterEnd)
             .fillMaxHeight()
             .width(Motion.Panel.RailWidthDp)
-            .offset { IntOffset(x = offsetPx, y = 0) }
+            .graphicsLayer { translationX = size.width - occupiedPx() }
             .onSizeChanged { onExtentMeasured(it.width) }
     }
 
