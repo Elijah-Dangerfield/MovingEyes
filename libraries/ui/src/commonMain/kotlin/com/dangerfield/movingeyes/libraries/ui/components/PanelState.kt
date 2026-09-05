@@ -43,12 +43,19 @@ class PanelState internal constructor(initial: PanelPosition) {
     /** The header's height: the panel's resting size when collapsed. */
     internal var headerPx by mutableIntStateOf(0)
 
-    /** Read this to lay out around the panel; it updates every frame of a drag. */
-    val occupiedPx: Float get() = exposure.value
+    /**
+     * Read this to lay out around the panel; it updates every frame of a drag.
+     *
+     * Clamped, because the settle spring is underdamped and undershoots past
+     * zero on the way to hidden. Callers treat this as a length — a padding, a
+     * share of the canvas — and a negative one either throws or silently
+     * inflates the canvas past full size for a few frames.
+     */
+    val occupiedPx: Float get() = exposure.value.coerceIn(0f, extentPx.toFloat())
 
-    val isExpanded: Boolean get() = extentPx > 0 && exposure.value > (extentPx + headerPx) / 2f
+    val isExpanded: Boolean get() = extentPx > 0 && occupiedPx > (extentPx + headerPx) / 2f
 
-    val isVisible: Boolean get() = exposure.value > 0f || pending != PanelPosition.Hidden
+    val isVisible: Boolean get() = occupiedPx > 0f || pending != PanelPosition.Hidden
 
     internal fun offsetPx(): Int = (extentPx - exposure.value).roundToInt()
 
