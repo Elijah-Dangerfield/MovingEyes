@@ -50,39 +50,26 @@ A tablet behind a painting with the eyes cut out. They blink and follow you.
 ### Full description, filled
 
 ```
-Cut two eye holes in a painting or a sheet of cardboard, and tape a phone or
-tablet behind it. The eyes blink and follow whoever walks past.
-
-That is the whole app.
-
-Lining the eyes up with the holes is the fiddly part, so the app measures in real
-millimetres and snaps the eyes into line with each other. Mark the cardboard,
-then cut it.
-
-When it's set up, hit play. The controls disappear, the screen stays awake all
-night, and taps do nothing, so nobody can drag an eye out of its hole by
-touching the painting.
-
-FREE
-
-Three eye styles, as many eyes as you want, and everything above.
-
-FULL VERSION, ONE PAYMENT
-
-Ten more eyes: bloodshot, cat, reptile, demon, spider, doll and more. Six moods,
-from a slow scan to Possessed. And eyes that turn toward a sound and look at
-whoever just came in.
-
-No subscription, no ads, no account, no internet needed.
-
-If you switch on sound reactivity, audio is read on your device and thrown away
-immediately. Nothing is recorded or uploaded, and it cannot understand speech.
+Cut two eye holes in a painting or a sheet of cardboard and tape your phone
+behind it. The eyes blink and follow people around the room. The app measures in
+real millimetres, so you can line the eyes up and mark the cardboard before you
+cut. Hit play and the controls disappear; the screen stays awake all night and
+ignores taps. Free with three eye styles, and one payment adds ten more, six
+moods, and eyes that turn toward sounds (audio is read on your device and never
+leaves it).
 ```
 
-About 200 words, down from 2,300. The cut list was: the OLED paragraph, the
-"built for the cut" heading, the free-tier feature inventory, and the flashing
-note. None of them survive the test of "would somebody read this before
-deciding?" The flashing setting still exists and is still disclosed in the app.
+One paragraph, 80 words. It was 2,300, then 200 across nine paragraphs with
+shouty section headings, which is still a wall when it lands in a store on a
+phone. Nobody expands a description to read a feature inventory for a Halloween
+decoration.
+
+The last draft's headings were the giveaway that it was too long: FREE and FULL
+VERSION, ONE PAYMENT are navigation, and a paragraph does not need navigating.
+
+The microphone note survives as a parenthesis rather than its own sentence. It
+is the one line that prevents a category of one-star review, since a Halloween
+app asking for a microphone looks alarming without it.
 
 ## App Store
 
