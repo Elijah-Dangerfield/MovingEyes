@@ -13,14 +13,11 @@ import com.dangerfield.movingeyes.features.editor.impl.EditorState
 import com.dangerfield.movingeyes.features.editor.impl.SleepTimerOptions
 import com.dangerfield.movingeyes.libraries.ui.components.SegmentedControl
 import com.dangerfield.movingeyes.libraries.ui.components.ColorField
-import com.dangerfield.movingeyes.libraries.ui.components.button.Button
-import com.dangerfield.movingeyes.libraries.ui.components.button.ButtonSize
 import com.dangerfield.movingeyes.libraries.ui.components.text.Text
 import com.dangerfield.movingeyes.system.Dimension
 import movingeyes.libraries.resources.generated.resources.Res
 import movingeyes.libraries.resources.generated.resources.scene_brightness
 import movingeyes.libraries.resources.generated.resources.scene_canvas_color
-import movingeyes.libraries.resources.generated.resources.scene_save
 import movingeyes.libraries.resources.generated.resources.scene_sleep_hours
 import movingeyes.libraries.resources.generated.resources.scene_sleep_minutes
 import movingeyes.libraries.resources.generated.resources.scene_sleep_never
@@ -36,7 +33,6 @@ import kotlin.time.Duration
 @Composable
 fun ScenePanel(
     editor: EditorState,
-    onSave: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -66,14 +62,6 @@ fun ScenePanel(
                 onSelect = { editor.setSleepTimer(it) },
                 label = { labels.getValue(it) },
             )
-        }
-
-        Button(
-            onClick = onSave,
-            size = ButtonSize.Medium,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(Res.string.scene_save))
         }
     }
 }

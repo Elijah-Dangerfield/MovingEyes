@@ -19,16 +19,9 @@ import movingeyes.libraries.resources.generated.resources.motion_mood
 import movingeyes.libraries.resources.generated.resources.motion_reactivity
 import movingeyes.libraries.resources.generated.resources.motion_restlessness
 import movingeyes.libraries.resources.generated.resources.motion_wander
-import movingeyes.libraries.resources.generated.resources.preset_attic_bats
-import movingeyes.libraries.resources.generated.resources.preset_bloodshot_vigil
-import movingeyes.libraries.resources.generated.resources.preset_cat_in_the_bushes
-import movingeyes.libraries.resources.generated.resources.preset_demon_awakens
-import movingeyes.libraries.resources.generated.resources.preset_dolls_room
-import movingeyes.libraries.resources.generated.resources.preset_ghouls_stare
-import movingeyes.libraries.resources.generated.resources.preset_portrait_haunt
 import movingeyes.libraries.resources.generated.resources.preset_pumpkin_pals
-import movingeyes.libraries.resources.generated.resources.preset_spider_nest
-import movingeyes.libraries.resources.generated.resources.preset_window_watchers
+import movingeyes.libraries.resources.generated.resources.preset_trapped
+import movingeyes.libraries.resources.generated.resources.preset_wall_of_eyes
 import movingeyes.libraries.resources.generated.resources.style_bat
 import movingeyes.libraries.resources.generated.resources.style_bloodshot
 import movingeyes.libraries.resources.generated.resources.style_cartoon
@@ -80,16 +73,9 @@ val Mood.label: StringResource
 
 val ScenePresetId.label: StringResource
     get() = when (this) {
-        ScenePresetId.PortraitHaunt -> Res.string.preset_portrait_haunt
+        ScenePresetId.WallOfEyes -> Res.string.preset_wall_of_eyes
+        ScenePresetId.Trapped -> Res.string.preset_trapped
         ScenePresetId.PumpkinPals -> Res.string.preset_pumpkin_pals
-        ScenePresetId.SpiderNest -> Res.string.preset_spider_nest
-        ScenePresetId.AtticBats -> Res.string.preset_attic_bats
-        ScenePresetId.CatInTheBushes -> Res.string.preset_cat_in_the_bushes
-        ScenePresetId.DemonAwakens -> Res.string.preset_demon_awakens
-        ScenePresetId.WindowWatchers -> Res.string.preset_window_watchers
-        ScenePresetId.DollsRoom -> Res.string.preset_dolls_room
-        ScenePresetId.BloodshotVigil -> Res.string.preset_bloodshot_vigil
-        ScenePresetId.GhoulsStare -> Res.string.preset_ghouls_stare
     }
 
 /** Names the control in the "keep it" bar. */

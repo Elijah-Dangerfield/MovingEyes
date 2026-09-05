@@ -47,7 +47,10 @@ class RealSceneRepository(
     private fun Scene.toEntity(id: String, isAutosave: Boolean) = SceneEntity(
         id = id,
         name = name,
-        payload = SceneCodec.encode(this.copy(id = id)),
+        // The scene's own id, not the row's. For a saved scene they're the
+        // same; for the autosave row they are not, and encoding the row id
+        // there would lose track of which saved scene is open.
+        payload = SceneCodec.encode(this),
         updatedAtMillis = clock.now().toEpochMilliseconds(),
         isAutosave = isAutosave,
     )

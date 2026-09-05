@@ -61,7 +61,7 @@ import org.jetbrains.compose.resources.stringResource
 fun ScenesDrawer(
     saved: List<Scene>,
     onOpenScene: (Scene) -> Unit,
-    onOpenPreset: (ScenePreset) -> Unit,
+    onOpenPreset: (ScenePreset, String) -> Unit,
     onDeleteScene: (Scene) -> Unit,
     onNewBlank: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -150,10 +150,11 @@ fun ScenesDrawer(
 
                 items(ScenePresets.All.size) { index ->
                     val preset = ScenePresets.All[index]
+                    val name = stringResource(preset.id.label)
                     SceneRow(
-                        name = stringResource(preset.id.label),
+                        name = name,
                         isLocked = preset.isPaid && !isUnlocked,
-                        onClick = { onOpenPreset(preset) },
+                        onClick = { onOpenPreset(preset, name) },
                         onDelete = null,
                         preview = {
                             ScenePreview(

@@ -38,6 +38,8 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ChevronLeft
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Menu
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Egg
 import androidx.compose.material.icons.rounded.EggAlt
@@ -216,6 +218,10 @@ enum class Icons(
     ),
 
     Settings(androidx.compose.material.icons.Icons.Rounded.Settings),
+
+    Menu(androidx.compose.material.icons.Icons.Rounded.Menu),
+
+    Play(androidx.compose.material.icons.Icons.Rounded.PlayArrow),
 
     ChevronLeft(androidx.compose.material.icons.Icons.Rounded.ChevronLeft),
 

@@ -12,7 +12,7 @@ import kotlin.test.assertTrue
 /**
  * Presets are data, so the tests here are the ones that catch a typo in the
  * data: an eye placed off-screen, a pair that isn't symmetric, a preset that
- * quietly needs the unlock without being marked as needing it.
+ * quietly needs the unlock.
  */
 class ScenePresetsTest {
 
@@ -54,25 +54,20 @@ class ScenePresetsTest {
     }
 
     /**
-     * The two scenes that are meant to be graphic rather than alive. A cartoon
-     * is a drawing and a doll is unsettling because it's too perfect, so both
-     * must stay exactly level and mirrored — the opposite of every other preset.
+     * The one scene meant to be graphic rather than alive. A cartoon is a
+     * drawing, so it stays exactly level and mirrored — the opposite of the
+     * rule every other preset follows.
      */
     @Test
-    fun `the deliberately graphic presets stay perfectly symmetric`() {
-        listOf(ScenePresets.PumpkinPals, ScenePresets.DollsRoom).forEach { preset ->
-            val (left, right) = preset.eyes
-            val centre = (left.x + right.x) / 2f
+    fun `the cartoon preset stays perfectly symmetric`() {
+        val (left, right) = ScenePresets.PumpkinPals.eyes
+        val centre = (left.x + right.x) / 2f
 
-            assertTrue(
-                abs((centre - left.x) - (right.x - centre)) < 0.0001f,
-                "${preset.id} is asymmetric",
-            )
-            assertEquals(left.y, right.y, "${preset.id} is not level")
-            assertEquals(left.sizeFraction, right.sizeFraction, "${preset.id} has mismatched eyes")
-            assertEquals(0f, left.rotationDegrees)
-            assertEquals(0f, right.rotationDegrees)
-        }
+        assertTrue(abs((centre - left.x) - (right.x - centre)) < 0.0001f, "asymmetric")
+        assertEquals(left.y, right.y, "not level")
+        assertEquals(left.sizeFraction, right.sizeFraction, "mismatched eyes")
+        assertEquals(0f, left.rotationDegrees)
+        assertEquals(0f, right.rotationDegrees)
     }
 
     /**
@@ -81,28 +76,20 @@ class ScenePresetsTest {
      * a deliberate tilt — small enough not to look like a mistake.
      */
     @Test
-    fun `the living presets are tilted rather than level`() {
-        listOf(
-            ScenePresets.PortraitHaunt,
-            ScenePresets.CatInTheBushes,
-            ScenePresets.DemonAwakens,
-            ScenePresets.BloodshotVigil,
-            ScenePresets.GhoulsStare,
-        ).forEach { preset ->
-            val (left, right) = preset.eyes
+    fun `the living preset is tilted rather than level`() {
+        val (left, right) = ScenePresets.Trapped.eyes
 
-            assertTrue(left.rotationDegrees != 0f, "${preset.id} is dead level")
-            assertTrue(left.y != right.y, "${preset.id} has no head tilt")
-            assertTrue(left.sizeFraction != right.sizeFraction, "${preset.id} has no perspective")
+        assertTrue(left.rotationDegrees != 0f, "dead level")
+        assertTrue(left.y != right.y, "no head tilt")
+        assertTrue(left.sizeFraction != right.sizeFraction, "no perspective")
 
-            // Small enough to read as life rather than as a bug.
-            assertTrue(abs(left.rotationDegrees) < 8f, "${preset.id} is tilted $left")
-            assertTrue(abs(left.y - right.y) < 0.03f, "${preset.id} eyes are at different heights")
-            assertTrue(
-                abs(left.sizeFraction - right.sizeFraction) / left.sizeFraction < 0.1f,
-                "${preset.id} eyes are visibly different sizes",
-            )
-        }
+        // Small enough to read as life rather than as a bug.
+        assertTrue(abs(left.rotationDegrees) < 8f, "tilted $left")
+        assertTrue(abs(left.y - right.y) < 0.03f, "eyes are at different heights")
+        assertTrue(
+            abs(left.sizeFraction - right.sizeFraction) / left.sizeFraction < 0.1f,
+            "eyes are visibly different sizes",
+        )
     }
 
     /** Pure white is the loudest tell that an eye was drawn rather than seen. */
@@ -116,8 +103,8 @@ class ScenePresetsTest {
     /** Distance takes size, colour and glow together; shrinking alone reads as
      *  small eyes rather than distant ones. */
     @Test
-    fun `window watchers recede on every axis at once`() {
-        val pairs = ScenePresets.WindowWatchers.eyes.chunked(2).map { it.first() }
+    fun `the wall recedes on every axis at once`() {
+        val pairs = ScenePresets.WallOfEyes.eyes.chunked(2).map { it.first() }
         val nearest = pairs.maxBy { it.sizeFraction }
         val farthest = pairs.minBy { it.sizeFraction }
 
@@ -137,13 +124,16 @@ class ScenePresetsTest {
     }
 
     /**
-     * The free tier has to be able to complete the whole trick, so at least one
-     * preset must be usable without paying. If this ever fails, the paywall has
-     * crept over the line the product is built on.
+     * All of them, not most of them. A preset is a demonstration of what the
+     * app does, and a locked demonstration is a scene you can look at and not
+     * use. If this fails, a paid style or mood has crept into a preset and the
+     * drawer has started nagging instead of showing.
      */
     @Test
-    fun `at least one preset is free`() {
-        assertTrue(ScenePresets.All.any { !it.isPaid })
+    fun `every preset is free`() {
+        ScenePresets.All.forEach { preset ->
+            assertFalse(preset.isPaid, "${preset.id} needs the unlock")
+        }
     }
 
     @Test
@@ -168,9 +158,11 @@ class ScenePresetsTest {
         }
     }
 
+    /** The busiest scene the app ships, and the one the renderer's frame budget
+     *  is measured against. */
     @Test
-    fun `spider nest holds the count the renderer was profiled against`() {
-        assertEquals(8, ScenePresets.SpiderNest.eyes.size)
+    fun `the wall holds the count the renderer was profiled against`() {
+        assertEquals(14, ScenePresets.WallOfEyes.eyes.size)
     }
 
     @Test

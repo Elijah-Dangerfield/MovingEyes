@@ -97,30 +97,29 @@ class EditorViewModel(
             }
 
             is EditorAction.Open -> {
-                action.updateState { it.copy(openScene = action.scene) }
-                // Opened scenes are autosaved immediately rather than waiting
-                // for the first gesture. Without this, picking a scene and then
-                // losing the app to a low-memory kill reopens the *previous*
-                // one, which reads as the app having forgotten what you chose.
-                sceneRepository.writeAutosave(action.scene)
-                sendEvent(EditorEvent.SceneOpened(action.scene))
+                val opened = action.scene.identified()
+                sceneRepository.save(opened)
+                sceneRepository.writeAutosave(opened)
+                action.updateState { it.copy(openScene = opened) }
+                sendEvent(EditorEvent.SceneOpened(opened))
             }
 
             /**
-             * Autosave is the working copy, not a backup — see [SceneRepository].
-             * It's written on gesture end rather than on a timer, so the thing
-             * on disk is always a composition the user finished making rather
-             * than one caught mid-drag.
+             * There is no Save. Opening anything forks a scene of your own and
+             * every edit writes through to it, because the alternative is an
+             * app that quietly discards an hour of alignment work from someone
+             * who never noticed a button.
+             *
+             * Two writes, not one: the autosave row is the pointer to whatever
+             * is open, and the saved row is the scene itself.
              */
             is EditorAction.Autosave -> {
-                sceneRepository.writeAutosave(action.scene)
-            }
-
-            is EditorAction.Save -> {
-                val named = action.scene.copy(id = clock.now().toEpochMilliseconds().toString())
-                sceneRepository.save(named)
-                logger.d { "Saved scene ${named.id}" }
-                sendEvent(EditorEvent.SceneSaved)
+                val scene = action.scene.identified()
+                sceneRepository.writeAutosave(scene)
+                sceneRepository.save(scene)
+                if (scene.id != action.scene.id) {
+                    action.updateState { it.copy(openScene = scene) }
+                }
             }
 
             is EditorAction.SettingsChanged -> {
@@ -181,6 +180,10 @@ class EditorViewModel(
             is EditorAction.Delete -> sceneRepository.delete(action.scene.id)
         }
     }
+
+    /** A scene with no id has never been written. Give it one so it can be. */
+    private fun Scene.identified(): Scene =
+        if (id.isNotBlank()) this else copy(id = clock.now().toEpochMilliseconds().toString())
 }
 
 data class EditorViewState(
@@ -209,7 +212,6 @@ private val ReviewWorthySession = 10.minutes
 
 sealed interface EditorEvent {
     data class SceneOpened(val scene: Scene) : EditorEvent
-    data object SceneSaved : EditorEvent
     data object MicrophoneGranted : EditorEvent
     data object MicrophoneUnavailable : EditorEvent
 }
@@ -219,7 +221,8 @@ sealed interface EditorAction {
     data class ScenesChanged(val scenes: List<Scene>) : EditorAction
     data class Open(val scene: Scene) : EditorAction
     data class Autosave(val scene: Scene) : EditorAction
-    data class Save(val scene: Scene) : EditorAction
+
+
     data class Delete(val scene: Scene) : EditorAction
     data class SettingsChanged(
         val seenHint: Boolean,

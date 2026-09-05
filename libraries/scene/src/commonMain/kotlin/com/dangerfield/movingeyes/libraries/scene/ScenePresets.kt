@@ -9,16 +9,9 @@ import com.dangerfield.movingeyes.libraries.eyes.Mood
 
 /** Names live in the string catalogue; this module is pure Kotlin. */
 enum class ScenePresetId {
-    PortraitHaunt,
+    WallOfEyes,
+    Trapped,
     PumpkinPals,
-    SpiderNest,
-    AtticBats,
-    CatInTheBushes,
-    DemonAwakens,
-    WindowWatchers,
-    DollsRoom,
-    BloodshotVigil,
-    GhoulsStare,
 }
 
 /**
@@ -48,6 +41,15 @@ data class ScenePreset(
 }
 
 /**
+ * Three, and every one of them free.
+ *
+ * A preset is a demonstration, not a catalogue. Ten of them made the drawer a
+ * list to get through, and a locked one is a scene you can look at and not
+ * use — which is the worst version of a paywall. These three each show a
+ * different thing the app can do (a crowd, a face, a graphic), all with free
+ * styles and the free motion default, so the trick works before anyone pays.
+ * The unlock is styles, moods and sound, which is where v2 puts it.
+ *
  * ## What makes these read as real rather than as graphics
  *
  * **Nothing is pure white.** A real sclera is warm off-white and picks up the
@@ -59,38 +61,51 @@ data class ScenePreset(
  * percent of size difference and a hair of vertical offset is the whole
  * difference between "two ovals" and "someone is behind that painting".
  *
- * **Depth is colour, not just size.** In the multi-pair scenes the far eyes are
- * smaller *and* darker *and* dimmer, because that's what distance does. Scaling
- * alone reads as small eyes, not distant ones.
+ * **Depth is colour, not just size.** In [WallOfEyes] the far eyes are smaller
+ * *and* darker *and* dimmer, because that's what distance does. Scaling alone
+ * reads as small eyes, not distant ones.
  *
- * The exceptions prove it: Pumpkin Pals and The Doll's Room are deliberately
- * symmetric and level. A cartoon is a graphic and should look like one, and a
- * doll is unsettling *because* it's too perfect.
+ * Pumpkin Pals is the deliberate exception: a cartoon is a graphic and should
+ * look like one, so it stays exactly symmetric and level.
  */
 object ScenePresets {
 
-    /** The flagship, and the one that has to sell the product in a screenshot. */
-    val PortraitHaunt = ScenePreset(
-        id = ScenePresetId.PortraitHaunt,
+    /**
+     * A crowd in the dark, and the one that has to sell the app in a
+     * screenshot. Seven pairs at seven distances: the near ones are large,
+     * warm and low in frame; the far ones are small, dim, cooler and high,
+     * because that is what a room full of things looking at you does.
+     */
+    val WallOfEyes = ScenePreset(
+        id = ScenePresetId.WallOfEyes,
         eyes = listOf(
-            eye(
-                style = EyeStyles.HumanRealistic,
-                x = 0.33f, y = 0.455f, size = 0.255f, rotation = -2.5f,
-                sclera = AgedSclera, iris = DeepBrown, veins = 0.35f,
-                mood = Mood.Suspicious,
-            ),
-            // Fractionally smaller and a touch lower: the head is turned a few
-            // degrees, which is the difference between a face and a symbol.
-            eye(
-                style = EyeStyles.HumanRealistic,
-                x = 0.67f, y = 0.465f, size = 0.248f, rotation = -2.5f,
-                sclera = AgedSclera, iris = DeepBrown, veins = 0.30f,
-                mood = Mood.Suspicious,
-            ),
+            depthPair(centerX = 0.24f, y = 0.74f, separation = 0.150f, depth = 0.04f),
+            depthPair(centerX = 0.71f, y = 0.80f, separation = 0.134f, depth = 0.19f),
+            depthPair(centerX = 0.46f, y = 0.59f, separation = 0.112f, depth = 0.38f),
+            depthPair(centerX = 0.15f, y = 0.45f, separation = 0.097f, depth = 0.53f),
+            depthPair(centerX = 0.83f, y = 0.50f, separation = 0.087f, depth = 0.62f),
+            depthPair(centerX = 0.35f, y = 0.29f, separation = 0.071f, depth = 0.79f),
+            depthPair(centerX = 0.64f, y = 0.21f, separation = 0.059f, depth = 0.91f),
+        ).flatten(),
+    )
+
+    /**
+     * The opposite composition: one face, close, low, and too near the glass.
+     *
+     * The pair sits tighter than anatomy would put it and low in the frame, so
+     * it reads as something looking *up* out of a gap rather than a portrait
+     * looking straight ahead.
+     */
+    val Trapped = ScenePreset(
+        id = ScenePresetId.Trapped,
+        eyes = tiltedPair(
+            style = EyeStyles.HumanBasic,
+            centerX = 0.5f, y = 0.63f, separation = 0.285f, size = 0.255f, tilt = -2f,
+            sclera = LivingSclera, iris = WarmBrown, veins = 0.55f,
         ),
     )
 
-    /** Free, friendly, and deliberately graphic — a cartoon should look drawn. */
+    /** Friendly, and deliberately graphic — a cartoon should look drawn. */
     val PumpkinPals = ScenePreset(
         id = ScenePresetId.PumpkinPals,
         eyes = symmetricPair(
@@ -101,134 +116,7 @@ object ScenePresets {
         ),
     )
 
-    /**
-     * The real jumping-spider arrangement: two huge forward-facing eyes, a
-     * smaller lateral pair, and four little ones set back. A ring of eight
-     * evenly spaced dots is what people draw from memory and it looks like a
-     * pattern; this looks like an animal.
-     */
-    val SpiderNest = ScenePreset(
-        id = ScenePresetId.SpiderNest,
-        eyes = symmetricPair(
-            style = EyeStyles.Spider, y = 0.545f, separation = 0.165f, size = 0.150f,
-            sclera = SpiderShell, iris = SpiderIris, glow = 0.04f, mood = Mood.Frantic,
-        ) + symmetricPair(
-            style = EyeStyles.Spider, y = 0.515f, separation = 0.365f, size = 0.098f,
-            sclera = SpiderShell, iris = SpiderIris, glow = 0.03f, mood = Mood.Frantic,
-        ) + symmetricPair(
-            style = EyeStyles.Spider, y = 0.435f, separation = 0.300f, size = 0.052f,
-            sclera = 0xFF0A090B, iris = 0xFF121016, mood = Mood.Frantic,
-        ) + symmetricPair(
-            style = EyeStyles.Spider, y = 0.425f, separation = 0.455f, size = 0.044f,
-            sclera = 0xFF0A090B, iris = 0xFF121016, mood = Mood.Frantic,
-        ),
-    )
-
-    /** Three pairs receding into the dark. Each one further back is smaller,
-     *  darker and dimmer, which is what distance actually does. */
-    val AtticBats = ScenePreset(
-        id = ScenePresetId.AtticBats,
-        eyes = tiltedPair(
-            style = EyeStyles.Bat, centerX = 0.30f, y = 0.30f, separation = 0.20f,
-            size = 0.150f, tilt = -4f, sclera = 0xFF2A1A14, iris = 0xFFD8452C,
-            glow = 0.15f, mood = Mood.Suspicious,
-        ) + tiltedPair(
-            style = EyeStyles.Bat, centerX = 0.68f, y = 0.50f, separation = 0.145f,
-            size = 0.108f, tilt = 3f, sclera = 0xFF1F130F, iris = 0xFFB33C26,
-            glow = 0.11f, mood = Mood.Suspicious,
-        ) + tiltedPair(
-            style = EyeStyles.Bat, centerX = 0.42f, y = 0.74f, separation = 0.100f,
-            size = 0.074f, tilt = -2f, sclera = 0xFF160D0A, iris = 0xFF8A2F1E,
-            glow = 0.07f, mood = Mood.Suspicious,
-        ),
-    )
-
-    /** Low and wide: it sits in a planter and looks up at a path. */
-    val CatInTheBushes = ScenePreset(
-        id = ScenePresetId.CatInTheBushes,
-        eyes = tiltedPair(
-            style = EyeStyles.Feline, centerX = 0.5f, y = 0.665f, separation = 0.42f,
-            size = 0.235f, tilt = 3.5f, sclera = 0xFFE6DCBE, iris = CatYellow,
-            glow = 0.06f, mood = Mood.Suspicious,
-        ),
-    )
-
-    /** Dormant on purpose: the effect is the contrast when it opens. The glow
-     *  is heavy so it reads as embers even while the lids are down. */
-    val DemonAwakens = ScenePreset(
-        id = ScenePresetId.DemonAwakens,
-        eyes = tiltedPair(
-            style = EyeStyles.Demon, centerX = 0.5f, y = 0.495f, separation = 0.365f,
-            size = 0.275f, tilt = -1.5f, sclera = 0xFF35120A, iris = 0xFFFF5A12,
-            glow = 0.26f, mood = Mood.Dormant,
-        ),
-    )
-
-    /** Five pairs at five depths. Glow Orb because this is the one meant to be
-     *  seen from the street, and it's the style that survives a window. */
-    val WindowWatchers = ScenePreset(
-        id = ScenePresetId.WindowWatchers,
-        eyes = depthPair(0.22f, 0.26f, separation = 0.115f, depth = 0f) +
-            depthPair(0.74f, 0.38f, separation = 0.098f, depth = 0.25f) +
-            depthPair(0.40f, 0.55f, separation = 0.128f, depth = 0.1f) +
-            depthPair(0.79f, 0.71f, separation = 0.082f, depth = 0.6f) +
-            depthPair(0.24f, 0.80f, separation = 0.070f, depth = 0.85f),
-    )
-
-    /** Symmetric and level on purpose. A doll is unsettling *because* it is
-     *  too perfect, so every trick used to make the others feel alive is
-     *  deliberately withheld here. */
-    val DollsRoom = ScenePreset(
-        id = ScenePresetId.DollsRoom,
-        eyes = symmetricPair(
-            style = EyeStyles.Doll, y = 0.48f, separation = 0.345f, size = 0.265f,
-            sclera = Porcelain, iris = DollBlue, mood = Mood.Dormant,
-        ),
-    )
-
-    /** Someone who has not slept. The veins carry this one, so they run near
-     *  full and the lids sit heavy. */
-    val BloodshotVigil = ScenePreset(
-        id = ScenePresetId.BloodshotVigil,
-        eyes = listOf(
-            eye(
-                style = EyeStyles.Bloodshot,
-                x = 0.325f, y = 0.505f, size = 0.268f, rotation = 1.5f,
-                sclera = 0xFFEFDBD3, iris = 0xFF7A5030, veins = 0.95f,
-                mood = Mood.Sleepy,
-            ),
-            eye(
-                style = EyeStyles.Bloodshot,
-                x = 0.675f, y = 0.495f, size = 0.262f, rotation = 1.5f,
-                sclera = 0xFFEDD8CF, iris = 0xFF6E4729, veins = 0.85f,
-                mood = Mood.Sleepy,
-            ),
-        ),
-    )
-
-    /** Cataracts. The style already flattens the iris gradient so it can't
-     *  appear to focus; the colours here keep it just this side of dead. */
-    val GhoulsStare = ScenePreset(
-        id = ScenePresetId.GhoulsStare,
-        eyes = tiltedPair(
-            style = EyeStyles.Ghoul, centerX = 0.5f, y = 0.47f, separation = 0.33f,
-            size = 0.275f, tilt = -3f, sclera = 0xFFC9C0AE, iris = 0xFFA9B3A4,
-            veins = 0.6f, mood = Mood.Suspicious,
-        ),
-    )
-
-    val All: List<ScenePreset> = listOf(
-        PortraitHaunt,
-        PumpkinPals,
-        DemonAwakens,
-        CatInTheBushes,
-        AtticBats,
-        SpiderNest,
-        WindowWatchers,
-        DollsRoom,
-        BloodshotVigil,
-        GhoulsStare,
-    )
+    val All: List<ScenePreset> = listOf(WallOfEyes, Trapped, PumpkinPals)
 
     fun byId(id: ScenePresetId): ScenePreset = All.first { it.id == id }
 
@@ -257,17 +145,10 @@ object ScenePresets {
 // Real irises, and sclerae that are never pure white.
 
 private const val LivingSclera = 0xFFF1EBE0
-private const val AgedSclera = 0xFFEBE3D5
-private const val Porcelain = 0xFFFDF8F0
 
 private const val WarmBrown = 0xFF6B4A2B
-private const val DeepBrown = 0xFF553C24
-private const val DollBlue = 0xFF5C7EA8
-private const val CatYellow = 0xFFC2B23A
 private const val PumpkinOrange = 0xFFE8721C
 
-private const val SpiderShell = 0xFF0E0C10
-private const val SpiderIris = 0xFF17131C
 
 // ---- Builders -----------------------------------------------------------
 

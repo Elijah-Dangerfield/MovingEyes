@@ -7,6 +7,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -65,6 +67,9 @@ import com.dangerfield.movingeyes.libraries.scene.Scene
 import com.dangerfield.movingeyes.libraries.scene.ScenePreset
 import com.dangerfield.movingeyes.libraries.scene.ScenePresets
 import com.dangerfield.movingeyes.libraries.ui.components.AdaptivePanel
+import com.dangerfield.movingeyes.libraries.ui.components.HorizontalDivider
+import com.dangerfield.movingeyes.libraries.ui.components.icon.IconButton
+import com.dangerfield.movingeyes.libraries.ui.components.icon.Icons
 import com.dangerfield.movingeyes.libraries.ui.components.rememberPanelState
 import com.dangerfield.movingeyes.libraries.ui.components.ReadoutPill
 import com.dangerfield.movingeyes.libraries.ui.components.SegmentedControl
@@ -92,6 +97,7 @@ import movingeyes.libraries.resources.generated.resources.editor_readout_size
 import movingeyes.libraries.resources.generated.resources.editor_readout_x
 import movingeyes.libraries.resources.generated.resources.editor_readout_y
 import movingeyes.libraries.resources.generated.resources.editor_redo
+import movingeyes.libraries.resources.generated.resources.editor_controls
 import movingeyes.libraries.resources.generated.resources.editor_undo
 import movingeyes.libraries.resources.generated.resources.panel_look
 import movingeyes.libraries.resources.generated.resources.panel_motion
@@ -154,10 +160,10 @@ fun EditorScreen(
         val openScene = state.openScene
         // One director for the scene, so every eye looks at the same thing.
         val gaze = remember(openScene) {
-            GazeDirector((openScene ?: blankScene()).eyes.firstOrNull()?.behavior() ?: Moods.FreeDefault)
+            GazeDirector((openScene ?: blankScene("")).eyes.firstOrNull()?.behavior() ?: Moods.FreeDefault)
         }
         val editor = remember(openScene, displayWidthPx, displayHeightPx) {
-            val scene = openScene ?: blankScene()
+            val scene = openScene ?: blankScene("")
             EditorState(
                 gaze = gaze,
                 eyes = scene.toRenderedEyes(displayWidthPx, displayHeightPx, gaze),
@@ -312,8 +318,9 @@ fun EditorScreen(
                     viewModel.takeAction(
                         EditorAction.Autosave(
                             editor.toScene(
-                                id = "autosave",
-                                name = openScene?.name.orEmpty(),
+                                id = openScene?.id.orEmpty(),
+                                name = openScene?.name?.takeIf { it.isNotBlank() }
+                                    ?: fallbackSceneName,
                                 canvasWidthPx = canvasWidthPx,
                                 canvasHeightPx = canvasHeightPx,
                             ),
@@ -473,7 +480,9 @@ fun EditorScreen(
                     screenMetrics = screenMetrics,
                 ),
                 panelClearance = with(density) { occupied.toDp() },
+                isPanelOpen = panel.isExpanded,
                 onOpenScenes = { drawerOpen = true },
+                onTogglePanel = { scope.launch { panel.toggle() } },
                 onEnterDisplay = {
                     editor.clearSelection()
                     display.enter()
@@ -560,22 +569,7 @@ fun EditorScreen(
                         },
                     )
 
-                    PanelTab.Scene -> ScenePanel(
-                        editor = editor,
-                        onSave = {
-                            viewModel.takeAction(
-                                EditorAction.Save(
-                                    editor.toScene(
-                                        id = "",
-                                        name = openScene?.name?.takeIf { it.isNotBlank() }
-                                            ?: fallbackSceneName,
-                                        canvasWidthPx = canvasWidthPx,
-                                        canvasHeightPx = canvasHeightPx,
-                                    ),
-                                ),
-                            )
-                        },
-                    )
+                    PanelTab.Scene -> ScenePanel(editor = editor)
                 }
             }
         }
@@ -688,15 +682,17 @@ fun EditorScreen(
                     viewModel.takeAction(EditorAction.Open(it))
                     drawerOpen = false
                 },
-                onOpenPreset = { preset ->
+                onOpenPreset = { preset, name ->
+                    // A blank id forks a scene of the user's own rather than
+                    // handing back the preset every time they reopen it.
                     viewModel.takeAction(
-                        EditorAction.Open(preset.toScene(id = "preset", name = "")),
+                        EditorAction.Open(preset.toScene(id = "", name = name)),
                     )
                     drawerOpen = false
                 },
                 onDeleteScene = { viewModel.takeAction(EditorAction.Delete(it)) },
                 onNewBlank = {
-                    viewModel.takeAction(EditorAction.Open(blankScene()))
+                    viewModel.takeAction(EditorAction.Open(blankScene(fallbackSceneName)))
                     drawerOpen = false
                 },
                 onOpenSettings = {
@@ -736,27 +732,83 @@ private val DemoControl.paywallTrigger: PaywallTrigger
         else -> PaywallTrigger.Motion
     }
 
+/**
+ * One floating rail instead of four buttons scattered into the corners.
+ *
+ * Every control that isn't the canvas lives here, in reach of one thumb, in a
+ * fixed order that never reflows. The alternative — a button in each corner —
+ * meant the two most-used actions (open the controls, start the show) were the
+ * furthest apart on screen, and nothing said the corners belonged together.
+ *
+ * Play sits apart at the bottom and is the only filled control on the screen,
+ * because it is the only one that changes what the app *is* rather than what
+ * the scene looks like.
+ */
 @Composable
 private fun EditorChrome(
     editor: EditorState,
     readout: String,
     panelClearance: Dp,
+    isPanelOpen: Boolean,
     onOpenScenes: () -> Unit,
+    onTogglePanel: () -> Unit,
     onEnterDisplay: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
-        Button(
-            onClick = onOpenScenes,
-            size = ButtonSize.Small,
-            style = ButtonStyle.Outlined,
+        Column(
             modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(Dimension.D700),
+                .align(Alignment.TopEnd)
+                .padding(Dimension.D700)
+                .clip(RoundedCornerShape(RailCornerRadius))
+                .background(AppTheme.colors.surfacePrimary.color.copy(alpha = 0.92f))
+                .border(1.dp, AppTheme.colors.border.color, RoundedCornerShape(RailCornerRadius))
+                .padding(RailPadding),
+            verticalArrangement = Arrangement.spacedBy(RailPadding),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(stringResource(Res.string.scenes_open))
-        }
+            RailButton(
+                icon = Icons.Menu,
+                contentDescription = stringResource(Res.string.scenes_open),
+                onClick = onOpenScenes,
+            )
+            RailButton(
+                icon = Icons.Pencil,
+                contentDescription = stringResource(Res.string.editor_controls),
+                isActive = isPanelOpen,
+                onClick = onTogglePanel,
+            )
 
+            // Never inside a collapsible panel: the way back from a fat-finger
+            // must be visible at the moment it happens.
+            RailButton(
+                icon = Icons.Undo,
+                contentDescription = stringResource(Res.string.editor_undo),
+                enabled = editor.canUndo,
+                onClick = { editor.undo() },
+            )
+            RailButton(
+                icon = Icons.Redo,
+                contentDescription = stringResource(Res.string.editor_redo),
+                enabled = editor.canRedo,
+                onClick = { editor.redo() },
+            )
+
+            // Explicitly narrow: a divider left to fill would drag the whole
+            // rail out to the screen's width.
+            HorizontalDivider(
+                modifier = Modifier
+                    .width(RailDividerWidth)
+                    .padding(vertical = Dimension.D100),
+            )
+
+            RailButton(
+                icon = Icons.Play,
+                contentDescription = stringResource(Res.string.display_enter),
+                isPrimary = true,
+                onClick = onEnterDisplay,
+            )
+        }
 
         // Clear of the panel's collapsed grab edge: this is the number someone
         // cuts cardboard from.
@@ -768,36 +820,44 @@ private fun EditorChrome(
                 .padding(start = Dimension.D700, end = Dimension.D700, bottom = Dimension.D700)
                 .padding(bottom = panelClearance),
         )
-
-        Row(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(Dimension.D700),
-            horizontalArrangement = Arrangement.spacedBy(Dimension.D400),
-        ) {
-            // Never inside a collapsible panel: the way back from a fat-finger
-            // must be visible at the moment it happens.
-            ToolbarButton(
-                label = stringResource(Res.string.editor_undo),
-                enabled = editor.canUndo,
-                onClick = { editor.undo() },
-            )
-            ToolbarButton(
-                label = stringResource(Res.string.editor_redo),
-                enabled = editor.canRedo,
-                onClick = { editor.redo() },
-            )
-            // In the toolbar, not floating at the bottom, where the panel
-            // would cover it and hide the app's whole point while editing.
-            Button(
-                onClick = onEnterDisplay,
-                size = ButtonSize.Small,
-            ) {
-                Text(stringResource(Res.string.display_enter))
-            }
-        }
     }
 }
+
+/**
+ * Icon-only, so the rail stays one thumb wide, which is the whole reason it can
+ * float over the canvas instead of eating a strip of it. The label survives as
+ * the content description rather than being dropped.
+ */
+@Composable
+private fun RailButton(
+    icon: Icons,
+    contentDescription: String,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    isActive: Boolean = false,
+    isPrimary: Boolean = false,
+) {
+    val background = when {
+        isPrimary -> AppTheme.colors.accentPrimary
+        isActive -> AppTheme.colors.surfaceTertiary
+        else -> null
+    }
+    IconButton(
+        icon = icon(contentDescription),
+        onClick = onClick,
+        enabled = enabled,
+        backgroundColor = background,
+        iconColor = when {
+            isPrimary -> AppTheme.colors.onAccentPrimary
+            !enabled -> AppTheme.colors.textDisabled
+            else -> AppTheme.colors.text
+        },
+    )
+}
+
+private val RailCornerRadius = 18.dp
+private val RailDividerWidth = 28.dp
+private val RailPadding = 6.dp
 
 /** Mono, so a number changing every second doesn't jitter. */
 @Composable
@@ -821,23 +881,6 @@ private fun DemoCountdown(
     }
 }
 
-@Composable
-private fun ToolbarButton(
-    label: String,
-    enabled: Boolean,
-    onClick: () -> Unit,
-    isActive: Boolean = false,
-) {
-    Button(
-        onClick = onClick,
-        enabled = enabled,
-        size = ButtonSize.Small,
-        style = if (isActive) ButtonStyle.Filled else ButtonStyle.Outlined,
-    ) {
-        Text(label)
-    }
-}
-
 private val PanelTab.label
     get() = when (this) {
         PanelTab.Place -> Res.string.panel_place
@@ -847,15 +890,20 @@ private val PanelTab.label
     }
 
 /** What the app opens on before anything is saved. */
-private fun blankScene() = Scene(
-    id = "autosave",
-    name = "",
+private fun blankScene(name: String) = Scene(
+    id = "",
+    name = name,
     eyes = ScenePresets.blank(),
 )
 
 /**
- * Snaps the *first* active eye and carries the rest rigidly. Snapping each
- * independently would drift a pair apart mid-drag.
+ * Snaps the selection's centre and carries every eye rigidly with it.
+ *
+ * The anchor is the middle of the same box the overlay draws, so the guide
+ * lights up when the thing you can see is centred. Snapping each eye
+ * independently would drift a pair apart mid-drag; snapping the *first* eye,
+ * which is what this used to do, quietly centred the left eye and left the
+ * pair sitting off to the right of the line claiming it was aligned.
  */
 private fun dragSelection(
     editor: EditorState,
@@ -881,12 +929,18 @@ private fun dragSelection(
         }
     }
 
-    val leadIndex = active.first()
-    val lead = editor.eyes[leadIndex]
+    val anchor = selectionBounds(
+        eyes = editor.eyes,
+        selection = active,
+        canvasWidth = canvasWidthPx,
+        canvasHeight = canvasHeightPx,
+        paddingPx = 0f,
+    )?.center ?: return false
+
     val result = resolveSnap(
         dragged = SnapCandidate(
-            id = leadIndex,
-            center = CanvasPoint(lead.centerX * canvasWidthPx, lead.centerY * canvasHeightPx),
+            id = active.first(),
+            center = CanvasPoint(anchor.x, anchor.y),
         ),
         others = editor.eyes.indices
             .filter { it !in active }
@@ -903,8 +957,8 @@ private fun dragSelection(
     )
 
     if (result.snapped) {
-        val correctionX = result.position.x / canvasWidthPx - lead.centerX
-        val correctionY = result.position.y / canvasHeightPx - lead.centerY
+        val correctionX = (result.position.x - anchor.x) / canvasWidthPx
+        val correctionY = (result.position.y - anchor.y) / canvasHeightPx
         active.forEach { index ->
             editor.eyes[index].apply {
                 centerX += correctionX
