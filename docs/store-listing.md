@@ -24,13 +24,17 @@ neighbour walks up the path.
 
 ## Google Play
 
-### App name (30)
+### App name (30) — FILLED
 
 ```
-Moving Eyes
+Halloween Eyes Decoration
 ```
 
-### Short description (80)
+*25 characters. The store name is deliberately keyword-rich and differs from the
+in-app name, which stays "Moving Eyes". This is a normal split: the listing is
+found by search, the app is remembered by brand.*
+
+### Short description (80) — FILLED
 
 ```
 Hide a tablet behind a painting. The eyes follow whoever walks past.
@@ -38,12 +42,12 @@ Hide a tablet behind a painting. The eyes follow whoever walks past.
 
 *68 characters.*
 
-### Full description (4000)
+### Full description (4000) — FILLED
 
 ```
 Tape a tablet behind a painting, cut two eye holes, and let it watch the room.
 
-Moving Eyes turns any phone or tablet into a pair of eyes that blink, glance
+Halloween Eyes turns any phone or tablet into a pair of eyes that blink, glance
 around, and react to what is happening in front of them. Put it behind a
 portrait in the hallway, a sheet of cardboard in a window, or a jack-o'-lantern
 on the porch. People notice the eyes before they notice the screen, which is the
@@ -218,6 +222,34 @@ https://elijah-dangerfield.github.io/MovingEyes/privacy.html
   that would use one.
 
 ---
+
+## Play console state
+
+Filled and saved as draft on 2026-09-05:
+
+- App name, short description, full description
+- App category: Entertainment. App, not Game.
+- Contact email and website (the Pages site)
+
+Still to do there, all of which are developer declarations rather than copy:
+
+- [ ] Content rating questionnaire
+- [ ] Data safety form — answers are in the section above
+- [ ] Target audience and content
+- [ ] Privacy policy URL under App content
+- [ ] Graphics: icon, feature graphic, screenshots
+
+## App Store Connect state
+
+**Blocked, and not by anything on the listing.** The New App dialog leads to a
+blank page. The likely cause is that the bundle identifier
+`com.dangerfield.movingeyes` does not yet exist as an App ID — iOS has never
+been built, so nothing has ever registered it.
+
+Create it first at
+developer.apple.com → Certificates, Identifiers & Profiles → Identifiers, then
+the ASC New App dialog will offer it in the Bundle ID dropdown. Everything else
+on that form is in this document.
 
 ## Assets still needed
 
