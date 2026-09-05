@@ -187,10 +187,11 @@
     <!-- Settings -->
     <string name="settings_title">Settings</string>
     <string name="settings_open">Settings</string>
+    <string name="settings_purchases">Purchases</string>
     <string name="settings_plan_free">Free</string>
-    <string name="settings_plan_free_detail">Three eye styles and the motion they come with. Everything you place, colour and save is yours to keep.</string>
-    <string name="settings_plan_unlocked">Unlocked</string>
-    <string name="settings_plan_unlocked_detail">Every style, every mood and sound reactivity. Bought once, tied to this store account.</string>
+    <string name="settings_plan_free_detail">Three eye styles and the motion they come with. Placing, colouring, saving and display mode are all yours already.</string>
+    <string name="settings_plan_unlocked">Everything unlocked</string>
+    <string name="settings_plan_unlocked_detail">You own the full version. Every eye style, every mood and sound reactivity, on this store account — nothing expires and there is nothing to renew.</string>
     <string name="settings_unlock">Unlock everything</string>
     <string name="settings_restore">Restore purchase</string>
     <string name="settings_reduce_flashing">Reduce flashing</string>

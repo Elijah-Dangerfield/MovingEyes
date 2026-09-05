@@ -28,6 +28,7 @@ import movingeyes.libraries.resources.generated.resources.settings_plan_unlocked
 import movingeyes.libraries.resources.generated.resources.settings_plan_free_detail
 import movingeyes.libraries.resources.generated.resources.settings_plan_unlocked_detail
 import movingeyes.libraries.resources.generated.resources.settings_privacy
+import movingeyes.libraries.resources.generated.resources.settings_purchases
 import movingeyes.libraries.resources.generated.resources.settings_reduce_flashing
 import movingeyes.libraries.resources.generated.resources.settings_reduce_flashing_detail
 import movingeyes.libraries.resources.generated.resources.settings_report_bug
@@ -66,14 +67,18 @@ fun SettingsScreen(
             typography = AppTheme.typography.Display.D1000,
         )
 
-        // A word on its own was doing the whole job of saying what someone
-        // bought. Both states now say what you actually have, and the unlocked
-        // one sits on a plate so it reads as a receipt rather than as a label.
-        SectionCard(
-            title = stringResource(
-                if (isUnlocked) Res.string.settings_plan_unlocked else Res.string.settings_plan_free,
-            ),
-        ) {
+        // Under a heading that says what kind of fact this is. A bare
+        // "Unlocked" floating under the title reads as a status label the app
+        // is muttering to itself; the same word under Purchases reads as a
+        // receipt, which is what someone who paid is looking for.
+        SectionCard(title = stringResource(Res.string.settings_purchases)) {
+            Text(
+                text = stringResource(
+                    if (isUnlocked) Res.string.settings_plan_unlocked else Res.string.settings_plan_free,
+                ),
+                typography = AppTheme.typography.Heading.H600,
+                color = if (isUnlocked) AppTheme.colors.accentPrimary else AppTheme.colors.text,
+            )
             Text(
                 text = stringResource(
                     if (isUnlocked) {

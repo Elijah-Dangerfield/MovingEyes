@@ -75,9 +75,9 @@ class SettingsFeatureEntryPoint(
 
     private companion object {
         /** Served from `pages/`; the same URLs go in both store listings. */
-        const val PrivacyUrl = "https://elijahdangerfield.github.io/MovingEyes/privacy.html"
+        const val PrivacyUrl = "https://elijah-dangerfield.github.io/MovingEyes/privacy.html"
 
         /** The landing page carries the contact address. */
-        const val SupportUrl = "https://elijahdangerfield.github.io/MovingEyes/"
+        const val SupportUrl = "https://elijah-dangerfield.github.io/MovingEyes/"
     }
 }

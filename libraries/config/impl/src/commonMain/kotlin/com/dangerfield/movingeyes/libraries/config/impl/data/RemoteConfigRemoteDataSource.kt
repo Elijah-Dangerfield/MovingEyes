@@ -102,7 +102,7 @@ class RemoteConfigRemoteDataSource @Inject constructor(
          * config is: edit `pages/app-config.json`, merge, and the Pages
          * workflow does the rest.
          */
-        const val RemoteConfigUrl = "https://elijahdangerfield.github.io/MovingEyes/app-config.json"
+        const val RemoteConfigUrl = "https://elijah-dangerfield.github.io/MovingEyes/app-config.json"
 
         /** Short on purpose: a slow fetch must never delay the first frame. */
         const val RequestTimeoutMillis = 5_000L
