@@ -15,6 +15,7 @@ class MovingEyesRuleSetProvider : RuleSetProvider {
     override fun instance(): RuleSet = RuleSet(
         ruleSetId,
         listOf(
+            ::AnimatedStateReadInComposition,
             ::VerifyStrings,
         ),
     )

@@ -6,6 +6,8 @@
 # a constructor reference in MovingEyesRuleSetProvider.
 movingeyes:
   active: true
+  AnimatedStateReadInComposition:
+    active: true
   VerifyStrings:
     active: true
     # Developer-facing surfaces that never ship to a user: the design-system
