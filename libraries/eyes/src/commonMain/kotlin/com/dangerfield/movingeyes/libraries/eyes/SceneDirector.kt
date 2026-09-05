@@ -15,11 +15,13 @@ import kotlin.random.Random
  * watching you — and desync is a one-way door, since two independent timers
  * only ever get further apart.
  *
- * Blink sync is a scene property rather than a law, because it stops being
- * right at scale: two eyes blinking separately looks broken, but fourteen eyes
- * in seven pairs blinking in unison looks like one enormous creature rather
- * than a crowd. Pairs want [blinksTogether] on, which is the default; a wall
- * may want it off.
+ * **A pair is the atom.** [blinksTogether] chooses between one timeline for the
+ * whole scene and one timeline *per pair* — never one per eye. Two eyes of a
+ * face blinking separately is the bug this class exists to prevent, at any
+ * scale; what changes with scale is whether the whole crowd should blink as
+ * one. Fourteen eyes in unison read as a single enormous creature, so a wall
+ * wants [blinksTogether] off and gets seven independent pairs rather than
+ * fourteen independent eyes.
  */
 class SceneDirector(
     behavior: BehaviorConfig,
@@ -28,24 +30,37 @@ class SceneDirector(
 ) {
 
     /**
-     * Bumped when the scene should blink. Runtimes watch it rather than being
-     * pushed to, so an eye added mid-scene joins the rhythm on the next blink
-     * instead of firing one immediately.
+     * One blink timeline per group, grown on demand. Runtimes watch their
+     * group's tick rather than being pushed to, so an eye added mid-scene joins
+     * the rhythm on the next blink instead of firing one immediately.
      */
-    var blinkTick: Int = 0
-        private set
+    private var ticks = IntArray(1)
+    private var doubles = BooleanArray(1)
+    private var nextBlinkAts = FloatArray(1)
+
+    /** Which timeline an eye in [group] is on. Everything shares group 0 when
+     *  the scene blinks as one. */
+    private fun timelineFor(group: Int) = if (blinksTogether) 0 else group.coerceAtLeast(0)
+
+    fun blinkTick(group: Int): Int = ticks.getOrElse(timelineFor(group)) { 0 }
 
     /**
-     * Whether the blink [blinkTick] just announced is a double.
+     * Whether the blink this group just announced is a double.
      *
      * Rolled here rather than per eye. Left to the eyes, one of a synced pair
      * would occasionally blink twice while the other blinked once — a face
      * winking at itself, and the exact desync the director exists to prevent.
      */
-    var blinkIsDouble: Boolean = false
-        private set
+    fun blinkIsDouble(group: Int): Boolean = doubles.getOrElse(timelineFor(group)) { false }
 
-    private var nextBlinkAt = 0f
+    /** Called by the scene once it knows how many pairs it has. */
+    fun setGroupCount(count: Int) {
+        val wanted = count.coerceAtLeast(1)
+        if (ticks.size == wanted) return
+        ticks = IntArray(wanted)
+        doubles = BooleanArray(wanted)
+        nextBlinkAts = FloatArray(wanted) { elapsed + behavior.blinkIntervalSeconds.sampleIn(random) }
+    }
 
     var behavior: BehaviorConfig = behavior
         set(value) {
@@ -73,10 +88,11 @@ class SceneDirector(
     fun advance(deltaSeconds: Float) {
         elapsed += deltaSeconds
 
-        if (elapsed >= nextBlinkAt) {
-            blinkTick += 1
-            blinkIsDouble = random.nextFloat() < behavior.doubleBlinkChance
-            scheduleNextBlink()
+        for (timeline in ticks.indices) {
+            if (elapsed < nextBlinkAts[timeline]) continue
+            ticks[timeline] += 1
+            doubles[timeline] = random.nextFloat() < behavior.doubleBlinkChance
+            nextBlinkAts[timeline] = elapsed + behavior.blinkIntervalSeconds.sampleIn(random)
         }
 
         if (saccadeElapsed < saccadeDuration) {
@@ -148,7 +164,9 @@ class SceneDirector(
     }
 
     private fun scheduleNextBlink() {
-        nextBlinkAt = elapsed + behavior.blinkIntervalSeconds.sampleIn(random)
+        for (timeline in nextBlinkAts.indices) {
+            nextBlinkAts[timeline] = elapsed + behavior.blinkIntervalSeconds.sampleIn(random)
+        }
     }
 
 }

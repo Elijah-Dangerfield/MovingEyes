@@ -561,11 +561,24 @@ fun EditorScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .safeDrawingPadding()
-                .padding(bottom = Dimension.D1000),
+                .padding(bottom = Dimension.D1000)
+                .padding(bottom = with(density) { (if (isRail) 0f else panel.occupiedPx).toDp() }),
+        )
+
+        // Faded, not slid away. The canvas scales itself against the panel's
+        // occupied height, so actually moving the panel mid-drag would rescale
+        // the canvas and slide the eye out from under the finger — the one
+        // thing a placement gesture must never do. Fading gives the screen back
+        // to the composition without moving a pixel of it.
+        val panelAlpha = animateFloatAsState(
+            targetValue = if (isManipulating) RecessedAlpha else 1f,
+            animationSpec = Motion.Chrome.dissolve(),
+            label = "panelAlpha",
         )
 
         AnimatedVisibility(
             visible = !display.isActive,
+            modifier = Modifier.graphicsLayer { alpha = panelAlpha.value },
             enter = fadeIn(Motion.Chrome.restore()),
             exit = fadeOut(Motion.Chrome.dissolve()),
         ) {

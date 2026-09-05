@@ -390,7 +390,28 @@ class EyeSceneState(
     val gaze: SceneDirector = SceneDirector(eyes.firstOrNull()?.runtime?.behavior ?: Moods.FreeDefault),
 ) {
     var eyes: List<RenderedEye> = eyes
+        set(value) {
+            field = value
+            assignBlinkGroups()
+        }
+
     var frameIntervalSeconds: Float = frameIntervalSeconds
+
+    init {
+        assignBlinkGroups()
+    }
+
+    /**
+     * Tells each eye which blink timeline it is on, and the director how many
+     * there are. Recomputed when the eye list changes rather than per frame:
+     * dragging one eye across a scene should not re-pair the whole thing
+     * mid-gesture, and it re-settles the moment the scene is next rebuilt.
+     */
+    fun assignBlinkGroups() {
+        val groups = blinkGroupsFor(eyes)
+        eyes.forEachIndexed { index, eye -> eye.runtime.blinkGroup = groups.getOrElse(index) { 0 } }
+        gaze.setGroupCount((groups.maxOrNull() ?: 0) + 1)
+    }
 
     /**
      * Bumped once per advanced frame. The draw lambda reads it so Compose

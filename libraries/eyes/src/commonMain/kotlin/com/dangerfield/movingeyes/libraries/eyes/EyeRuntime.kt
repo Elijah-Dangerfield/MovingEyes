@@ -61,6 +61,10 @@ class EyeRuntime(
     val phaseOffset: Float = random.nextFloat() * MaxPhaseOffsetSeconds,
 ) {
 
+    /** Which of the director's blink timelines this eye is on. Eyes that form a
+     *  pair share one; see [SceneDirector]. */
+    var blinkGroup: Int = 0
+
     var behavior: BehaviorConfig = behavior
         set(value) {
             field = value
@@ -87,7 +91,7 @@ class EyeRuntime(
 
     /** Starts level with the director so joining a scene doesn't fire a blink
      *  on the first frame. */
-    private var lastBlinkTick = sceneDirector?.blinkTick ?: 0
+    private var lastBlinkTick = sceneDirector?.blinkTick(0) ?: 0
     private var queuedBlinks = 0
 
     private var startleElapsed = Float.MAX_VALUE
@@ -179,11 +183,12 @@ class EyeRuntime(
         }
 
         val director = sceneDirector
-        if (director != null && director.blinksTogether) {
-            if (director.blinkTick == lastBlinkTick) return
-            lastBlinkTick = director.blinkTick
+        if (director != null) {
+            val tick = director.blinkTick(blinkGroup)
+            if (tick == lastBlinkTick) return
+            lastBlinkTick = tick
             blinkElapsed = 0f
-            if (director.blinkIsDouble) queuedBlinks = 1
+            if (director.blinkIsDouble(blinkGroup)) queuedBlinks = 1
             return
         }
 

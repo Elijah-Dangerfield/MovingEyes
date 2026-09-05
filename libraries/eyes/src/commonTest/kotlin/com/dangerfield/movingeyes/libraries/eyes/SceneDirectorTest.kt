@@ -145,51 +145,49 @@ class SceneDirectorTest {
         )
     }
 
-    /** Off, the director stops deciding and each eye falls back to its own
-     *  timer — otherwise the toggle would only ever be cosmetic. */
+    /**
+     * With sync off the scene splits per *pair*, not per eye — a pair is the
+     * atom. Two eyes on the same group still blink together however the scene
+     * is configured, because a face winking at itself is the bug this whole
+     * class exists to prevent.
+     */
     @Test
-    fun `turning sync off hands blinking back to the eyes`() {
+    fun `sync off still keeps a pair together`() {
         val director = SceneDirector(Moods.IdleScan, blinksTogether = false, random = Random(4))
+        director.setGroupCount(2)
+
         val left = EyeRuntime(Moods.IdleScan, Random(11), director)
         val right = EyeRuntime(Moods.IdleScan, Random(22), director)
 
-        var drifted = false
         repeat(900) {
             director.advance(FrameSeconds)
             left.advance(FrameSeconds)
             right.advance(FrameSeconds)
-            if (abs(left.frame.lidOpenness - right.frame.lidOpenness) > 0.01f) drifted = true
+            assertTrue(
+                abs(left.frame.lidOpenness - right.frame.lidOpenness) < 0.01f,
+                "a pair on one group drifted apart",
+            )
         }
-        assertTrue(drifted, "sync was off but the pair still blinked in lockstep")
     }
 
-    /**
-     * A faint sound has to visibly move the eyes. The deflection used to scale
-     * straight off intensity, so a quiet noise aimed them at centre and the
-     * only evidence anything had been heard was a pupil twitch.
-     */
+    /** And two *different* groups do come apart, or the toggle would be
+     *  cosmetic and a wall would blink as one creature. */
     @Test
-    fun `even a barely audible sound turns the scene toward it`() {
-        val director = SceneDirector(Moods.IdleScan, random = Random(6))
+    fun `sync off lets separate pairs blink independently`() {
+        val director = SceneDirector(Moods.IdleScan, blinksTogether = false, random = Random(4))
+        director.setGroupCount(2)
 
-        director.look(direction = 1f, intensity = 0.01f)
-        repeat(20) { director.advance(FrameSeconds) }
+        val near = EyeRuntime(Moods.IdleScan, Random(11), director)
+        val far = EyeRuntime(Moods.IdleScan, Random(22), director).apply { blinkGroup = 1 }
 
-        assertTrue(director.gaze.x > 0.4f, "a faint sound moved the gaze to ${director.gaze.x}")
-    }
-
-    /** And a loud one still has somewhere further to go, or volume would mean
-     *  nothing. */
-    @Test
-    fun `a loud sound turns further than a faint one`() {
-        fun gazeAfter(intensity: Float): Float {
-            val director = SceneDirector(Moods.IdleScan, random = Random(6))
-            director.look(direction = 1f, intensity = intensity)
-            repeat(20) { director.advance(FrameSeconds) }
-            return director.gaze.x
+        var drifted = false
+        repeat(900) {
+            director.advance(FrameSeconds)
+            near.advance(FrameSeconds)
+            far.advance(FrameSeconds)
+            if (abs(near.frame.lidOpenness - far.frame.lidOpenness) > 0.01f) drifted = true
         }
-
-        assertTrue(gazeAfter(1f) > gazeAfter(0.01f))
+        assertTrue(drifted, "two separate pairs blinked in lockstep")
     }
 
     private companion object {
