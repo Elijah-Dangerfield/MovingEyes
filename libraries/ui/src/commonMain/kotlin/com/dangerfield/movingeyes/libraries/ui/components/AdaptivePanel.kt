@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -111,14 +112,18 @@ fun AdaptivePanel(
                 PanelLayout.Sheet -> Orientation.Vertical
                 PanelLayout.Rail -> Orientation.Horizontal
             },
-            onDragStopped = { velocity -> state.settle(-velocity, Motion.Panel.slide()) },
+            // Not negated. dragBy already treats a positive delta as closing —
+            // down for a sheet, right for a rail — so the raw velocity has the
+            // sign settleTarget expects. Negating it made a flick toward the
+            // edge re-open the panel it was being thrown away from.
+            onDragStopped = { velocity -> state.settle(velocity, Motion.Panel.slide()) },
         )
 
         Panel(
             layout = layout,
             occupiedPx = { state.occupiedPx },
             onExtentMeasured = { state.extentPx = it },
-            onHeaderMeasured = { state.headerPx = it },
+            onCollapsedMeasured = { state.headerPx = it },
             expanded = state.isExpanded,
             onToggle = { scope.launch { if (state.isExpanded) state.show() else state.expand() } },
             contentAlpha = contentAlpha,
@@ -136,7 +141,7 @@ private fun BoxScope.Panel(
     layout: PanelLayout,
     occupiedPx: () -> Float,
     onExtentMeasured: (Int) -> Unit,
-    onHeaderMeasured: (Int) -> Unit,
+    onCollapsedMeasured: (Int) -> Unit,
     expanded: Boolean,
     onToggle: () -> Unit,
     contentAlpha: Float,
@@ -157,12 +162,17 @@ private fun BoxScope.Panel(
         )
     }
 
+    // Slid by its *own* size, read inside graphicsLayer where the layout size
+    // is already known. Offsetting by the measured extent instead meant that on
+    // the frame before the first measurement the extent was zero, so the panel
+    // drew fully in place and then jumped.
+    //
+    // Both measurements are taken along the axis the panel slides on. They used
+    // to be taken along different ones — the extent as a width for a rail, the
+    // collapsed size always as a height — so a rail came to rest at a distance
+    // that was its header's *height* measured across its width, which is not a
+    // number that means anything.
     val placement = when (layout) {
-        // Slid by its *own* height, read inside graphicsLayer where the layout
-        // size is already known. Offsetting by the measured extent instead
-        // meant that on the frame before the first measurement the extent was
-        // zero, so the panel drew fully in place and then jumped — it popped
-        // into existence rather than arriving.
         PanelLayout.Sheet -> Modifier
             .align(Alignment.BottomCenter)
             .fillMaxWidth()
@@ -178,31 +188,59 @@ private fun BoxScope.Panel(
             .onSizeChanged { onExtentMeasured(it.width) }
     }
 
-    Column(
-        modifier = placement
-            .clip(shape)
-            .background(AppTheme.colors.surfacePrimary.color),
-    ) {
-        Column(
-            modifier = Modifier
-                .onSizeChanged { onHeaderMeasured(it.height) }
-                .then(dragModifier),
-        ) {
-            GrabEdge(expanded = expanded, onToggle = onToggle)
-            header()
+    val surface = placement.clip(shape).background(AppTheme.colors.surfacePrimary.color)
+
+    when (layout) {
+        PanelLayout.Sheet -> Column(modifier = surface) {
+            Column(
+                modifier = Modifier
+                    .onSizeChanged { onCollapsedMeasured(it.height) }
+                    .then(dragModifier),
+            ) {
+                GrabEdge(layout = layout, expanded = expanded, onToggle = onToggle)
+                header()
+            }
+            Box(modifier = Modifier.alpha(contentAlpha)) { content() }
         }
-        Box(modifier = Modifier.alpha(contentAlpha)) { content() }
+
+        // The handle runs down the leading edge rather than across the top:
+        // a rail slides sideways, and a grab affordance at right angles to the
+        // direction it moves reads as the wrong control.
+        PanelLayout.Rail -> Row(modifier = surface) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .onSizeChanged { onCollapsedMeasured(it.width) }
+                    .then(dragModifier),
+            ) {
+                GrabEdge(layout = layout, expanded = expanded, onToggle = onToggle)
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                header()
+                Box(modifier = Modifier.alpha(contentAlpha)) { content() }
+            }
+        }
     }
 }
 
 /** Still tappable, because a tap is what you reach for when the panel is
  *  mostly off screen. Amber when collapsed, when it's the way back in. */
 @Composable
-private fun GrabEdge(expanded: Boolean, onToggle: () -> Unit) {
+private fun GrabEdge(layout: PanelLayout, expanded: Boolean, onToggle: () -> Unit) {
+    val handle = if (expanded) {
+        AppTheme.colors.borderSecondary.color
+    } else {
+        AppTheme.colors.accentPrimary.color
+    }
+
     Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .height(Motion.Panel.GrabEdgeDp)
+            .then(
+                when (layout) {
+                    PanelLayout.Sheet -> Modifier.fillMaxWidth().height(Motion.Panel.GrabEdgeDp)
+                    PanelLayout.Rail -> Modifier.fillMaxHeight().width(Motion.Panel.GrabEdgeDp)
+                },
+            )
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -212,24 +250,18 @@ private fun GrabEdge(expanded: Boolean, onToggle: () -> Unit) {
     ) {
         Box(
             modifier = Modifier
-                .size(width = GrabHandleWidth, height = GrabHandleHeight)
+                .then(
+                    when (layout) {
+                        PanelLayout.Sheet -> Modifier.size(GrabHandleWidth, GrabHandleHeight)
+                        PanelLayout.Rail -> Modifier.size(GrabHandleHeight, GrabHandleWidth)
+                    },
+                )
                 .clip(RoundedCornerShape(GrabHandleHeight / 2))
-                .background(
-                    if (expanded) {
-                        AppTheme.colors.borderSecondary.color
-                    } else {
-                        AppTheme.colors.accentPrimary.color
-                    }
-                ),
+                .background(handle),
         )
     }
 }
 
-/**
- * Both shapes at once: the sheet a phone gets, and the rail a tablet does. The
- * whole point of this component is that those differ, so previewing one is
- * previewing half of it.
- */
 @PhoneAndTabletPreview
 @Composable
 private fun PreviewAdaptivePanel() {

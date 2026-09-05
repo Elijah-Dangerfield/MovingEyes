@@ -839,6 +839,11 @@ private fun EditorChrome(
                 .clip(RoundedCornerShape(RailCornerRadius))
                 .background(AppTheme.colors.surfacePrimary.color.copy(alpha = 0.92f))
                 .border(1.dp, AppTheme.colors.border.color, RoundedCornerShape(RailCornerRadius))
+                // Scrolls only when it has to. Seven buttons and a divider come
+                // to more than a phone has height for in landscape, and a
+                // toolbar that runs off the bottom of the screen takes Play
+                // with it.
+                .verticalScroll(rememberScrollState())
                 .padding(RailPadding),
             verticalArrangement = Arrangement.spacedBy(RailPadding),
             horizontalAlignment = Alignment.CenterHorizontally,
