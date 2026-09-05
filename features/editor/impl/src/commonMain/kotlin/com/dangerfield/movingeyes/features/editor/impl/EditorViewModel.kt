@@ -169,6 +169,13 @@ class EditorViewModel(
                 }
             }
 
+            is EditorAction.Rename -> {
+                val renamed = action.scene.copy(name = action.name)
+                sceneRepository.save(renamed)
+                sceneRepository.writeAutosave(renamed)
+                action.updateState { it.copy(openScene = renamed) }
+            }
+
             is EditorAction.Delete -> sceneRepository.delete(action.scene.id)
         }
     }
@@ -211,6 +218,8 @@ sealed interface EditorAction {
     data class Open(val scene: Scene) : EditorAction
     data class Autosave(val scene: Scene) : EditorAction
 
+
+    data class Rename(val scene: Scene, val name: String) : EditorAction
 
     data class Delete(val scene: Scene) : EditorAction
     data class SettingsChanged(

@@ -22,6 +22,8 @@ import com.dangerfield.movingeyes.libraries.ui.fadingEdge
 import androidx.compose.foundation.layout.size
 import com.dangerfield.movingeyes.libraries.ui.components.icon.Icon
 import com.dangerfield.movingeyes.libraries.ui.components.icon.IconSize
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.requiredSize
@@ -199,6 +201,7 @@ fun EditorScreen(
         var dragSession by remember { mutableStateOf<DragSession?>(null) }
         var isManipulating by remember { mutableStateOf(false) }
         var isOverTrash by remember { mutableStateOf(false) }
+        var isRenaming by remember { mutableStateOf(false) }
         var snappingEnabled by remember { mutableStateOf(true) }
         val panel = rememberPanelState()
         var tab by remember { mutableStateOf(PanelTab.Place) }
@@ -518,6 +521,8 @@ fun EditorScreen(
                 panelClearance = with(density) { occupied.toDp() },
                 isPanelOpen = panel.isExpanded,
                 isRecessed = isManipulating,
+                sceneName = openScene?.name?.takeIf { it.isNotBlank() } ?: fallbackSceneName,
+                onRenameScene = { isRenaming = true },
                 onOpenScenes = { drawerOpen = true },
                 onTogglePanel = { scope.launch { panel.toggle() } },
                 onAddEye = {
@@ -635,6 +640,18 @@ fun EditorScreen(
             )
         }
 
+        if (isRenaming) {
+            RenameSceneDialog(
+                currentName = openScene?.name.orEmpty(),
+                placeholderName = fallbackSceneName,
+                onRename = { name ->
+                    isRenaming = false
+                    openScene?.let { viewModel.takeAction(EditorAction.Rename(it, name)) }
+                },
+                onDismiss = { isRenaming = false },
+            )
+        }
+
         if (showMicExplanation) {
             MicrophoneExplanationDialog(
                 onAllow = {
@@ -728,7 +745,9 @@ private fun EditorChrome(
     panelClearance: Dp,
     isPanelOpen: Boolean,
     isRecessed: Boolean,
+    sceneName: String,
     onOpenScenes: () -> Unit,
+    onRenameScene: () -> Unit,
     onTogglePanel: () -> Unit,
     onAddEye: () -> Unit,
     onDuplicate: () -> Unit,
@@ -761,6 +780,23 @@ private fun EditorChrome(
                 onClick = onOpenScenes,
             )
         }
+
+        // Beside the menu rather than centred: the rail owns the other corner,
+        // and a name floating in the middle of a black canvas reads as part of
+        // the scene rather than as chrome.
+        Text(
+            text = sceneName,
+            typography = AppTheme.typography.Label.L500,
+            color = AppTheme.colors.textSecondary,
+            maxLines = 1,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(start = SceneNameIndent, top = Dimension.D900)
+                .widthIn(max = SceneNameMaxWidth)
+                .clip(RoundedCornerShape(RailCornerRadius))
+                .clickable(onClick = onRenameScene)
+                .padding(horizontal = Dimension.D400, vertical = Dimension.D300),
+        )
 
         Column(
             modifier = Modifier
@@ -945,6 +981,10 @@ private fun RailButton(
 /** Room past the last control, so the bottom of a long tab is reachable
  *  rather than pinned under the screen edge. */
 private val PanelBottomReach = 72.dp
+
+/** Clear of the menu button that sits in the same corner. */
+private val SceneNameIndent = 84.dp
+private val SceneNameMaxWidth = 180.dp
 
 private val RailCornerRadius = 18.dp
 private val RailPadding = 6.dp

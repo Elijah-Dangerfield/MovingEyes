@@ -124,6 +124,9 @@
     <string name="scenes_none_saved">Nothing here yet. Open a preset below to start one.</string>
     <string name="scenes_delete">Delete</string>
     <string name="scenes_default_name">Untitled scene</string>
+    <string name="scene_rename_title">Scene name</string>
+    <string name="scene_rename_save">Rename</string>
+    <string name="scene_rename_cancel">Cancel</string>
 
     <!-- Eye styles -->
     <string name="style_cartoon">Cartoon</string>

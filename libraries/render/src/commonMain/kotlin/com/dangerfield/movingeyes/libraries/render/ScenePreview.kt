@@ -18,6 +18,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.IntSize
+import com.dangerfield.movingeyes.libraries.eyes.Moods
+import com.dangerfield.movingeyes.libraries.eyes.SceneDirector
 import com.dangerfield.movingeyes.libraries.scene.Scene
 
 /**
@@ -43,9 +45,23 @@ fun ScenePreview(
 ) {
     var measured by remember { mutableStateOf(IntSize.Zero) }
 
+    // The director is built first and handed to both, because an eye only
+    // follows one it was constructed with. Without this the miniature's eyes
+    // each ran their own gaze and blink — a pair of watchers looking at
+    // different things, in a chip small enough that the disagreement is all
+    // you can see.
     val state = remember(scene, measured) {
+        val director = SceneDirector(
+            behavior = scene.eyes.firstOrNull()?.behavior() ?: Moods.FreeDefault,
+            blinksTogether = scene.blinkTogether,
+        )
         EyeSceneState(
-            eyes = scene.toRenderedEyes(measured.width.toFloat(), measured.height.toFloat()),
+            eyes = scene.toRenderedEyes(
+                canvasWidthPx = measured.width.toFloat(),
+                canvasHeightPx = measured.height.toFloat(),
+                gaze = director,
+            ),
+            gaze = director,
         )
     }
 

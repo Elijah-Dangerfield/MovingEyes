@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.dangerfield.movingeyes.libraries.billing.BillingProduct
 import com.dangerfield.movingeyes.libraries.eyes.EyeStyles
 import com.dangerfield.movingeyes.libraries.eyes.Moods
-import com.dangerfield.movingeyes.libraries.render.EyePreview
+import com.dangerfield.movingeyes.libraries.render.EyePairPreview
 import com.dangerfield.movingeyes.libraries.ui.components.button.Button
 import com.dangerfield.movingeyes.libraries.ui.components.button.ButtonSize
 import com.dangerfield.movingeyes.libraries.ui.components.button.ButtonStyle
@@ -145,20 +145,12 @@ private fun LiveStrip() {
             .background(Color.Black),
         contentAlignment = Alignment.Center,
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(Dimension.D700)) {
-            EyePreview(
-                style = EyeStyles.HumanRealistic,
-                sizeDp = StripEyeSize,
-                behavior = Moods.Frantic,
-                seed = 1,
-            )
-            EyePreview(
-                style = EyeStyles.HumanRealistic,
-                sizeDp = StripEyeSize,
-                behavior = Moods.Frantic,
-                seed = 2,
-            )
-        }
+        EyePairPreview(
+            style = EyeStyles.HumanRealistic,
+            eyeSize = StripEyeSize,
+            separation = Dimension.D700,
+            behavior = Moods.Frantic,
+        )
 
         Text(
             text = stringResource(Res.string.paywall_live_label),
