@@ -239,19 +239,27 @@ private fun DrawScope.drawGuide(guide: SnapGuide, accent: Color) {
     // Dashed, so a guide can never be mistaken for something in the scene.
     val dash = PathEffect.dashPathEffect(floatArrayOf(12f, 10f))
 
+    // A guide between two eyes spans them and a little past, rather than the
+    // whole canvas. With fourteen eyes on screen a full-height rule says
+    // "something here is aligned" and leaves you to work out what; a short one
+    // points at the two things it is talking about. The canvas centre lines are
+    // the exception and do run edge to edge, because the thing they align to
+    // *is* the whole canvas.
+    val overhang = GuideOverhang.toPx()
+
     when (guide) {
         is SnapGuide.Vertical -> drawLine(
             color = accent,
-            start = Offset(guide.x, 0f),
-            end = Offset(guide.x, size.height),
+            start = Offset(guide.x, if (guide.from.isNaN()) 0f else guide.from - overhang),
+            end = Offset(guide.x, if (guide.to.isNaN()) size.height else guide.to + overhang),
             strokeWidth = stroke,
             pathEffect = dash,
         )
 
         is SnapGuide.Horizontal -> drawLine(
             color = accent,
-            start = Offset(0f, guide.y),
-            end = Offset(size.width, guide.y),
+            start = Offset(if (guide.from.isNaN()) 0f else guide.from - overhang, guide.y),
+            end = Offset(if (guide.to.isNaN()) size.width else guide.to + overhang, guide.y),
             strokeWidth = stroke,
             pathEffect = dash,
         )
@@ -347,3 +355,7 @@ private val MeasurementTickHalf: Dp = 7.dp
 private val MeasurementLabelGap: Dp = 6.dp
 private val MeasurementLabelPadding: Dp = 5.dp
 private val MeasurementLabelRadius: Dp = 6.dp
+
+/** How far a guide runs past the things it aligns, so it reads as pointing at
+ *  them rather than as touching them. */
+private val GuideOverhang: Dp = 20.dp

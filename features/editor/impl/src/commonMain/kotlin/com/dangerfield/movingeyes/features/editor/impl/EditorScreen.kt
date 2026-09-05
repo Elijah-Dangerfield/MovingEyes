@@ -1198,18 +1198,24 @@ private fun dragSelection(
         }
     }
 
-    val anchor = selectionBounds(
+    val bounds = selectionBounds(
         eyes = editor.eyes,
         selection = active,
         canvasWidth = canvasWidthPx,
         canvasHeight = canvasHeightPx,
         paddingPx = 0f,
-    )?.center ?: return false
+    )
+
+    val anchor = bounds?.center ?: return false
 
     val result = resolveSnap(
         dragged = SnapCandidate(
             id = active.first(),
             center = CanvasPoint(anchor.x, anchor.y),
+            // The whole selection's extent, so a dragged pair aligns its outer
+            // edges rather than one member's.
+            halfWidth = (bounds?.width ?: 0f) / 2f,
+            halfHeight = (bounds?.height ?: 0f) / 2f,
         ),
         others = editor.eyes.indices
             .filter { it !in active }
@@ -1218,6 +1224,8 @@ private fun dragSelection(
                 SnapCandidate(
                     id = index,
                     center = CanvasPoint(eye.centerX * canvasWidthPx, eye.centerY * canvasHeightPx),
+                    halfWidth = eye.sizePx / 2f,
+                    halfHeight = eye.sizePx * eye.style.aspectRatio / 2f,
                 )
             },
         canvasWidth = canvasWidthPx,

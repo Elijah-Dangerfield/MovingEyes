@@ -202,6 +202,84 @@ class SnappingTest {
         assertTrue(result.guides.none { it is SnapGuide.MatchedSpacing })
     }
 
+    /**
+     * Edges align, not just middles — the rule every design tool has taught
+     * people to expect. A box dragged near another's top should land on it.
+     */
+    @Test
+    fun `an eye snaps its top edge to another eye's top edge`() {
+        val other = SnapCandidate(2, CanvasPoint(300f, 200f), halfWidth = 40f, halfHeight = 30f)
+
+        val result = resolveSnap(
+            // Top at 174, four short of the other's 170.
+            dragged = SnapCandidate(1, CanvasPoint(600f, 224f), halfWidth = 25f, halfHeight = 50f),
+            others = listOf(other),
+            canvasWidth = 1000f,
+            canvasHeight = 1000f,
+            thresholdPx = 10f,
+        )
+
+        assertEquals(220f, result.position.y, "tops did not meet")
+    }
+
+    /**
+     * What "the same size and lined up" looks like without a badge for it: two
+     * equal boxes on a shared middle also share their tops and bottoms, so all
+     * three guides light at once and say so.
+     */
+    @Test
+    fun `two equal eyes on one middle draw all three guides`() {
+        val other = SnapCandidate(2, CanvasPoint(300f, 400f), halfWidth = 40f, halfHeight = 30f)
+
+        val result = resolveSnap(
+            dragged = SnapCandidate(1, CanvasPoint(600f, 403f), halfWidth = 40f, halfHeight = 30f),
+            others = listOf(other),
+            canvasWidth = 1000f,
+            canvasHeight = 1000f,
+            thresholdPx = 10f,
+        )
+
+        val levels = result.guides.filterIsInstance<SnapGuide.Horizontal>().map { it.y }.toSet()
+        assertEquals(setOf(370f, 400f, 430f), levels, "expected top, middle and bottom")
+    }
+
+    /** Different heights on a shared middle line up on the middle alone —
+     *  anything more would be claiming an alignment that isn't there. */
+    @Test
+    fun `eyes of different heights draw only the middle guide`() {
+        val other = SnapCandidate(2, CanvasPoint(300f, 400f), halfWidth = 40f, halfHeight = 30f)
+
+        val result = resolveSnap(
+            dragged = SnapCandidate(1, CanvasPoint(600f, 400f), halfWidth = 40f, halfHeight = 80f),
+            others = listOf(other),
+            canvasWidth = 1000f,
+            canvasHeight = 1000f,
+            thresholdPx = 10f,
+        )
+
+        val levels = result.guides.filterIsInstance<SnapGuide.Horizontal>().map { it.y }.toSet()
+        assertEquals(setOf(400f), levels, "an alignment was claimed that isn't there")
+    }
+
+    /** A guide spans the things it aligns rather than the whole canvas, so in a
+     *  crowded scene it points at the two that matter. */
+    @Test
+    fun `a guide between two eyes spans only those eyes`() {
+        val other = SnapCandidate(2, CanvasPoint(300f, 400f), halfWidth = 40f, halfHeight = 30f)
+
+        val result = resolveSnap(
+            dragged = SnapCandidate(1, CanvasPoint(600f, 400f), halfWidth = 40f, halfHeight = 30f),
+            others = listOf(other),
+            canvasWidth = 1000f,
+            canvasHeight = 1000f,
+            thresholdPx = 10f,
+        )
+
+        val guide = result.guides.filterIsInstance<SnapGuide.Horizontal>().first { it.y == 400f }
+        assertEquals(260f, guide.from)
+        assertEquals(640f, guide.to)
+    }
+
     @Test
     fun `rotation clicks to fifteen degree detents`() {
         assertEquals(0f, snapRotation(2f))

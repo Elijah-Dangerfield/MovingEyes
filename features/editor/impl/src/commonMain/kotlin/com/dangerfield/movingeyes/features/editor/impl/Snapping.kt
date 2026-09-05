@@ -9,8 +9,33 @@ import kotlin.math.hypot
  *  without Compose. */
 data class CanvasPoint(val x: Float, val y: Float)
 
-/** One eye's position, as far as snapping cares. */
-data class SnapCandidate(val id: Int, val center: CanvasPoint)
+/**
+ * One eye's position and extent, as far as snapping cares.
+ *
+ * The half-extents default to zero so a caller that only cares about centres —
+ * spacing matching, most tests — needn't invent a size. An eye with no extent
+ * simply has its three anchors on top of each other, which degrades to
+ * centre-only snapping rather than misbehaving.
+ */
+data class SnapCandidate(
+    val id: Int,
+    val center: CanvasPoint,
+    val halfWidth: Float = 0f,
+    val halfHeight: Float = 0f,
+)
+
+/**
+ * The three places on a box an alignment can happen, on either axis.
+ *
+ * Following Figma and every design tool since: things line up by their edges as
+ * readily as by their middles, and which one you meant is usually obvious from
+ * which one you dragged toward.
+ */
+enum class SnapAnchor(val scale: Float) {
+    Start(-1f),
+    Middle(0f),
+    End(1f),
+}
 
 /**
  * What the drag landed on, and what to draw because of it.
@@ -19,11 +44,27 @@ data class SnapCandidate(val id: Int, val center: CanvasPoint)
  * your finger with no explanation reads as the app fighting you.
  */
 sealed interface SnapGuide {
-    /** Aligned to something's X. Drawn as a vertical line at [x]. */
-    data class Vertical(val x: Float, val kind: SnapKind) : SnapGuide
+    /**
+     * Aligned to something's X. Drawn as a vertical line at [x], spanning
+     * [from]..[to] — the extent of the things that actually line up, not the
+     * whole canvas. In a scene with fourteen eyes a full-height rule says
+     * "something here is aligned" and leaves you to work out what.
+     */
+    data class Vertical(
+        val x: Float,
+        val kind: SnapKind,
+        val from: Float = Float.NaN,
+        val to: Float = Float.NaN,
+    ) : SnapGuide
 
-    /** Aligned to something's Y. Drawn as a horizontal line at [y]. */
-    data class Horizontal(val y: Float, val kind: SnapKind) : SnapGuide
+    /** Aligned to something's Y. Drawn as a horizontal line at [y], spanning
+     *  [from]..[to]. */
+    data class Horizontal(
+        val y: Float,
+        val kind: SnapKind,
+        val from: Float = Float.NaN,
+        val to: Float = Float.NaN,
+    ) : SnapGuide
 
     /**
      * Matched the spacing of an existing pair. Drawn as **two** measure bars
@@ -63,8 +104,11 @@ data class SnapResult(
  *
  *  1. **The canvas centre lines.** Centred is the single most common thing
  *     anyone wants and the hardest to hit by hand.
- *  2. **Other eyes' centre lines.** Two eyes level with each other is what
- *     makes a pair read as a face rather than two things.
+ *  2. **Other eyes' edges and centre lines.** Two eyes level with each other is
+ *     what makes a pair read as a face rather than two things — and level can
+ *     mean tops, middles or bottoms, so all three are candidates, matched
+ *     against all three of the dragged eye's. Following Figma, which everyone
+ *     has already learned.
  *  3. **A spacing that matches an existing pair.** The flagship case is a
  *     portrait with two holes cut in it; the second pair of eyes has to match
  *     the first, and matching a distance by eye at arm's length is genuinely
@@ -90,25 +134,46 @@ fun resolveSnap(
 
     // Canvas centre wins over another eye when both are in range: someone
     // reaching for the middle of the screen means the middle of the screen.
+    // Each candidate is the *centre* the dragged eye would need to sit at for
+    // some anchor of it to meet some anchor of a target. Resolving in centre
+    // coordinates keeps the two axes independent and the arithmetic in one
+    // place.
     val xTargets = buildList {
         add(canvasCenterX to SnapKind.CanvasCenter)
-        others.forEach { add(it.center.x to SnapKind.OtherEye) }
+        others.forEach { other ->
+            SnapAnchor.entries.forEach { theirs ->
+                val at = other.center.x + theirs.scale * other.halfWidth
+                SnapAnchor.entries.forEach { ours ->
+                    add(at - ours.scale * dragged.halfWidth to SnapKind.OtherEye)
+                }
+            }
+        }
     }
     val yTargets = buildList {
         add(canvasCenterY to SnapKind.CanvasCenter)
-        others.forEach { add(it.center.y to SnapKind.OtherEye) }
+        others.forEach { other ->
+            SnapAnchor.entries.forEach { theirs ->
+                val at = other.center.y + theirs.scale * other.halfHeight
+                SnapAnchor.entries.forEach { ours ->
+                    add(at - ours.scale * dragged.halfHeight to SnapKind.OtherEye)
+                }
+            }
+        }
     }
 
     val snappedX = nearest(dragged.center.x, xTargets, thresholdPx)
     val snappedY = nearest(dragged.center.y, yTargets, thresholdPx)
 
-    snappedX?.let { guides += SnapGuide.Vertical(it.first, it.second) }
-    snappedY?.let { guides += SnapGuide.Horizontal(it.first, it.second) }
-
     var position = CanvasPoint(
         x = snappedX?.first ?: dragged.center.x,
         y = snappedY?.first ?: dragged.center.y,
     )
+
+    // Guides describe the position that was *reached*, not the one candidate
+    // that got it there. Two eyes of equal height whose middles meet also have
+    // their tops and bottoms meeting, and drawing all three is how a design
+    // tool says "these are the same size and lined up" without a badge for it.
+    guides += alignmentGuides(dragged, position, others, canvasCenterX, canvasCenterY)
 
     // Spacing runs *after* the axis snaps and on whatever freedom they left,
     // because the two are usually orthogonal rather than competing. The
@@ -132,6 +197,61 @@ fun resolveSnap(
 
     return SnapResult(position, guides)
 }
+
+/**
+ * Every alignment true at [position], as something to draw.
+ *
+ * Tolerance is a hair rather than the snap threshold: this answers "what is
+ * actually lined up", and reporting near-misses as lines would mean guides that
+ * appear before anything has snapped.
+ */
+private fun alignmentGuides(
+    dragged: SnapCandidate,
+    position: CanvasPoint,
+    others: List<SnapCandidate>,
+    canvasCenterX: Float,
+    canvasCenterY: Float,
+): List<SnapGuide> = buildList {
+    if (abs(position.x - canvasCenterX) < GuideTolerancePx) {
+        add(SnapGuide.Vertical(canvasCenterX, SnapKind.CanvasCenter))
+    }
+    if (abs(position.y - canvasCenterY) < GuideTolerancePx) {
+        add(SnapGuide.Horizontal(canvasCenterY, SnapKind.CanvasCenter))
+    }
+
+    others.forEach { other ->
+        SnapAnchor.entries.forEach { ours ->
+            val ourX = position.x + ours.scale * dragged.halfWidth
+            val ourY = position.y + ours.scale * dragged.halfHeight
+
+            SnapAnchor.entries.forEach { theirs ->
+                if (abs(ourX - (other.center.x + theirs.scale * other.halfWidth)) < GuideTolerancePx) {
+                    add(
+                        SnapGuide.Vertical(
+                            x = ourX,
+                            kind = SnapKind.OtherEye,
+                            from = minOf(position.y - dragged.halfHeight, other.center.y - other.halfHeight),
+                            to = maxOf(position.y + dragged.halfHeight, other.center.y + other.halfHeight),
+                        ),
+                    )
+                }
+                if (abs(ourY - (other.center.y + theirs.scale * other.halfHeight)) < GuideTolerancePx) {
+                    add(
+                        SnapGuide.Horizontal(
+                            y = ourY,
+                            kind = SnapKind.OtherEye,
+                            from = minOf(position.x - dragged.halfWidth, other.center.x - other.halfWidth),
+                            to = maxOf(position.x + dragged.halfWidth, other.center.x + other.halfWidth),
+                        ),
+                    )
+                }
+            }
+        }
+    }
+}.distinct()
+
+/** Close enough to call aligned. Sub-pixel, so only a real snap draws a line. */
+private const val GuideTolerancePx = 0.5f
 
 private fun nearest(
     value: Float,
