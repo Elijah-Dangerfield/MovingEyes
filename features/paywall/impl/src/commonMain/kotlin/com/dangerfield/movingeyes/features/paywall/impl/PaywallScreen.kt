@@ -38,6 +38,10 @@ import movingeyes.libraries.resources.generated.resources.paywall_buy_no_price
 import movingeyes.libraries.resources.generated.resources.paywall_close
 import movingeyes.libraries.resources.generated.resources.paywall_live_label
 import movingeyes.libraries.resources.generated.resources.paywall_once
+import movingeyes.libraries.resources.generated.resources.paywall_working
+import movingeyes.libraries.resources.generated.resources.paywall_done_title
+import movingeyes.libraries.resources.generated.resources.paywall_done_body
+import movingeyes.libraries.resources.generated.resources.paywall_done_close
 import movingeyes.libraries.resources.generated.resources.paywall_restore
 import movingeyes.libraries.resources.generated.resources.paywall_title
 import movingeyes.libraries.resources.generated.resources.paywall_value_motion
@@ -57,6 +61,7 @@ import org.jetbrains.compose.resources.stringResource
 fun PaywallScreen(
     product: BillingProduct?,
     isPurchasing: Boolean,
+    isUnlocked: Boolean,
     message: String?,
     onPurchase: () -> Unit,
     onRestore: () -> Unit,
@@ -73,6 +78,15 @@ fun PaywallScreen(
         verticalArrangement = Arrangement.spacedBy(Dimension.D700),
     ) {
         LiveStrip()
+
+        // The screen becomes the receipt rather than closing itself. A purchase
+        // that dismisses on success leaves you looking at the canvas wondering
+        // whether the money went anywhere — which is exactly what the debug
+        // build did, because the fake store answers instantly.
+        if (isUnlocked) {
+            PurchaseComplete(onClose = onClose)
+            return@Column
+        }
 
         Text(
             text = stringResource(Res.string.paywall_title),
@@ -105,10 +119,16 @@ fun PaywallScreen(
             size = ButtonSize.Large,
             modifier = Modifier.fillMaxWidth(),
         ) {
+            // Says what it is doing rather than just going grey. A store round
+            // trip can take seconds, and a dead button is indistinguishable
+            // from a broken one.
             Text(
-                product?.displayPrice
-                    ?.let { stringResource(Res.string.paywall_buy, it) }
-                    ?: stringResource(Res.string.paywall_buy_no_price),
+                when {
+                    isPurchasing -> stringResource(Res.string.paywall_working)
+                    product?.displayPrice != null ->
+                        stringResource(Res.string.paywall_buy, product.displayPrice)
+                    else -> stringResource(Res.string.paywall_buy_no_price)
+                },
             )
         }
 
@@ -184,3 +204,25 @@ private val StripHeight = 180.dp
 private val StripEyeSize = 84.dp
 private val StripCornerRadius = 14.dp
 private val BulletSize = 8.dp
+
+/** What you see the moment it works. */
+@Composable
+private fun PurchaseComplete(onClose: () -> Unit) {
+    Text(
+        text = stringResource(Res.string.paywall_done_title),
+        typography = AppTheme.typography.Display.D1000,
+        color = AppTheme.colors.accentPrimary,
+    )
+    Text(
+        text = stringResource(Res.string.paywall_done_body),
+        typography = AppTheme.typography.Body.B600,
+        color = AppTheme.colors.textSecondary,
+    )
+    Button(
+        onClick = onClose,
+        size = ButtonSize.Large,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(stringResource(Res.string.paywall_done_close))
+    }
+}

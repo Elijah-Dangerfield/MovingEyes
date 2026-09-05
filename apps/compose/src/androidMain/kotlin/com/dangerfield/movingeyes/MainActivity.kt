@@ -15,16 +15,14 @@ class MainActivity : ComponentActivity() {
         
         super.onCreate(savedInstanceState)
         
-        // Enable edge-to-edge with light status bar (dark icons)
+        // `dark` means dark *background*, so light icons — which is the only
+        // legible choice here. This app has no light theme to follow: every
+        // screen is black or near it. The default `auto` picks its icon colour
+        // from the system theme, so a phone in light mode was drawing dark
+        // icons on a black status bar and they simply disappeared.
         enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.light(
-                android.graphics.Color.TRANSPARENT,
-                android.graphics.Color.TRANSPARENT
-            ),
-            navigationBarStyle = SystemBarStyle.light(
-                android.graphics.Color.TRANSPARENT,
-                android.graphics.Color.TRANSPARENT
-            )
+            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
         )
 
         val appComponent = (application as MovingEyesApplication).appComponent

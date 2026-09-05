@@ -18,13 +18,15 @@ import com.dangerfield.movingeyes.libraries.ui.components.Switch
 import com.dangerfield.movingeyes.libraries.ui.components.button.Button
 import com.dangerfield.movingeyes.libraries.ui.components.button.ButtonSize
 import com.dangerfield.movingeyes.libraries.ui.components.button.ButtonStyle
+import com.dangerfield.movingeyes.libraries.ui.components.SectionCard
 import com.dangerfield.movingeyes.libraries.ui.components.text.Text
 import com.dangerfield.movingeyes.system.AppTheme
 import com.dangerfield.movingeyes.system.Dimension
 import movingeyes.libraries.resources.generated.resources.Res
-import movingeyes.libraries.resources.generated.resources.settings_mute
 import movingeyes.libraries.resources.generated.resources.settings_plan_free
 import movingeyes.libraries.resources.generated.resources.settings_plan_unlocked
+import movingeyes.libraries.resources.generated.resources.settings_plan_free_detail
+import movingeyes.libraries.resources.generated.resources.settings_plan_unlocked_detail
 import movingeyes.libraries.resources.generated.resources.settings_privacy
 import movingeyes.libraries.resources.generated.resources.settings_reduce_flashing
 import movingeyes.libraries.resources.generated.resources.settings_reduce_flashing_detail
@@ -41,10 +43,8 @@ import org.jetbrains.compose.resources.stringResource
 fun SettingsScreen(
     isUnlocked: Boolean,
     reduceFlashing: Boolean,
-    muteAllSound: Boolean,
     versionName: String,
     onReduceFlashingChange: (Boolean) -> Unit,
-    onMuteChange: (Boolean) -> Unit,
     onUnlock: () -> Unit,
     onRestore: () -> Unit,
     onOpenPrivacy: () -> Unit,
@@ -66,13 +66,26 @@ fun SettingsScreen(
             typography = AppTheme.typography.Display.D1000,
         )
 
-        Text(
-            text = stringResource(
+        // A word on its own was doing the whole job of saying what someone
+        // bought. Both states now say what you actually have, and the unlocked
+        // one sits on a plate so it reads as a receipt rather than as a label.
+        SectionCard(
+            title = stringResource(
                 if (isUnlocked) Res.string.settings_plan_unlocked else Res.string.settings_plan_free,
             ),
-            typography = AppTheme.typography.Body.B700,
-            color = if (isUnlocked) AppTheme.colors.accentPrimary else AppTheme.colors.textSecondary,
-        )
+        ) {
+            Text(
+                text = stringResource(
+                    if (isUnlocked) {
+                        Res.string.settings_plan_unlocked_detail
+                    } else {
+                        Res.string.settings_plan_free_detail
+                    },
+                ),
+                typography = AppTheme.typography.Body.B600,
+                color = AppTheme.colors.textSecondary,
+            )
+        }
 
         if (!isUnlocked) {
             Button(
@@ -82,17 +95,20 @@ fun SettingsScreen(
             ) {
                 Text(stringResource(Res.string.settings_unlock))
             }
-        }
 
-        // Visible whether or not the plan says unlocked: someone who switched
-        // store accounts sees "Free" and this is the button that fixes it.
-        Button(
-            onClick = onRestore,
-            size = ButtonSize.Medium,
-            style = ButtonStyle.Outlined,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(Res.string.settings_restore))
+            // Only while locked. Restore exists for someone who owns this and
+            // is looking at "Free" — on a reinstall or a switched store
+            // account. Offering it to someone already unlocked is offering to
+            // fix a problem they do not have, and reads as doubt about whether
+            // the purchase took.
+            Button(
+                onClick = onRestore,
+                size = ButtonSize.Medium,
+                style = ButtonStyle.Outlined,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(Res.string.settings_restore))
+            }
         }
 
         HorizontalDivider()
@@ -102,13 +118,6 @@ fun SettingsScreen(
             detail = stringResource(Res.string.settings_reduce_flashing_detail),
             checked = reduceFlashing,
             onCheckedChange = onReduceFlashingChange,
-        )
-
-        ToggleRow(
-            title = stringResource(Res.string.settings_mute),
-            detail = null,
-            checked = muteAllSound,
-            onCheckedChange = onMuteChange,
         )
 
         HorizontalDivider()

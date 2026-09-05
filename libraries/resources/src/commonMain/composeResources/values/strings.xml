@@ -21,8 +21,6 @@
     <string name="editor_measure">Measurements</string>
     <string name="editor_undo">Undo</string>
     <string name="editor_redo">Redo</string>
-    <string name="editor_lock">Lock</string>
-    <string name="editor_unlock">Unlock</string>
 
     <!--
       The live measurement readout. Assembled from these fragments rather than
@@ -85,7 +83,7 @@
     <string name="motion_restlessness">Restlessness</string>
     <string name="motion_gaze_center">Gaze centre</string>
     <string name="motion_reactivity">Sound reactivity</string>
-    <string name="motion_free_caption">Free scenes blink and wander on a fixed default.</string>
+    <string name="motion_free_caption">Free eyes still blink and look around. These controls decide how.</string>
 
     <!-- Scene tab -->
     <string name="scene_canvas_color">Canvas colour</string>
@@ -168,15 +166,19 @@
       on impulse by someone who already likes the app, and pressure tactics
       only produce refunds and one-star reviews.
     -->
-    <string name="paywall_title">Unlock everything</string>
-    <string name="paywall_live_label">Running at Frantic, right now</string>
-    <string name="paywall_value_motion">Every mood, and the sliders behind them</string>
-    <string name="paywall_value_styles">Ten more eye styles</string>
-    <string name="paywall_value_reactivity">Eyes that react to sound</string>
-    <string name="paywall_once">Paid once. No subscription, no ads.</string>
+    <string name="paywall_title">Unlock every eye</string>
+    <string name="paywall_live_label">This is Frantic. It\'s running right now.</string>
+    <string name="paywall_value_motion">Six moods, from a slow scan to Possessed, and the blink, wander and restlessness behind each one</string>
+    <string name="paywall_value_styles">Ten more eyes: bloodshot, feline, reptile, demon, spider, doll and the rest</string>
+    <string name="paywall_value_reactivity">Eyes that turn toward a door opening, and look at whoever came in</string>
+    <string name="paywall_once">One payment, forever, on this store account. No subscription, no ads, nothing to cancel.</string>
     <string name="paywall_buy">Unlock for %1$s</string>
     <string name="paywall_buy_no_price">Unlock everything</string>
     <string name="paywall_restore">Restore purchase</string>
+    <string name="paywall_working">Talking to the store…</string>
+    <string name="paywall_done_title">Unlocked</string>
+    <string name="paywall_done_body">Every style, every mood and sound reactivity are yours. Thanks.</string>
+    <string name="paywall_done_close">Back to the scene</string>
     <string name="paywall_close">Not now</string>
     <string name="paywall_store_unavailable">Couldn’t reach the store. Try again in a moment.</string>
     <string name="paywall_nothing_to_restore">No purchase found on this store account.</string>
@@ -186,27 +188,28 @@
     <string name="settings_title">Settings</string>
     <string name="settings_open">Settings</string>
     <string name="settings_plan_free">Free</string>
+    <string name="settings_plan_free_detail">Three eye styles and the motion they come with. Everything you place, colour and save is yours to keep.</string>
     <string name="settings_plan_unlocked">Unlocked</string>
+    <string name="settings_plan_unlocked_detail">Every style, every mood and sound reactivity. Bought once, tied to this store account.</string>
     <string name="settings_unlock">Unlock everything</string>
     <string name="settings_restore">Restore purchase</string>
     <string name="settings_reduce_flashing">Reduce flashing</string>
     <string name="settings_reduce_flashing_detail">Caps rapid movement and blinking in every mood.</string>
-    <string name="settings_mute">Mute all sound</string>
     <!--
       Bug report and feedback. Both reach Sentry through Telemetry, so the copy
       should set the expectation that a person reads them and nothing else is
       collected beyond what the report already shows.
     -->
     <string name="feedback_bug_title">Report a bug</string>
-    <string name="feedback_bug_body">Tell us what went wrong and we\'ll fix it.</string>
-    <string name="feedback_captured">What we already know</string>
+    <string name="feedback_bug_body">What happened? This goes straight to me, with the details below attached.</string>
+    <string name="feedback_captured">Attached automatically</string>
     <string name="feedback_error_code">Error code</string>
     <string name="feedback_report_id">Report id</string>
     <string name="feedback_message">Message</string>
     <string name="feedback_message_hint">What happened?</string>
     <string name="feedback_bug_sent">Sent. Thank you.</string>
     <string name="feedback_title">Send feedback</string>
-    <string name="feedback_body">Tell us what you think. A person reads these.</string>
+    <string name="feedback_body">Tell me what you think. I read all of these.</string>
     <string name="feedback_hint">What is on your mind?</string>
     <string name="feedback_sent">Sent. Thank you.</string>
     <string name="feedback_empty">Add a note before sending.</string>
@@ -255,7 +258,7 @@
     <string name="error_dismiss">Dismiss</string>
     <string name="error_code">Error code: %1$d</string>
     <string name="error_report">Report to developers</string>
-    <string name="error_report_aside">(that goes to me. I’m one person.)</string>
+    <string name="error_report_aside">(that goes to me. I\'m one person.)</string>
 
     <!-- Paywall and entitlement -->
     <string name="paid_feature">Paid feature</string>

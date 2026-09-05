@@ -39,12 +39,10 @@ class SettingsFeatureEntryPoint(
             SettingsScreen(
                 isUnlocked = state.isUnlocked,
                 reduceFlashing = state.reduceFlashing,
-                muteAllSound = state.muteAllSound,
                 versionName = state.versionName,
                 onReduceFlashingChange = {
                     settingsViewModel.takeAction(SettingsAction.SetReduceFlashing(it))
                 },
-                onMuteChange = { settingsViewModel.takeAction(SettingsAction.SetMute(it)) },
                 onUnlock = { router.navigate(PaywallRoute(PaywallTrigger.Settings)) },
                 onRestore = { settingsViewModel.takeAction(SettingsAction.Restore) },
                 onOpenPrivacy = { router.openWebLink(PrivacyUrl) },

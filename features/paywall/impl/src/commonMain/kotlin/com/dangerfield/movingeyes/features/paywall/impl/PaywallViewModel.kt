@@ -30,6 +30,7 @@ class PaywallViewModel(
                 action.updateState { it.copy(isWorking = false, outcome = outcome) }
 
                 if (outcome is PurchaseOutcome.Unlocked) {
+                    action.updateState { it.copy(isUnlocked = true) }
                     // A demo running when the purchase lands must not then take
                     // the feature away.
                     sendEvent(PaywallEvent.Unlocked)
@@ -42,6 +43,7 @@ class PaywallViewModel(
                 action.updateState { it.copy(isWorking = false, restoreOutcome = outcome) }
 
                 if (outcome is RestoreOutcome.Restored) {
+                    action.updateState { it.copy(isUnlocked = true) }
                     sendEvent(PaywallEvent.Unlocked)
                 }
             }
@@ -52,6 +54,10 @@ class PaywallViewModel(
 data class PaywallViewState(
     val product: BillingProduct? = null,
     val isWorking: Boolean = false,
+
+    /** Drives the receipt. Set from the outcome rather than read from
+     *  Entitlements, so the screen only celebrates a purchase made *here*. */
+    val isUnlocked: Boolean = false,
 
     /** Cancelling shows nothing at all; only failures and restores speak. */
     val outcome: PurchaseOutcome? = null,

@@ -513,7 +513,11 @@ fun EditorScreen(
             )
 
             SelectionOverlay(
-                measurements = if (showMeasurements) {
+                // Never in display mode: it dissolves every other piece of
+                // chrome, and a dimension line left on the canvas would be the
+                // one thing still saying "this is an editor" to a room full of
+                // people looking at a painting.
+                measurements = if (showMeasurements && !display.isActive) {
                     measurementsFor(editor, canvasWidthPx, canvasHeightPx, screenMetrics)
                 } else {
                     emptyList()

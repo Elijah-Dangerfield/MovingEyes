@@ -36,6 +36,7 @@ class PaywallFeatureEntryPoint(
             PaywallScreen(
                 product = state.product,
                 isPurchasing = state.isWorking,
+                isUnlocked = state.isUnlocked,
                 message = state.outcomeMessage(),
                 onPurchase = { paywallViewModel.takeAction(PaywallAction.Purchase) },
                 onRestore = { paywallViewModel.takeAction(PaywallAction.Restore) },

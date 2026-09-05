@@ -19,7 +19,7 @@ class SettingsViewModel(
 
     init {
         appCache.updates
-            .onEach { takeAction(SettingsAction.Loaded(it.reduceFlashing, it.muteAllSound)) }
+            .onEach { takeAction(SettingsAction.Loaded(it.reduceFlashing)) }
             .launchIn(viewModelScope)
 
         entitlements.isUnlocked
@@ -30,7 +30,7 @@ class SettingsViewModel(
     override suspend fun handleAction(action: SettingsAction) {
         when (action) {
             is SettingsAction.Loaded -> action.updateState {
-                it.copy(reduceFlashing = action.reduceFlashing, muteAllSound = action.mute)
+                it.copy(reduceFlashing = action.reduceFlashing)
             }
 
             is SettingsAction.UnlockChanged -> action.updateState {
@@ -41,9 +41,6 @@ class SettingsViewModel(
                 appCache.update { it.copy(reduceFlashing = action.enabled) }
             }
 
-            is SettingsAction.SetMute -> {
-                appCache.update { it.copy(muteAllSound = action.enabled) }
-            }
 
             SettingsAction.Restore -> {
                 entitlements.restore()
@@ -55,14 +52,12 @@ class SettingsViewModel(
 data class SettingsViewState(
     val isUnlocked: Boolean = false,
     val reduceFlashing: Boolean = false,
-    val muteAllSound: Boolean = false,
     val versionName: String = BuildInfo.versionName,
 )
 
 sealed interface SettingsAction {
-    data class Loaded(val reduceFlashing: Boolean, val mute: Boolean) : SettingsAction
+    data class Loaded(val reduceFlashing: Boolean) : SettingsAction
     data class UnlockChanged(val isUnlocked: Boolean) : SettingsAction
     data class SetReduceFlashing(val enabled: Boolean) : SettingsAction
-    data class SetMute(val enabled: Boolean) : SettingsAction
     data object Restore : SettingsAction
 }

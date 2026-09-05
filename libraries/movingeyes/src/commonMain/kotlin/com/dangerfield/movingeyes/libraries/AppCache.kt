@@ -47,7 +47,6 @@ data class AppData(
     /** Caps rapid movement and blinking in every mood. */
     val reduceFlashing: Boolean = false,
 
-    val muteAllSound: Boolean = false,
 
     /** Moods whose photosensitivity warning has already been shown. */
     val flashingWarningsSeen: Set<String> = emptySet(),
