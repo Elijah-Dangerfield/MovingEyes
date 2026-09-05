@@ -3,6 +3,7 @@ package com.dangerfield.movingeyes.plugin
 import com.android.build.gradle.LibraryExtension
 import com.dangerfield.movingeyes.ext.ConfigurationExtension
 import com.dangerfield.movingeyes.util.configureAndroid
+import com.dangerfield.movingeyes.util.configureComposeMetrics
 import com.dangerfield.movingeyes.util.configureKotlinInject
 import com.dangerfield.movingeyes.util.configureKotlinMultiplatform
 import com.dangerfield.movingeyes.util.enforceModuleBoundaries
@@ -56,6 +57,7 @@ class ComposeMultiplatformConventionPlugin : Plugin<Project> {
             configureKotlinMultiplatform()
             configureKotlinInject()
             configureComposeTestDependencies()
+            configureComposeMetrics()
             
             extensions.configure<LibraryExtension> {
                 configureAndroid()

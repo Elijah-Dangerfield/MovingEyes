@@ -80,29 +80,31 @@ fun TopBar(
     }
 }
 
-private fun Modifier.elevateOnScroll(
-    scrollState: ScrollState?,
-): Modifier {
-
+/**
+ * A shadow that appears once the content has scrolled under the header.
+ *
+ * `@Composable` rather than `Modifier.composed`: composed is deprecated, and it
+ * allocates a fresh modifier on every composition and opts the chain out of
+ * skipping — which is exactly backwards for something attached to a header that
+ * recomposes with the screen behind it.
+ *
+ * The animated Dp is read in composition and suppressed rather than deferred:
+ * `Modifier.shadow` takes a Dp, not a lambda, so there is no draw-phase form to
+ * move it into. The scope is one modifier on a container, not anything with
+ * text in it, and it only runs while the list crosses the top.
+ */
+@Composable
+private fun Modifier.elevateOnScroll(scrollState: ScrollState?): Modifier {
     checkNotNull(scrollState) {
         "ScrollState should not be null when liftOnScroll is true"
     }
 
-    return this.composed {
-        // `Modifier.shadow` takes a Dp, not a lambda, so there is no
-        // phase-deferred form to move this read into. The scope is one modifier
-        // on the header container rather than anything with text in it, and the
-        // animation runs only while the list crosses the top.
-        @Suppress("AnimatedStateReadInComposition")
-        val elevation by animateDpAsState(
-            if (scrollState.canScrollBackward) {
-                Elevation.Header.dp
-            } else {
-                0.dp
-            }, label = ""
-        )
-        Modifier.shadow(elevation)
-    }
+    @Suppress("AnimatedStateReadInComposition")
+    val elevation by animateDpAsState(
+        targetValue = if (scrollState.canScrollBackward) Elevation.Header.dp else 0.dp,
+        label = "headerLift",
+    )
+    return shadow(elevation)
 }
 
 @Preview
