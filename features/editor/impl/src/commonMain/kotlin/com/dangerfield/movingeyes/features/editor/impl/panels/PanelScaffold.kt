@@ -1,6 +1,7 @@
 package com.dangerfield.movingeyes.features.editor.impl.panels
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,9 +32,13 @@ fun PanelRow(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(Dimension.D300),
     ) {
+        // The trailing control takes the leftover width rather than the row
+        // splitting what's there: SegmentedControl asks for all of it, so under
+        // SpaceBetween the gap collapsed and ROTATE sat flush against the
+        // Group/Each border.
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(Dimension.D500),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(
@@ -48,7 +53,9 @@ fun PanelRow(
                 )
                 if (isLocked) LockBadge()
             }
-            trailing()
+            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
+                trailing()
+            }
         }
         content()
     }

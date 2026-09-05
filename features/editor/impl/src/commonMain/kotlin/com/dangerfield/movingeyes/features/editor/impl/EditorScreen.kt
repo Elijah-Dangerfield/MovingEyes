@@ -84,7 +84,7 @@ import movingeyes.libraries.resources.generated.resources.display_enter
 import movingeyes.libraries.resources.generated.resources.demo_ended
 import movingeyes.libraries.resources.generated.resources.demo_keep
 import movingeyes.libraries.resources.generated.resources.editor_eye_count
-import movingeyes.libraries.resources.generated.resources.editor_readout_hint
+import movingeyes.libraries.resources.generated.resources.editor_readout_canvas
 import movingeyes.libraries.resources.generated.resources.editor_readout_ipd
 import movingeyes.libraries.resources.generated.resources.editor_readout_millimeters
 import movingeyes.libraries.resources.generated.resources.editor_readout_rotation
@@ -934,6 +934,15 @@ private fun transformSelection(editor: EditorState, zoom: Float, rotation: Float
 }
 
 /**
+ * The readout reports, it never instructs.
+ *
+ * With nothing selected there is still something true to measure, so it gives
+ * the canvas's physical size — which happens to be the number you hold a ruler
+ * against before cutting the cardboard. It used to say "tap to select", which
+ * is the interface explaining itself inside its own instrument, welded to a
+ * count with the separator that's supposed to mean "another field of the same
+ * reading".
+ *
  * Millimetres appear only when the platform actually knows the screen's
  * physical size: a figure the app can't stand behind is worse than none when
  * someone is about to cut a hole from it.
@@ -952,7 +961,14 @@ private fun readoutText(
     val selection = editor.selection
     val eyeCount = pluralStringResource(Res.plurals.editor_eye_count, editor.eyes.size, editor.eyes.size)
     if (selection.isEmpty()) {
-        return stringResource(Res.string.editor_readout_hint, eyeCount)
+        val wide = screenMetrics.millimeters(canvasWidthPx)
+        val tall = screenMetrics.millimeters(canvasHeightPx)
+        val canvas = if (wide != null && tall != null) {
+            stringResource(Res.string.editor_readout_canvas, wide.roundToInt(), tall.roundToInt())
+        } else {
+            null
+        }
+        return listOfNotNull(eyeCount, canvas).joinToString(" · ")
     }
 
     val parts = mutableListOf(
