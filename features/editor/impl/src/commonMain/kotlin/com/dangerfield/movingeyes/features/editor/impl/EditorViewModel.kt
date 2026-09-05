@@ -1,7 +1,6 @@
 package com.dangerfield.movingeyes.features.editor.impl
 
 import com.dangerfield.movingeyes.libraries.billing.Entitlements
-import com.dangerfield.movingeyes.libraries.billing.FeatureTrial
 import com.dangerfield.movingeyes.libraries.core.logging.KLog
 import com.dangerfield.movingeyes.libraries.device.BatteryStatus
 import com.dangerfield.movingeyes.libraries.device.DisplayController
@@ -42,7 +41,6 @@ class EditorViewModel(
     private val clock: Clock,
     private val appCache: AppCache,
     val entitlements: Entitlements,
-    val featureTrial: FeatureTrial,
     private val reviewPrompts: ReviewPromptCoordinator,
     private val permissions: PermissionManager,
     private val accessibility: SystemAccessibility,
@@ -71,7 +69,6 @@ class EditorViewModel(
             .onEach { data ->
                 takeAction(
                     EditorAction.SettingsChanged(
-                        seenHint = data.hasSeenDisplayModeHint,
                         // The OS preference counts as the setting being on:
                         // someone who set it system-wide should not have to
                         // find it again in here.
@@ -125,7 +122,6 @@ class EditorViewModel(
             is EditorAction.SettingsChanged -> {
                 action.updateState {
                     it.copy(
-                        hasSeenDisplayModeHint = action.seenHint,
                         reduceFlashing = action.reduceFlashing,
                         moodsWarnedAbout = action.moodsWarnedAbout,
                     )
@@ -173,10 +169,6 @@ class EditorViewModel(
                 }
             }
 
-            EditorAction.DisplayHintSeen -> {
-                appCache.update { it.copy(hasSeenDisplayModeHint = true) }
-            }
-
             is EditorAction.Delete -> sceneRepository.delete(action.scene.id)
         }
     }
@@ -198,9 +190,6 @@ data class EditorViewState(
      * replacing it would flash two eyes the user didn't place.
      */
     val isLoaded: Boolean = false,
-
-    /** The one-time "taps do nothing now" card has been dismissed. */
-    val hasSeenDisplayModeHint: Boolean = false,
 
     val reduceFlashing: Boolean = false,
 
@@ -225,7 +214,6 @@ sealed interface EditorAction {
 
     data class Delete(val scene: Scene) : EditorAction
     data class SettingsChanged(
-        val seenHint: Boolean,
         val reduceFlashing: Boolean,
         val moodsWarnedAbout: Set<String>,
     ) : EditorAction
@@ -237,5 +225,4 @@ sealed interface EditorAction {
     data object StartReactivity : EditorAction
     data object StopReactivity : EditorAction
     data object OpenAppSettings : EditorAction
-    data object DisplayHintSeen : EditorAction
 }

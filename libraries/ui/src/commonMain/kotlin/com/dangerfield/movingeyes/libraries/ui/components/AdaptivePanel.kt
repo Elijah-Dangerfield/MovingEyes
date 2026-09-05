@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -91,9 +92,17 @@ fun AdaptivePanel(
         val scope = rememberCoroutineScope()
         val density = LocalDensity.current
 
-        val travel = state.travel.value
-        val contentAlpha = ((Motion.Panel.ContentFadeAtTravel - travel) /
-            Motion.Panel.ContentFadeAtTravel).coerceIn(0f, 1f)
+        // Fades out over the stretch between collapsed and expanded, so the
+        // controls aren't legible while they're sliding past the header.
+        val reveal = state.extentPx - state.headerPx
+        val contentAlpha = if (reveal <= 0) {
+            0f
+        } else {
+            ((state.occupiedPx - state.headerPx) / reveal / Motion.Panel.ContentFadeAtTravel)
+                .coerceIn(0f, 1f)
+        }
+
+        LaunchedEffect(state.extentPx, state.headerPx) { state.settleIntoLayout() }
 
         val drag = Modifier.draggable(
             state = rememberDraggableState { delta ->
@@ -103,7 +112,7 @@ fun AdaptivePanel(
                 PanelLayout.Sheet -> Orientation.Vertical
                 PanelLayout.Rail -> Orientation.Horizontal
             },
-            onDragStopped = { velocity -> state.settle(velocity, Motion.Panel.slide()) },
+            onDragStopped = { velocity -> state.settle(-velocity, Motion.Panel.slide()) },
         )
 
         Panel(
@@ -112,7 +121,7 @@ fun AdaptivePanel(
             onExtentMeasured = { state.extentPx = it },
             onHeaderMeasured = { state.headerPx = it },
             expanded = state.isExpanded,
-            onToggle = { scope.launch { state.toggle() } },
+            onToggle = { scope.launch { if (state.isExpanded) state.show() else state.expand() } },
             contentAlpha = contentAlpha,
             dragModifier = drag,
             maxSheetHeight = maxHeight * SheetMaxHeightFraction,
@@ -217,7 +226,7 @@ private fun GrabEdge(expanded: Boolean, onToggle: () -> Unit) {
 private fun PreviewSheetPanel() {
     PreviewContent {
         AdaptivePanel(
-            state = rememberPanelState(),
+            state = rememberPanelState(PanelPosition.Expanded),
             header = { SegmentedControl(listOf("Place", "Look"), "Place", {}, label = { it }) },
         ) { layout -> PanelSample(layout) }
     }
@@ -228,7 +237,7 @@ private fun PreviewSheetPanel() {
 private fun PreviewRailPanel() {
     PreviewContent {
         AdaptivePanel(
-            state = rememberPanelState(),
+            state = rememberPanelState(PanelPosition.Expanded),
             header = { SegmentedControl(listOf("Place", "Look"), "Place", {}, label = { it }) },
         ) { layout -> PanelSample(layout) }
     }

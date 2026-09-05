@@ -62,6 +62,7 @@
     <string name="place_snapping">Snapping</string>
     <string name="place_canvas_turn">Canvas turn</string>
     <string name="place_add_eye">Add eye</string>
+    <string name="place_duplicate">Duplicate</string>
     <string name="place_delete">Delete</string>
     <string name="place_select_all">Select all</string>
     <!-- Shown when a control needs a selection it doesn't have. -->
@@ -155,9 +156,6 @@
       The thirty-second demo. The countdown is mono and never localises its
       digits, for the same reason the readout doesn't.
     -->
-    <string name="demo_countdown">%1$d s</string>
-    <string name="demo_ended">Demo ended</string>
-    <string name="demo_keep">Keep %1$s</string>
 
     <!--
       Paywall. No countdown, no scarcity, no "limited time" — this gets bought
@@ -219,9 +217,7 @@
       tapped, then the choice. Better than a full-screen paywall, which
       throws away the context of what you were reaching for.
     -->
-    <string name="locked_try">Try it for 30 seconds</string>
     <string name="locked_unlock">Unlock everything</string>
-    <string name="locked_spent">You have already tried this one.</string>
 
     <!-- Errors -->
     <string name="error_generic_title">This screen didn’t load</string>

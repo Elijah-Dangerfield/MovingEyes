@@ -12,59 +12,90 @@ import com.dangerfield.movingeyes.system.Motion
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
+/** Where a panel can come to rest. */
+enum class PanelPosition { Hidden, Collapsed, Expanded }
+
 /**
- * How far the panel is slid away, and how much of the screen it still covers.
+ * How much of the screen the panel is taking, in pixels, right now.
  *
- * One value drives both the panel's position and the canvas's scale, so they
- * move together frame for frame. Two independent animations — one for the
- * sheet, one for the canvas reacting to its measured height — is exactly how
- * you get the lag and the stutter: the canvas would always be chasing a number
- * the sheet had already moved past.
+ * **One number, measured in the same unit the canvas cares about.** The canvas
+ * scales itself against [occupiedPx], so panel and canvas move together frame
+ * for frame. Two independent animations — one for the sheet, one for the canvas
+ * reacting to its measured height — is exactly how you get lag and stutter: the
+ * canvas would always be chasing a number the sheet had already moved past.
+ *
+ * **Hidden is a real position, not a special case.** The editor's resting state
+ * is a full-bleed canvas with nothing over it; the panel only exists once you
+ * have said what you want to edit. Modelling that as "collapsed but with zero
+ * height" would leave a grab edge on screen forever, which is a permanent strip
+ * of chrome charging rent on the one thing the app is for.
  */
 @Stable
-class PanelState internal constructor(initiallyExpanded: Boolean) {
+class PanelState internal constructor(initial: PanelPosition) {
 
-    /** 0 fully open, 1 collapsed to the grab edge. */
-    internal val travel = Animatable(if (initiallyExpanded) 0f else 1f)
+    private var pending: PanelPosition = initial
+
+    /** Pixels of the screen the panel currently covers. */
+    private val exposure = Animatable(0f)
 
     internal var extentPx by mutableIntStateOf(0)
 
-    /** The header's height. It never slides away, so it bounds the travel. */
+    /** The header's height: the panel's resting size when collapsed. */
     internal var headerPx by mutableIntStateOf(0)
 
-    /** How much the panel covers right now, in pixels. Read this to lay out
-     *  around it; it updates every frame of a drag. */
-    val occupiedPx: Float
-        get() = (extentPx - slidePx * travel.value).coerceAtLeast(0f)
+    /** Read this to lay out around the panel; it updates every frame of a drag. */
+    val occupiedPx: Float get() = exposure.value
 
-    val isExpanded: Boolean get() = travel.value < 0.5f
+    val isExpanded: Boolean get() = extentPx > 0 && exposure.value > (extentPx + headerPx) / 2f
 
-    /** The distance the panel can travel: everything but the grab edge, which
-     *  always stays on screen. */
-    private val slidePx: Float get() = (extentPx - headerPx).coerceAtLeast(0).toFloat()
+    val isVisible: Boolean get() = exposure.value > 0f || pending != PanelPosition.Hidden
 
-    internal fun offsetPx(): Int = (slidePx * travel.value).roundToInt()
+    internal fun offsetPx(): Int = (extentPx - exposure.value).roundToInt()
+
+    internal fun restingPx(position: PanelPosition): Float = when (position) {
+        PanelPosition.Hidden -> 0f
+        PanelPosition.Collapsed -> headerPx.toFloat()
+        PanelPosition.Expanded -> extentPx.toFloat()
+    }
+
+    /**
+     * Snaps to the requested position without animating. Used the first time the
+     * panel is measured, when there is nothing to animate from — animating there
+     * would slide the panel up from nowhere on the frame it first appears.
+     */
+    internal suspend fun settleIntoLayout() {
+        val target = restingPx(pending)
+        if (exposure.value != target && !exposure.isRunning) exposure.snapTo(target)
+    }
 
     internal suspend fun dragBy(deltaPx: Float) {
-        if (slidePx <= 0f) return
-        travel.snapTo((travel.value + deltaPx / slidePx).coerceIn(0f, 1f))
+        exposure.snapTo((exposure.value - deltaPx).coerceIn(0f, extentPx.toFloat()))
     }
 
     /**
      * Settles after a drag. A flick decides on its own, however far the panel
-     * happened to have travelled — otherwise a fast short swipe leaves the
-     * sheet stuck where it was, which reads as the gesture not having worked.
+     * happened to travel — otherwise a fast short swipe leaves the panel stuck
+     * where it was, which reads as the gesture not having worked.
+     *
+     * A downward flick dismisses rather than collapsing, because the thing a
+     * thrown-away panel should do is go away.
      */
     internal suspend fun settle(velocityPx: Float, spec: AnimationSpec<Float>) {
-        travel.animateTo(settleTarget(travel.value, velocityPx), spec)
+        go(settleTarget(exposure.value, velocityPx, headerPx.toFloat(), extentPx.toFloat()), spec)
     }
 
-    suspend fun expand() = travel.animateTo(0f, Motion.Panel.slide())
+    suspend fun show() = go(PanelPosition.Collapsed)
 
-    suspend fun collapse() = travel.animateTo(1f, Motion.Panel.slide())
+    suspend fun expand() = go(PanelPosition.Expanded)
 
-    suspend fun toggle() = if (isExpanded) collapse() else expand()
+    suspend fun hide() = go(PanelPosition.Hidden)
 
+    suspend fun toggle() = if (isExpanded) hide() else expand()
+
+    private suspend fun go(position: PanelPosition, spec: AnimationSpec<Float> = Motion.Panel.slide()) {
+        pending = position
+        exposure.animateTo(restingPx(position), spec)
+    }
 }
 
 /**
@@ -72,17 +103,30 @@ class PanelState internal constructor(initiallyExpanded: Boolean) {
  *
  * A flick decides on its own, however far the panel happened to travel —
  * otherwise a fast short swipe leaves it stuck, which reads as the gesture not
- * having worked. Below that, it goes wherever it is closest to.
+ * having worked. A downward flick dismisses rather than collapsing, because the
+ * thing a thrown-away panel should do is go away. Below flick speed it goes
+ * wherever it is closest to.
  */
-internal fun settleTarget(travel: Float, velocityPx: Float): Float = when {
-    abs(velocityPx) > FlickVelocityPx -> if (velocityPx > 0f) 1f else 0f
-    travel > 0.5f -> 1f
-    else -> 0f
+internal fun settleTarget(
+    exposurePx: Float,
+    velocityPx: Float,
+    headerPx: Float,
+    extentPx: Float,
+): PanelPosition {
+    if (velocityPx > FlickVelocityPx) return PanelPosition.Hidden
+    if (velocityPx < -FlickVelocityPx) return PanelPosition.Expanded
+
+    val resting = mapOf(
+        PanelPosition.Hidden to 0f,
+        PanelPosition.Collapsed to headerPx,
+        PanelPosition.Expanded to extentPx,
+    )
+    return resting.minBy { abs(it.value - exposurePx) }.key
 }
 
 /** Pixels per second past which a swipe is a decision rather than a nudge. */
 private const val FlickVelocityPx = 400f
 
 @Composable
-fun rememberPanelState(initiallyExpanded: Boolean = true): PanelState =
-    remember { PanelState(initiallyExpanded) }
+fun rememberPanelState(initial: PanelPosition = PanelPosition.Hidden): PanelState =
+    remember { PanelState(initial) }

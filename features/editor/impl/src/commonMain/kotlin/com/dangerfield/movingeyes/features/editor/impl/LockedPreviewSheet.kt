@@ -23,8 +23,6 @@ import com.dangerfield.movingeyes.libraries.ui.components.text.Text
 import com.dangerfield.movingeyes.system.AppTheme
 import com.dangerfield.movingeyes.system.Dimension
 import movingeyes.libraries.resources.generated.resources.Res
-import movingeyes.libraries.resources.generated.resources.locked_spent
-import movingeyes.libraries.resources.generated.resources.locked_try
 import movingeyes.libraries.resources.generated.resources.locked_unlock
 import movingeyes.libraries.resources.generated.resources.reactivity_not_now
 import org.jetbrains.compose.resources.stringResource
@@ -39,8 +37,6 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun LockedPreviewSheet(
     title: String,
-    canDemo: Boolean,
-    onDemo: () -> Unit,
     onUnlock: () -> Unit,
     onDismiss: () -> Unit,
     preview: @Composable () -> Unit,
@@ -65,31 +61,13 @@ fun LockedPreviewSheet(
                 ) {
                     preview()
                 }
-
-                if (!canDemo) {
-                    Text(
-                        text = stringResource(Res.string.locked_spent),
-                        typography = AppTheme.typography.Body.B600,
-                        color = AppTheme.colors.textTertiary,
-                    )
-                }
             }
         },
         bottomContent = {
             Column(verticalArrangement = Arrangement.spacedBy(Dimension.D400)) {
-                if (canDemo) {
-                    Button(
-                        onClick = onDemo,
-                        size = ButtonSize.Medium,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(stringResource(Res.string.locked_try))
-                    }
-                }
                 Button(
                     onClick = onUnlock,
                     size = ButtonSize.Medium,
-                    style = if (canDemo) ButtonStyle.Outlined else ButtonStyle.Filled,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(stringResource(Res.string.locked_unlock))
@@ -107,5 +85,7 @@ fun LockedPreviewSheet(
     )
 }
 
-private val PreviewHeight = 160.dp
+/** The preview is the whole pitch now that there is no trial, so it gets the
+ *  room a thing being judged deserves. */
+private val PreviewHeight = 260.dp
 private val PreviewCorner = 12.dp

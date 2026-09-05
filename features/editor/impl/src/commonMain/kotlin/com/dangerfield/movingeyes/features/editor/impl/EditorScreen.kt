@@ -6,6 +6,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -51,7 +52,6 @@ import com.dangerfield.movingeyes.features.editor.impl.panels.ScenePanel
 import com.dangerfield.movingeyes.features.paywall.PaywallRoute
 import com.dangerfield.movingeyes.features.paywall.PaywallTrigger
 import com.dangerfield.movingeyes.features.settings.SettingsRoute
-import com.dangerfield.movingeyes.libraries.billing.DemoControl
 import com.dangerfield.movingeyes.libraries.eyes.Mood
 import com.dangerfield.movingeyes.libraries.eyes.GazeDirector
 import com.dangerfield.movingeyes.libraries.eyes.Moods
@@ -73,8 +73,6 @@ import com.dangerfield.movingeyes.libraries.ui.components.icon.Icons
 import com.dangerfield.movingeyes.libraries.ui.components.rememberPanelState
 import com.dangerfield.movingeyes.libraries.ui.components.ReadoutPill
 import com.dangerfield.movingeyes.libraries.ui.components.SegmentedControl
-import com.dangerfield.movingeyes.libraries.ui.components.ToastAction
-import com.dangerfield.movingeyes.libraries.ui.components.ToastBar
 import com.dangerfield.movingeyes.libraries.ui.components.button.Button
 import com.dangerfield.movingeyes.libraries.ui.components.button.ButtonSize
 import com.dangerfield.movingeyes.libraries.ui.components.button.ButtonStyle
@@ -84,10 +82,7 @@ import com.dangerfield.movingeyes.system.Dimension
 import com.dangerfield.movingeyes.system.Motion
 import com.dangerfield.movingeyes.system.Target
 import movingeyes.libraries.resources.generated.resources.Res
-import movingeyes.libraries.resources.generated.resources.demo_countdown
 import movingeyes.libraries.resources.generated.resources.display_enter
-import movingeyes.libraries.resources.generated.resources.demo_ended
-import movingeyes.libraries.resources.generated.resources.demo_keep
 import movingeyes.libraries.resources.generated.resources.editor_eye_count
 import movingeyes.libraries.resources.generated.resources.editor_readout_canvas
 import movingeyes.libraries.resources.generated.resources.editor_readout_ipd
@@ -102,6 +97,8 @@ import movingeyes.libraries.resources.generated.resources.editor_undo
 import movingeyes.libraries.resources.generated.resources.panel_look
 import movingeyes.libraries.resources.generated.resources.panel_motion
 import movingeyes.libraries.resources.generated.resources.panel_place
+import movingeyes.libraries.resources.generated.resources.place_add_eye
+import movingeyes.libraries.resources.generated.resources.place_duplicate
 import movingeyes.libraries.resources.generated.resources.panel_scene
 import movingeyes.libraries.resources.generated.resources.scenes_default_name
 import movingeyes.libraries.resources.generated.resources.scenes_open
@@ -136,8 +133,6 @@ fun EditorScreen(
 ) {
     val state by viewModel.stateFlow.collectAsStateWithLifecycle()
     val isUnlocked by viewModel.entitlements.isUnlocked.collectAsStateWithLifecycle()
-    val activeTrial by viewModel.featureTrial.active.collectAsStateWithLifecycle()
-    val justEnded by viewModel.featureTrial.justEnded.collectAsStateWithLifecycle()
 
     // Drawing a default pair first would flash two eyes the user never placed.
     if (!state.isLoaded) return
@@ -190,6 +185,7 @@ fun EditorScreen(
         var guides by remember { mutableStateOf<List<SnapGuide>>(emptyList()) }
         var wasSnapped by remember { mutableStateOf(false) }
         var dragSession by remember { mutableStateOf<DragSession?>(null) }
+        var isManipulating by remember { mutableStateOf(false) }
         var snappingEnabled by remember { mutableStateOf(true) }
         val panel = rememberPanelState()
         var tab by remember { mutableStateOf(PanelTab.Place) }
@@ -218,7 +214,9 @@ fun EditorScreen(
         // describes.
         val occupied = if (display.isActive) 0f else panel.occupiedPx
         val isRail = maxWidth >= RailBreakpointDp
-        val insetPx = with(density) { CanvasInset.toPx() } * 2f
+        // No inset while the panel is away: the resting editor is the scene at
+        // full size, edge to edge, with nothing charging rent on it.
+        val insetPx = if (panel.isVisible) with(density) { CanvasInset.toPx() } * 2f else 0f
         // Display mode is exactly 1:1 with no inset and no edge. A percent of
         // scale there would make every millimetre on screen a lie.
         val canvasScale = if (display.isActive) {
@@ -365,7 +363,10 @@ fun EditorScreen(
                                 handleAt(position, bounds, handleTouchPx, rotateGapPx)
                             }
                         },
-                        onGestureStart = { dragSession = editor.beginGesture() },
+                        onGestureStart = {
+                            dragSession = editor.beginGesture()
+                            isManipulating = true
+                        },
                         onTap = { position ->
                             val hit = editor.eyes.hitTest(
                                 x = position.x,
@@ -377,7 +378,7 @@ fun EditorScreen(
                             when {
                                 hit == null -> {
                                     editor.clearSelection()
-                                    scope.launch { panel.collapse() }
+                                    scope.launch { panel.hide() }
                                 }
                                 // Tapping an already-selected eye is asking
                                 // about that eye, so it opens the inspector.
@@ -385,7 +386,10 @@ fun EditorScreen(
                                     tab = PanelTab.Look
                                     scope.launch { panel.expand() }
                                 }
-                                else -> editor.select(hit)
+                                else -> {
+                                    editor.select(hit)
+                                    scope.launch { panel.show() }
+                                }
                             }
                         },
                         onDoubleTap = { editor.selectAll() },
@@ -435,6 +439,7 @@ fun EditorScreen(
                             guides = emptyList()
                             wasSnapped = false
                             dragSession = null
+                            isManipulating = false
                         },
                         onUndo = { editor.undo() },
                         onRedo = { editor.redo() },
@@ -481,8 +486,14 @@ fun EditorScreen(
                 ),
                 panelClearance = with(density) { occupied.toDp() },
                 isPanelOpen = panel.isExpanded,
+                isRecessed = isManipulating,
                 onOpenScenes = { drawerOpen = true },
                 onTogglePanel = { scope.launch { panel.toggle() } },
+                onAddEye = {
+                    editor.addEye()
+                    scope.launch { panel.show() }
+                },
+                onDuplicate = { editor.duplicateSelection() },
                 onEnterDisplay = {
                     editor.clearSelection()
                     display.enter()
@@ -551,22 +562,9 @@ fun EditorScreen(
                         isUnlocked = isUnlocked,
                         onMoodPicked = { applyMood(it) },
                         onReactivityChange = { enabled ->
-                            if (isUnlocked) {
-                                enableReactivity(enabled)
-                            } else {
-                                gate(viewModel, router, DemoControl.Reactivity) {
-                                    enableReactivity(enabled)
-                                    return@gate { editor.setReactivityEnabled(false) }
-                                }
-                            }
+                            if (isUnlocked) enableReactivity(enabled)
                         },
-                        onLockedControl = { control, apply ->
-                            gate(viewModel, router, control) {
-                                val before = editor.snapshot()
-                                apply()
-                                return@gate { editor.restore(before) }
-                            }
-                        },
+                        onLocked = { trigger -> router.navigate(PaywallRoute(trigger)) },
                     )
 
                     PanelTab.Scene -> ScenePanel(editor = editor)
@@ -575,41 +573,8 @@ fun EditorScreen(
         }
         }
 
-        // Below the toolbar, not beside it: centred it collides with Undo.
-        DemoCountdown(
-            remainingSeconds = activeTrial?.remaining?.inWholeSeconds?.toInt(),
-            isUrgent = activeTrial?.isUrgent == true,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .safeDrawingPadding()
-                .padding(top = ToolbarClearance),
-        )
-
-        val ended = justEnded
-        ToastBar(
-            visible = ended != null,
-            message = stringResource(Res.string.demo_ended),
-            onDismiss = { },
-            actions = ended?.let { control ->
-                listOf(
-                    ToastAction(
-                        label = stringResource(Res.string.demo_keep, stringResource(control.label)),
-                        onSelect = { router.navigate(PaywallRoute(control.paywallTrigger)) },
-                    ),
-                )
-            }.orEmpty(),
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .safeDrawingPadding()
-                .padding(Dimension.D700),
-        )
-
         if (display.isActive) {
-            DisplayOverlay(
-                state = display,
-                showHint = !state.hasSeenDisplayModeHint,
-                onHintAcknowledged = { viewModel.takeAction(EditorAction.DisplayHintSeen) },
-            )
+            DisplayOverlay(state = display)
         }
 
         // Last, so it covers the overlay too.
@@ -618,18 +583,9 @@ fun EditorScreen(
         lockedItem?.let { item ->
             LockedPreviewSheet(
                 title = stringResource(item.label),
-                canDemo = viewModel.featureTrial.isAvailable(item.control),
-                onDemo = {
-                    lockedItem = null
-                    gate(viewModel, router, item.control) {
-                        val before = editor.snapshot()
-                        item.apply(editor)
-                        return@gate { editor.restore(before) }
-                    }
-                },
                 onUnlock = {
                     lockedItem = null
-                    router.navigate(PaywallRoute(item.control.paywallTrigger))
+                    router.navigate(PaywallRoute(item.trigger))
                 },
                 onDismiss = { lockedItem = null },
                 preview = { item.Preview() },
@@ -707,42 +663,20 @@ fun EditorScreen(
 }
 
 /**
- * A locked control runs its demo, or opens the paywall once that demo is spent.
- * [apply] performs the change and returns its undo, so a change and its
- * reversal are stated in one place and can't drift.
- */
-private fun gate(
-    viewModel: EditorViewModel,
-    router: Router,
-    control: DemoControl,
-    apply: () -> (() -> Unit),
-) {
-    if (!viewModel.featureTrial.isAvailable(control)) {
-        router.navigate(PaywallRoute(control.paywallTrigger))
-        return
-    }
-    val revert = apply()
-    viewModel.featureTrial.start(control, revert)
-}
-
-private val DemoControl.paywallTrigger: PaywallTrigger
-    get() = when (this) {
-        DemoControl.EyeStyle -> PaywallTrigger.EyeStyle
-        DemoControl.Reactivity -> PaywallTrigger.Reactivity
-        else -> PaywallTrigger.Motion
-    }
-
-/**
- * One floating rail instead of four buttons scattered into the corners.
+ * The controls that aren't the canvas: a menu in the corner and a rail down the
+ * side, both of which get out of the way the moment you touch an eye.
  *
- * Every control that isn't the canvas lives here, in reach of one thumb, in a
- * fixed order that never reflows. The alternative — a button in each corner —
- * meant the two most-used actions (open the controls, start the show) were the
- * furthest apart on screen, and nothing said the corners belonged together.
+ * **They fade during manipulation.** You are aligning something with a hole cut
+ * in cardboard, judging it by eye, and a floating slab of buttons sitting over
+ * the thing you're judging is the one thing that makes that harder. Chrome that
+ * recedes while you work and returns when you stop is the standard direct-
+ * manipulation bargain — Procreate, Photos, Figma all take it — and it costs
+ * nothing because during a drag you are not reaching for a button anyway.
  *
- * Play sits apart at the bottom and is the only filled control on the screen,
- * because it is the only one that changes what the app *is* rather than what
- * the scene looks like.
+ * **The menu is not in the rail.** The rail is what you do to *this scene*; the
+ * menu leaves it. Top-left is where that has lived since the hamburger was
+ * invented, and separating them means a thumb resting on the rail can't open
+ * the drawer by accident.
  */
 @Composable
 private fun EditorChrome(
@@ -750,12 +684,37 @@ private fun EditorChrome(
     readout: String,
     panelClearance: Dp,
     isPanelOpen: Boolean,
+    isRecessed: Boolean,
     onOpenScenes: () -> Unit,
     onTogglePanel: () -> Unit,
+    onAddEye: () -> Unit,
+    onDuplicate: () -> Unit,
     onEnterDisplay: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier) {
+    val chromeAlpha by animateFloatAsState(
+        targetValue = if (isRecessed) RecessedAlpha else 1f,
+        animationSpec = Motion.Chrome.dissolve(),
+        label = "chromeAlpha",
+    )
+
+    Box(modifier = modifier.alpha(chromeAlpha)) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(Dimension.D700)
+                .clip(RoundedCornerShape(RailCornerRadius))
+                .background(AppTheme.colors.surfacePrimary.color.copy(alpha = 0.92f))
+                .border(1.dp, AppTheme.colors.border.color, RoundedCornerShape(RailCornerRadius))
+                .padding(RailPadding),
+        ) {
+            RailButton(
+                icon = Icons.Menu,
+                contentDescription = stringResource(Res.string.scenes_open),
+                onClick = onOpenScenes,
+            )
+        }
+
         Column(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -768,9 +727,15 @@ private fun EditorChrome(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             RailButton(
-                icon = Icons.Menu,
-                contentDescription = stringResource(Res.string.scenes_open),
-                onClick = onOpenScenes,
+                icon = Icons.Add,
+                contentDescription = stringResource(Res.string.place_add_eye),
+                onClick = onAddEye,
+            )
+            RailButton(
+                icon = Icons.Copy,
+                contentDescription = stringResource(Res.string.place_duplicate),
+                enabled = editor.selection.isNotEmpty(),
+                onClick = onDuplicate,
             )
             RailButton(
                 icon = Icons.Pencil,
@@ -810,8 +775,8 @@ private fun EditorChrome(
             )
         }
 
-        // Clear of the panel's collapsed grab edge: this is the number someone
-        // cuts cardboard from.
+        // Clear of the panel, whatever height it's currently at: this is the
+        // number someone cuts cardboard from.
         ReadoutPill(
             text = readout,
             emphasized = editor.selection.isNotEmpty(),
@@ -856,30 +821,12 @@ private fun RailButton(
 }
 
 private val RailCornerRadius = 18.dp
-private val RailDividerWidth = 28.dp
 private val RailPadding = 6.dp
+private val RailDividerWidth = 28.dp
 
-/** Mono, so a number changing every second doesn't jitter. */
-@Composable
-private fun DemoCountdown(
-    remainingSeconds: Int?,
-    isUrgent: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    if (remainingSeconds == null) return
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(percent = 50))
-            .background(AppTheme.colors.accentPrimary.color.copy(alpha = if (isUrgent) 1f else 0.85f))
-            .padding(horizontal = Dimension.D500, vertical = Dimension.D300),
-    ) {
-        Text(
-            text = stringResource(Res.string.demo_countdown, remainingSeconds),
-            typography = AppTheme.typography.Readout.R400,
-            color = AppTheme.colors.onAccentPrimary,
-        )
-    }
-}
+/** Faded, not gone: you should still be able to find undo without lifting your
+ *  finger to make the buttons come back. */
+private const val RecessedAlpha = 0.15f
 
 private val PanelTab.label
     get() = when (this) {

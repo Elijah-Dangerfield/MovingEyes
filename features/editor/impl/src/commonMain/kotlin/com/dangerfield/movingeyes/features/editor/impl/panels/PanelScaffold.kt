@@ -1,5 +1,6 @@
 package com.dangerfield.movingeyes.features.editor.impl.panels
 
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.input.pointer.pointerInput
 import com.dangerfield.movingeyes.libraries.ui.components.LockBadge
 import com.dangerfield.movingeyes.libraries.ui.components.Slider
 import com.dangerfield.movingeyes.libraries.ui.components.text.Text
@@ -25,11 +28,21 @@ fun PanelRow(
     label: String,
     modifier: Modifier = Modifier,
     isLocked: Boolean = false,
+    /**
+     * Non-null when the row is paid and unowned. The content is then rendered
+     * but sealed behind a single tap target, so a locked control can be read
+     * and can't be operated. Anything else means a control that looks live,
+     * moves under your finger, and does nothing — or worse, fires its "you
+     * need to pay" route on every frame of the drag.
+     */
+    onLocked: (() -> Unit)? = null,
     trailing: @Composable () -> Unit = {},
     content: @Composable () -> Unit,
 ) {
     Column(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .then(if (onLocked != null) Modifier.sealed(onLocked) else Modifier),
         verticalArrangement = Arrangement.spacedBy(Dimension.D300),
     ) {
         // The trailing control takes the leftover width rather than the row
@@ -70,6 +83,7 @@ fun PanelSlider(
     onValueChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
     isLocked: Boolean = false,
+    onLocked: (() -> Unit)? = null,
     valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
     onValueChangeFinished: (() -> Unit)? = null,
 ) {
@@ -77,6 +91,7 @@ fun PanelSlider(
         label = label,
         modifier = modifier,
         isLocked = isLocked,
+        onLocked = onLocked,
         trailing = {
             Text(
                 text = valueLabel,
@@ -94,3 +109,14 @@ fun PanelSlider(
         )
     }
 }
+
+/**
+ * Swallows every gesture over its content and turns the whole area into one
+ * tap. Dimmed, because a control that can't be operated should not look like
+ * one that can.
+ */
+private fun Modifier.sealed(onTap: () -> Unit): Modifier = this
+    .alpha(SealedAlpha)
+    .pointerInput(onTap) { detectTapGestures { onTap() } }
+
+private const val SealedAlpha = 0.55f

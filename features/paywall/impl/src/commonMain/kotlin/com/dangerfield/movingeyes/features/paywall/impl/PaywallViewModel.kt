@@ -2,7 +2,6 @@ package com.dangerfield.movingeyes.features.paywall.impl
 
 import com.dangerfield.movingeyes.libraries.billing.BillingProduct
 import com.dangerfield.movingeyes.libraries.billing.Entitlements
-import com.dangerfield.movingeyes.libraries.billing.FeatureTrial
 import com.dangerfield.movingeyes.libraries.billing.PurchaseOutcome
 import com.dangerfield.movingeyes.libraries.billing.RestoreOutcome
 import com.dangerfield.movingeyes.libraries.flowroutines.SEAViewModel
@@ -11,7 +10,6 @@ import me.tatarka.inject.annotations.Inject
 @Inject
 class PaywallViewModel(
     private val entitlements: Entitlements,
-    private val featureTrial: FeatureTrial,
 ) : SEAViewModel<PaywallViewState, PaywallEvent, PaywallAction>(
     initialStateArg = PaywallViewState(),
 ) {
@@ -34,7 +32,6 @@ class PaywallViewModel(
                 if (outcome is PurchaseOutcome.Unlocked) {
                     // A demo running when the purchase lands must not then take
                     // the feature away.
-                    featureTrial.keep()
                     sendEvent(PaywallEvent.Unlocked)
                 }
             }
@@ -45,7 +42,6 @@ class PaywallViewModel(
                 action.updateState { it.copy(isWorking = false, restoreOutcome = outcome) }
 
                 if (outcome is RestoreOutcome.Restored) {
-                    featureTrial.keep()
                     sendEvent(PaywallEvent.Unlocked)
                 }
             }

@@ -16,6 +16,13 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.seconds
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,11 +48,21 @@ import org.jetbrains.compose.resources.stringResource
  * rectangle sitting in a cardboard cut-out until the owner comes home.
  */
 @Composable
-fun BoxScope.DisplayOverlay(
-    state: DisplayModeState,
-    showHint: Boolean,
-    onHintAcknowledged: () -> Unit,
-) {
+fun BoxScope.DisplayOverlay(state: DisplayModeState) {
+    // Every entry, not just the first. The rule it states — that touching the
+    // screen won't move anything until you swipe back — is the one thing about
+    // this mode that can't be discovered by trying, and it is worth restating
+    // to someone who set the tablet up last October.
+    //
+    // It leaves on its own rather than waiting for a tap, because a card that
+    // waits is a lit rectangle sitting in a cardboard cut-out until the owner
+    // gets home.
+    var isHintVisible by remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) {
+        delay(HintDuration)
+        isHintVisible = false
+    }
+
     BatteryPill(
         battery = state.batteryNotice,
         modifier = Modifier
@@ -54,14 +71,16 @@ fun BoxScope.DisplayOverlay(
             .padding(Dimension.D700),
     )
 
-    if (showHint) {
-        DisplayHintCard(
-            onAcknowledged = onHintAcknowledged,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .safeDrawingPadding()
-                .padding(Dimension.D700),
-        )
+    AnimatedVisibility(
+        visible = isHintVisible,
+        modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .safeDrawingPadding()
+            .padding(Dimension.D700),
+        enter = fadeIn(Motion.Chrome.restore()),
+        exit = fadeOut(Motion.Chrome.dissolve()),
+    ) {
+        DisplayHintCard(onAcknowledged = { isHintVisible = false })
     }
 }
 
@@ -141,3 +160,6 @@ fun BoxScope.SleepFade(fade: Float) {
 
 private val HintMaxWidth = 420.dp
 private val HintCornerRadius = 14.dp
+
+/** Long enough to read twice, short enough that nobody watches it linger. */
+private val HintDuration = 7.seconds

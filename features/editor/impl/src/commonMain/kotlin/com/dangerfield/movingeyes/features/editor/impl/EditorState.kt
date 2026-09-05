@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.Color
 import com.dangerfield.movingeyes.libraries.eyes.BehaviorConfig
 import com.dangerfield.movingeyes.libraries.eyes.EyeStyle
 import com.dangerfield.movingeyes.libraries.eyes.GazeDirector
+import com.dangerfield.movingeyes.libraries.eyes.EyeStyles
 import com.dangerfield.movingeyes.libraries.eyes.Mood
 import com.dangerfield.movingeyes.libraries.eyes.Moods
 import com.dangerfield.movingeyes.libraries.eyes.reducedFlashing
@@ -434,12 +435,14 @@ class EditorState(
     // ---- The eye list ---------------------------------------------------
 
     /** Copies the first active eye so the new one lands as a plausible partner
-     *  rather than a default that needs re-styling. */
+     *  rather than a default that needs re-styling. Falls all the way back to a
+     *  plain human eye, because a scene you have emptied still has to be one
+     *  you can add to. */
     fun addEye() {
         beginEdit()
         val template = activeIndices().firstOrNull()?.let { _eyes[it] }
         val added = RenderedEye(
-            style = template?.style ?: _eyes.firstOrNull()?.style ?: return,
+            style = template?.style ?: _eyes.firstOrNull()?.style ?: EyeStyles.HumanBasic,
             centerX = ((template?.centerX ?: 0.5f) + NewEyeOffset).coerceIn(0f, 1f),
             centerY = template?.centerY ?: 0.5f,
             sizePx = template?.sizePx ?: MinEyeSizePx * 4f,
@@ -456,6 +459,45 @@ class EditorState(
         _moods.add(activeMood() ?: Mood.IdleScan)
         _selection.clear()
         _selection.add(_eyes.lastIndex)
+        transformChanged()
+    }
+
+    /**
+     * Every selected eye again, nudged clear of its original and selected in
+     * its place, so the copies are what the next drag moves.
+     *
+     * The offset matters: a duplicate landing exactly on top of its original is
+     * indistinguishable from nothing having happened, and the user's next move
+     * is to press the button again.
+     */
+    fun duplicateSelection() {
+        val sources = activeIndices().map { _eyes[it] to _moods.getOrElse(it) { Mood.IdleScan } }
+        if (sources.isEmpty()) return
+        beginEdit()
+
+        val copies = sources.map { (eye, mood) ->
+            RenderedEye(
+                style = eye.style,
+                centerX = (eye.centerX + NewEyeOffset).coerceIn(0f, 1f),
+                centerY = (eye.centerY + NewEyeOffset).coerceIn(0f, 1f),
+                sizePx = eye.sizePx,
+                rotationDegrees = eye.rotationDegrees,
+                scleraColor = eye.scleraColor,
+                irisColor = eye.irisColor,
+                pupilColor = eye.pupilColor,
+                veinIntensity = eye.veinIntensity,
+                glowFraction = eye.glowFraction,
+                behavior = eye.runtime.behavior,
+                random = Random(_eyes.size + EyeSeedOffset),
+            ) to mood
+        }
+
+        _selection.clear()
+        copies.forEach { (eye, mood) ->
+            _eyes.add(eye)
+            _moods.add(mood)
+            _selection.add(_eyes.lastIndex)
+        }
         transformChanged()
     }
 

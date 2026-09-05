@@ -1,6 +1,5 @@
 package com.dangerfield.movingeyes.features.editor.impl
 
-import com.dangerfield.movingeyes.libraries.billing.DemoControl
 import com.dangerfield.movingeyes.libraries.eyes.EyeStyleId
 import com.dangerfield.movingeyes.libraries.eyes.Mood
 import com.dangerfield.movingeyes.libraries.scene.ScenePresetId
@@ -76,16 +75,4 @@ val ScenePresetId.label: StringResource
         ScenePresetId.WallOfEyes -> Res.string.preset_wall_of_eyes
         ScenePresetId.Trapped -> Res.string.preset_trapped
         ScenePresetId.PumpkinPals -> Res.string.preset_pumpkin_pals
-    }
-
-/** Names the control in the "keep it" bar. */
-val DemoControl.label: StringResource
-    get() = when (this) {
-        DemoControl.Mood -> Res.string.motion_mood
-        DemoControl.BlinkRate -> Res.string.motion_blink_rate
-        DemoControl.WanderRadius -> Res.string.motion_wander
-        DemoControl.Restlessness -> Res.string.motion_restlessness
-        DemoControl.GazeCenter -> Res.string.motion_gaze_center
-        DemoControl.EyeStyle -> Res.string.look_style
-        DemoControl.Reactivity -> Res.string.motion_reactivity
     }

@@ -10,7 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.dangerfield.movingeyes.features.editor.impl.EditorState
 import com.dangerfield.movingeyes.features.editor.impl.label
-import com.dangerfield.movingeyes.libraries.billing.DemoControl
+import com.dangerfield.movingeyes.features.paywall.PaywallTrigger
 import com.dangerfield.movingeyes.libraries.eyes.BehaviorConfig
 import com.dangerfield.movingeyes.libraries.eyes.Mood
 import com.dangerfield.movingeyes.libraries.ui.components.Switch
@@ -39,15 +39,18 @@ fun MotionPanel(
     isUnlocked: Boolean,
     onMoodPicked: (Mood) -> Unit,
     onReactivityChange: (Boolean) -> Unit,
-    onLockedControl: (DemoControl, apply: () -> Unit) -> Unit,
+    onLocked: (PaywallTrigger) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val behavior = editor.activeBehavior()
     val activeMood = editor.activeMood()
 
-    fun gated(control: DemoControl, apply: () -> Unit) {
-        if (isUnlocked) apply() else onLockedControl(control, apply)
-    }
+    // Null when unlocked, which is what makes the sliders live. Locked, they
+    // are inert with a single tap target: a slider you can drag but that only
+    // ever opens a paywall fired one navigation per frame of the drag, and
+    // stacked thirty paywalls to back out of.
+    val lockedMotion = if (isUnlocked) null else ({ onLocked(PaywallTrigger.Motion) })
+
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -55,7 +58,7 @@ fun MotionPanel(
     ) {
         PanelRow(
             label = stringResource(Res.string.motion_mood),
-            isLocked = !isUnlocked,
+            onLocked = lockedMotion,
         ) {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(Dimension.D300)) {
                 items(SelectableMoods.size) { index ->
@@ -74,12 +77,10 @@ fun MotionPanel(
             value = blinksPerMinute(behavior.blinkIntervalSeconds.midpoint()),
             valueLabel = "${blinksPerMinute(behavior.blinkIntervalSeconds.midpoint()).roundToInt()}/min",
             onValueChange = { rate ->
-                gated(DemoControl.BlinkRate) {
                     editor.setBehavior(behavior.withBlinksPerMinute(rate))
-                }
             },
             valueRange = MinBlinksPerMinute..MaxBlinksPerMinute,
-            isLocked = !isUnlocked,
+            onLocked = lockedMotion,
         )
 
         PanelSlider(
@@ -87,11 +88,9 @@ fun MotionPanel(
             value = behavior.gazeRange,
             valueLabel = "${(behavior.gazeRange * 100).roundToInt()}%",
             onValueChange = { range ->
-                gated(DemoControl.WanderRadius) {
                     editor.setBehavior(behavior.copy(gazeRange = range))
-                }
             },
-            isLocked = !isUnlocked,
+            onLocked = lockedMotion,
         )
 
         PanelSlider(
@@ -99,20 +98,20 @@ fun MotionPanel(
             value = behavior.saccadeSpeed / MaxSaccadeSpeed,
             valueLabel = "${(behavior.saccadeSpeed / MaxSaccadeSpeed * 100).roundToInt()}%",
             onValueChange = { amount ->
-                gated(DemoControl.Restlessness) {
                     editor.setBehavior(behavior.withRestlessness(amount))
-                }
             },
-            isLocked = !isUnlocked,
+            onLocked = lockedMotion,
         )
 
         PanelRow(
             label = stringResource(Res.string.motion_reactivity),
             isLocked = !isUnlocked,
+            onLocked = { onLocked(PaywallTrigger.Reactivity) },
             trailing = {
                 Switch(
                     checked = editor.canvas.reactivityEnabled,
                     onCheckedChange = onReactivityChange,
+                    enabled = isUnlocked,
                 )
             },
         ) {}
