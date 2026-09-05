@@ -267,4 +267,63 @@ class AudioAnalyzerTest {
 
         assertTrue(fired in 1..3, "a constant noise fired $fired times")
     }
+
+    /**
+     * The party-room case, and the reason the detector was rewritten.
+     *
+     * A busy room is loud *and* fluctuating. The old fast-attack / slow-release
+     * floor tracked those fluctuations' peaks, so the bar sat at the top of the
+     * noise and a shout could not clear it — in a real loud room the only thing
+     * that fired was a fingernail on the device body.
+     */
+    @Test
+    fun `a shout still registers over a loud restless room`() {
+        val analyzer = AudioAnalyzer()
+        val random = Random(4)
+
+        // A room at a conversational level that swings around by a lot.
+        repeat(300) {
+            analyzer.process(mono(0.08f + random.nextFloat() * 0.10f), channelCount = 1)
+        }
+
+        val shout = (0 until 40).firstNotNullOfOrNull {
+            analyzer.process(mono(0.55f), channelCount = 1)
+        }
+
+        assertNotNull(shout, "a shout over a loud room was swallowed")
+    }
+
+    /** And the other half: the room's own churn must not fire on its own, or
+     *  the eyes twitch continuously all night. */
+    @Test
+    fun `a loud restless room does not fire on itself`() {
+        val analyzer = AudioAnalyzer()
+        val random = Random(9)
+
+        repeat(100) { analyzer.process(mono(0.08f + random.nextFloat() * 0.10f), channelCount = 1) }
+
+        val fired = (0 until 600).count {
+            analyzer.process(mono(0.08f + random.nextFloat() * 0.10f), channelCount = 1) != null
+        }
+
+        assertTrue(fired <= 2, "the room fired on itself $fired times in fourteen seconds")
+    }
+
+    /**
+     * The scale-free property that makes one threshold work everywhere: the
+     * same *relative* jump has to register in a quiet room and a loud one.
+     */
+    @Test
+    fun `the same relative jump registers at either room level`() {
+        fun firesOverRoom(room: Float): Boolean {
+            val analyzer = AudioAnalyzer()
+            settle(analyzer, amplitude = room, buffers = 120)
+            return (0 until 30).firstNotNullOfOrNull {
+                analyzer.process(mono(room * 6f), channelCount = 1)
+            } != null
+        }
+
+        assertTrue(firesOverRoom(0.004f), "a knock in a quiet room was swallowed")
+        assertTrue(firesOverRoom(0.12f), "the same knock in a loud room was swallowed")
+    }
 }

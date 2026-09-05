@@ -3,23 +3,37 @@
 package com.dangerfield.movingeyes.libraries.reactivity
 
 import kotlin.math.abs
+import kotlin.math.log10
+import kotlin.math.max
 import kotlin.math.sqrt
 import kotlin.random.Random
 
 /**
  * Turns buffers of audio into occasional [SoundEvent]s.
  *
- * Three things have to be right for this to work in a real hallway rather than
- * a quiet room:
+ * Three things have to be right for this to work in a party room rather than a
+ * quiet one:
  *
- * **The threshold follows the room, not a constant.** A fixed one either never
- * fires next to a fridge or fires constantly at a party. The floor tracks the
- * quiet level and rises fast / falls slow, so a sustained noise stops
- * triggering while a bang still does.
+ * **It measures how unusual a moment is, not how loud.** The room's own level
+ * and its own restlessness are both tracked, in decibels, and a sound registers
+ * when it stands out from *that* room by more than that room normally varies.
+ * A ratio against a noise floor cannot do this: 2.2x a quiet hallway is a
+ * knock, and 2.2x a party is a gunshot.
+ *
+ * This replaces a fast-attack / slow-release follower, which is an envelope
+ * detector — it tracks the *peaks* of a fluctuating room, not its average.
+ * Every peak ratcheted the floor up in a tenth of a second and it bled off over
+ * a second, so in a loud room the floor sat at the peaks and nothing could
+ * exceed them. In practice the only thing that fired was a fingernail on the
+ * device body, which reaches the mic mechanically.
+ *
+ * **Decibels, not amplitude.** A room spans orders of magnitude between its
+ * quiet and its loud, so an average taken in linear amplitude is dominated
+ * entirely by the loudest moments in it.
  *
  * **Onsets, not loudness.** Eyes should react to a door slamming, not to music
- * being loud for three minutes. An event needs the level to *rise* past the
- * floor, and a refractory period stops one bang becoming six.
+ * being loud for three minutes. An event needs the level to *rise*, and a
+ * refractory period stops one bang becoming six.
  *
  * **A guessed direction is labelled as guessed.** Phone mics sit a few
  * centimetres apart, so the level difference between them is small and easily
@@ -30,10 +44,18 @@ import kotlin.random.Random
  */
 class AudioAnalyzer(private val random: Random = Random.Default) {
 
-    private var noiseFloor = 0f
-    private var lastLevel = 0f
+    /** The room's own level, in dBFS. A slow *symmetric* average on purpose:
+     *  the moment it rises faster than it falls it becomes a peak follower. */
+    private var ambientDb = SilenceDb
+
+    /** How much this room normally swings, as a mean absolute deviation in dB.
+     *  Big in a party, small in a library — which is what lets one threshold
+     *  work in both. */
+    private var swingDb = 0f
+
+    private var lastDb = SilenceDb
     private var buffersSinceEvent = RefractoryBuffers
-    private var hasFloor = false
+    private var warmupLeft = WarmupBuffers
 
     /** The current level, for a meter. */
     var level: Float = 0f
@@ -55,27 +77,27 @@ class AudioAnalyzer(private val random: Random = Random.Default) {
         val channels = rootMeanSquarePerChannel(samples, channelCount)
         val loudest = channels.max()
         level = loudest
+        val db = decibels(loudest)
 
-        if (!hasFloor) {
-            noiseFloor = loudest
-            hasFloor = true
-            lastLevel = loudest
+        if (warmupLeft > 0) {
+            warmupLeft--
+            // Seed rather than average in, so a second of silence at the start
+            // doesn't leave the room believing it is silent.
+            ambientDb = if (warmupLeft == WarmupBuffers - 1) db else blend(ambientDb, db, WarmupRate)
+            swingDb = blend(swingDb, abs(db - ambientDb), WarmupRate)
+            lastDb = db
             return null
         }
 
-        // Tested against the floor as it stood *before* this buffer. Adapting
-        // first let the sound being tested drag the floor up to meet itself, so
-        // the real ratio a noise had to clear was far higher than [OnsetRatio]
-        // and only a violent transient ever qualified.
-        val threshold = noiseFloor * OnsetRatio + MinimumOnsetLevel
-        val isOnset = loudest > threshold && loudest > lastLevel
+        // Measured against the room as it stood *before* this buffer: adapting
+        // first lets a sound drag up the bar it then has to clear.
+        val margin = maxOf(MinimumSpikeDb, swingDb * SpikeDeviations)
+        val threshold = ambientDb + margin
+        val isOnset = db > threshold && db > lastDb && db > SilenceDb
 
-        // Rises quickly so a sustained noise stops triggering within a second,
-        // falls slowly so the room going quiet doesn't re-arm on every gap
-        // between words.
-        val adaptation = if (loudest > noiseFloor) FloorRiseRate else FloorFallRate
-        noiseFloor += (loudest - noiseFloor) * adaptation
-        lastLevel = loudest
+        ambientDb = blend(ambientDb, db, AmbientRate)
+        swingDb = blend(swingDb, abs(db - ambientDb), SwingRate)
+        lastDb = db
 
         if (!isOnset || buffersSinceEvent < RefractoryBuffers) return null
         buffersSinceEvent = 0
@@ -83,18 +105,25 @@ class AudioAnalyzer(private val random: Random = Random.Default) {
         val balance = stereoBalance(channels)
         return SoundEvent(
             direction = balance ?: (random.nextFloat() * 2f - 1f),
-            intensity = intensityOf(loudest, threshold),
+            intensity = ((db - threshold) / IntensityRangeDb).coerceIn(0f, 1f),
             isDirectionKnown = balance != null,
         )
     }
 
+    private fun blend(current: Float, target: Float, rate: Float) = current + (target - current) * rate
+
+    /** dBFS, floored rather than allowed to reach negative infinity on silence. */
+    private fun decibels(amplitude: Float): Float =
+        DecibelScale * log10(max(amplitude, MinimumAmplitude))
+
     /** Forget the room. Call when capture restarts somewhere else. */
     fun reset() {
-        noiseFloor = 0f
-        lastLevel = 0f
+        ambientDb = SilenceDb
+        swingDb = 0f
+        lastDb = SilenceDb
         level = 0f
         buffersSinceEvent = RefractoryBuffers
-        hasFloor = false
+        warmupLeft = WarmupBuffers
     }
 
     private fun rootMeanSquarePerChannel(samples: FloatArray, channelCount: Int): FloatArray {
@@ -124,7 +153,7 @@ class AudioAnalyzer(private val random: Random = Random.Default) {
         val left = channels[0]
         val right = channels[1]
         val total = left + right
-        if (total <= MinimumOnsetLevel) return null
+        if (total <= MinimumAmplitude * 2f) return null
 
         val balance = (right - left) / total
         if (abs(balance) < MinDirectionConfidence) return null
@@ -136,35 +165,40 @@ class AudioAnalyzer(private val random: Random = Random.Default) {
         return scaled.coerceIn(-1f, 1f)
     }
 
-    /** How far above the threshold, saturating so a scream and a door slam
-     *  don't produce wildly different reactions. */
-    /**
-     * How hard to startle, as multiples of the threshold rather than an
-     * absolute level — so a quiet room and a loud one both get the full range
-     * rather than one of them living at 0 and the other pinned at 1.
-     *
-     * This used to divide by a threshold that moved with the sound being
-     * measured, which produced a plausible-looking spread only because the
-     * denominator grew with the numerator. Once the threshold stopped moving
-     * (it must, or an onset raises its own bar) that scale saturated on
-     * anything above a murmur, so the ceiling moved out to
-     * [IntensitySaturationRatio] multiples of threshold.
-     */
-    private fun intensityOf(level: Float, threshold: Float): Float {
-        if (threshold <= 0f) return 1f
-        val multiples = level / threshold
-        return ((multiples - 1f) / (IntensitySaturationRatio - 1f)).coerceIn(0f, 1f)
-    }
-
     private companion object {
-        const val FloorRiseRate = 0.25f
-        const val FloorFallRate = 0.02f
+        /**
+         * Adaptation rates, as a fraction per ~23ms buffer. The ambient is a
+         * 1.5-second average and the swing a 2-second one — the swing lags on
+         * purpose, so a single bang doesn't widen the band enough to hide the
+         * bang after it.
+         */
+        const val AmbientRate = 0.015f
+        const val SwingRate = 0.012f
 
-        /** How far above the floor counts as a sound rather than the room. */
-        const val OnsetRatio = 2.2f
+        /** Faster while settling, so reactivity is usable a fraction of a
+         *  second after it is switched on rather than ten seconds later. */
+        const val WarmupRate = 0.2f
+        const val WarmupBuffers = 12
 
-        /** Keeps near-silence from producing events on floating-point dust. */
-        const val MinimumOnsetLevel = 0.008f
+        /** How many times the room's own swing a sound must exceed it by. */
+        const val SpikeDeviations = 2.2f
+
+        /** And a floor on that, in dB, for a room so steady its swing is
+         *  almost zero — otherwise a fridge hum would fire on its own ripple. */
+        const val MinimumSpikeDb = 5f
+
+        /** Below this the room is silent and nothing in it is an event. */
+        const val SilenceDb = -55f
+
+        /**
+         * dB above threshold at which a startle is as hard as it gets.
+         *
+         * Wide, because dB is a log scale and the span from "a voice across the
+         * room" to "a shout at the tablet" really is thirty of them. A narrow
+         * range here pins everything above a murmur at full intensity, which
+         * makes every sound produce the same reaction.
+         */
+        const val IntensityRangeDb = 30f
 
         /** At ~43 buffers a second this is roughly half a second. */
         const val RefractoryBuffers = 20
@@ -175,11 +209,7 @@ class AudioAnalyzer(private val random: Random = Random.Default) {
          */
         const val MinDirectionConfidence = 0.06f
 
-        /**
-         * Multiples of the onset threshold at which a startle is as hard as it
-         * gets. Roughly: a door in a quiet hallway lands mid-range and a shout
-         * at arm's length saturates.
-         */
-        const val IntensitySaturationRatio = 24f
+        const val DecibelScale = 20f
+        const val MinimumAmplitude = 1e-5f
     }
 }

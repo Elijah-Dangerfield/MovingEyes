@@ -163,6 +163,35 @@ class SceneDirectorTest {
         assertTrue(drifted, "sync was off but the pair still blinked in lockstep")
     }
 
+    /**
+     * A faint sound has to visibly move the eyes. The deflection used to scale
+     * straight off intensity, so a quiet noise aimed them at centre and the
+     * only evidence anything had been heard was a pupil twitch.
+     */
+    @Test
+    fun `even a barely audible sound turns the scene toward it`() {
+        val director = SceneDirector(Moods.IdleScan, random = Random(6))
+
+        director.look(direction = 1f, intensity = 0.01f)
+        repeat(20) { director.advance(FrameSeconds) }
+
+        assertTrue(director.gaze.x > 0.4f, "a faint sound moved the gaze to ${director.gaze.x}")
+    }
+
+    /** And a loud one still has somewhere further to go, or volume would mean
+     *  nothing. */
+    @Test
+    fun `a loud sound turns further than a faint one`() {
+        fun gazeAfter(intensity: Float): Float {
+            val director = SceneDirector(Moods.IdleScan, random = Random(6))
+            director.look(direction = 1f, intensity = intensity)
+            repeat(20) { director.advance(FrameSeconds) }
+            return director.gaze.x
+        }
+
+        assertTrue(gazeAfter(1f) > gazeAfter(0.01f))
+    }
+
     private companion object {
         const val FrameSeconds = 1f / 30f
     }

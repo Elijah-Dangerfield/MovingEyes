@@ -137,7 +137,7 @@ class EyeRuntime(
         val strength = intensity.coerceIn(0f, 1f)
         startleElapsed = 0f
         startleGaze = EyeVector(
-            x = (direction.coerceIn(-1f, 1f) * strength),
+            x = direction.coerceIn(-1f, 1f) * deflectionFor(strength),
             y = (random.nextFloat() - 0.5f) * 0.3f * strength,
         )
         // Cut any saccade in flight: a startle overrides everything, and a
@@ -212,6 +212,19 @@ class EyeRuntime(
 
     /** Returns the current startle strength, 1 at the moment of the sound
      *  decaying to 0 over [StartleDecaySeconds]. */
+    /**
+     * How far toward the sound to turn, given how loud it was.
+     *
+     * Floored well above zero on purpose. Scaling the turn straight off
+     * intensity meant a quiet noise aimed the eyes at *centre* — a startle you
+     * could only detect as a pupil twitch, because the one part of the reaction
+     * that reads across a room had been scaled away. Volume should decide how
+     * hard the reaction is, not whether the eyes look at all: something heard
+     * faintly still gets looked at.
+     */
+    private fun deflectionFor(strength: Float): Float =
+        MinimumStartleDeflection + (1f - MinimumStartleDeflection) * strength
+
     private fun advanceStartle(delta: Float): Float {
         if (startleElapsed >= StartleDecaySeconds) return 0f
         startleElapsed += delta
@@ -324,6 +337,9 @@ class EyeRuntime(
          *  eyes don't merely start at different points in the same cycle. */
         const val SaccadePhaseBleed = 0.5f
         const val BlinkPhaseBleed = 0.7f
+
+        /** The share of a full turn even the quietest event still gets. */
+        const val MinimumStartleDeflection = 0.55f
     }
 }
 

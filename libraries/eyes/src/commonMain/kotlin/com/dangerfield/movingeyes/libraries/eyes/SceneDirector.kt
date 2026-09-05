@@ -98,11 +98,16 @@ class SceneDirector(
     }
 
     /** A sound pulls the whole scene's attention, not one eye's. */
+    /** Turns the whole scene toward a sound. The deflection is floored the same
+     *  way [EyeRuntime.startle] floors its own: a faint noise is still worth
+     *  looking at, it is just worth looking at less sharply. */
     fun look(direction: Float, intensity: Float) {
+        val strength = intensity.coerceIn(0f, 1f)
         from = gaze
         to = EyeVector(
-            x = (direction * intensity).coerceIn(-1f, 1f),
-            y = (random.nextFloat() - 0.5f) * 0.3f * intensity,
+            x = (direction * (MinimumLookDeflection + (1f - MinimumLookDeflection) * strength))
+                .coerceIn(-1f, 1f),
+            y = (random.nextFloat() - 0.5f) * 0.3f * strength,
         )
         saccadeElapsed = 0f
         saccadeDuration = BaseSaccadeSeconds / behavior.saccadeSpeed.coerceAtLeast(0.05f)
@@ -134,6 +139,9 @@ class SceneDirector(
     }
 
     private companion object {
+        /** The share of a full turn even the quietest event still gets. */
+        const val MinimumLookDeflection = 0.55f
+
         const val BaseSaccadeSeconds = 0.09f
         const val SaccadeOvershoot = 0.06f
         const val VerticalGazeDamping = 0.55f
@@ -142,6 +150,7 @@ class SceneDirector(
     private fun scheduleNextBlink() {
         nextBlinkAt = elapsed + behavior.blinkIntervalSeconds.sampleIn(random)
     }
+
 }
 
 internal fun ClosedFloatingPointRange<Float>.sampleIn(random: Random): Float =
