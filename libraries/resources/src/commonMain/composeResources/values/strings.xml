@@ -108,6 +108,7 @@
     <string name="display_battery">%1$d%</string>
     <string name="display_hint_title">Taps do nothing now</string>
     <string name="display_hint_body">Swipe in from the edge of the screen to get back to editing.</string>
+    <string name="display_hint_listening">Listening for sound. Nothing is recorded.</string>
     <string name="display_hint_got_it">Got it</string>
 
     <!-- Sleep timer, on the Scene tab -->

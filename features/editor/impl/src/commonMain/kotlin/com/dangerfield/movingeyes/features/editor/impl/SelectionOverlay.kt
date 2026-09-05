@@ -91,8 +91,20 @@ fun SelectionOverlay(
     }
 }
 
-/** A span worth showing, in canvas pixels, already labelled. */
-data class Measurement(val from: Offset, val to: Offset, val label: String)
+/**
+ * A span worth showing, in canvas pixels, already labelled.
+ *
+ * [leader] is how far off the line between the two points the rule is drawn,
+ * perpendicular to it. Non-zero pulls the rule clear of whatever it measures,
+ * which is the only way two spans that share a bearing — a gap and the width of
+ * the eye beside it — can be told apart at all.
+ */
+data class Measurement(
+    val from: Offset,
+    val to: Offset,
+    val label: String,
+    val leader: Float = 0f,
+)
 
 /**
  * A dimension line: a rule between two points with a tick at each end, drawn
@@ -105,19 +117,32 @@ private fun DrawScope.drawMeasurement(
     textMeasurer: TextMeasurer,
     labelStyle: TextStyle,
 ) {
-    val (from, to) = measurement.from to measurement.to
-    val along = to - from
+    val along = measurement.to - measurement.from
     val length = along.getDistance()
     if (length < 1f) return
 
     val unit = along / length
-    val across = Offset(-unit.y, unit.x) * MeasurementTickHalf.toPx()
-    val color = accent.copy(alpha = 0.75f)
+    val normal = Offset(-unit.y, unit.x)
     val stroke = MeasurementStroke.toPx()
+    val color = accent
+
+    // Offset perpendicular, with a witness line back to each point it measures.
+    // Without those the rule floats beside the thing it describes and the
+    // number stops belonging to anything in particular.
+    val shift = normal * measurement.leader
+    val from = measurement.from + shift
+    val to = measurement.to + shift
+    val tick = normal * MeasurementTickHalf.toPx()
+
+    if (measurement.leader != 0f) {
+        val witness = color.copy(alpha = 0.35f)
+        drawLine(witness, measurement.from, from + tick, strokeWidth = stroke)
+        drawLine(witness, measurement.to, to + tick, strokeWidth = stroke)
+    }
 
     drawLine(color = color, start = from, end = to, strokeWidth = stroke)
-    drawLine(color = color, start = from - across, end = from + across, strokeWidth = stroke)
-    drawLine(color = color, start = to - across, end = to + across, strokeWidth = stroke)
+    drawLine(color = color, start = from - tick, end = from + tick, strokeWidth = stroke)
+    drawLine(color = color, start = to - tick, end = to + tick, strokeWidth = stroke)
 
     // Above the rule and horizontal whatever angle the rule is at: a rotated
     // figure is harder to read than a level one, and the point of this is to be
@@ -317,8 +342,8 @@ private val HandleSize: Dp = 14.dp
 private val RotateHandleRadius: Dp = 13.dp
 private val MeasureCapLength: Dp = 14.dp
 
-private val MeasurementStroke: Dp = 1.dp
-private val MeasurementTickHalf: Dp = 5.dp
+private val MeasurementStroke: Dp = 2.dp
+private val MeasurementTickHalf: Dp = 7.dp
 private val MeasurementLabelGap: Dp = 6.dp
 private val MeasurementLabelPadding: Dp = 5.dp
 private val MeasurementLabelRadius: Dp = 6.dp

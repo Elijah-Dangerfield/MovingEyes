@@ -1,18 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Base app theme with SplashScreen API support -->
-    <style name="Theme.MovingEyes" parent="android:Theme.Material.Light.NoActionBar">
-        <!-- Splash screen background -->
+    <!--
+      Black, and a dark parent. The app is a black canvas from the first frame
+      it draws; a light splash means a white flash before it, which on an OLED
+      in a dark room is the brightest thing that will happen all evening.
+    -->
+    <style name="Theme.MovingEyes" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowSplashScreenBackground">@color/splash_background</item>
-        <!-- Status bar and nav bar colors -->
         <item name="android:statusBarColor">@color/splash_background</item>
         <item name="android:navigationBarColor">@color/splash_background</item>
-        <!-- Window background for after splash -->
+        <!-- Also the window background, so the frame between the splash
+             finishing and Compose drawing is black rather than a flash. -->
         <item name="android:windowBackground">@color/splash_background</item>
-        <!-- Dark status bar icons -->
-        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 
-    <!-- Splash background matches the app theme background (ColorResource.Gray50) -->
-    <color name="splash_background">#FAFAFA</color>
+    <!-- True black, matching the canvas exactly. See ColorResource.Canvas. -->
+    <color name="splash_background">#000000</color>
 </resources>

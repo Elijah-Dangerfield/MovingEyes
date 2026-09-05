@@ -39,6 +39,7 @@ import movingeyes.libraries.resources.generated.resources.Res
 import movingeyes.libraries.resources.generated.resources.display_battery
 import movingeyes.libraries.resources.generated.resources.display_hint_body
 import movingeyes.libraries.resources.generated.resources.display_hint_got_it
+import movingeyes.libraries.resources.generated.resources.display_hint_listening
 import movingeyes.libraries.resources.generated.resources.display_hint_title
 import org.jetbrains.compose.resources.stringResource
 
@@ -48,7 +49,7 @@ import org.jetbrains.compose.resources.stringResource
  * rectangle sitting in a cardboard cut-out until the owner comes home.
  */
 @Composable
-fun BoxScope.DisplayOverlay(state: DisplayModeState) {
+fun BoxScope.DisplayOverlay(state: DisplayModeState, isListening: Boolean) {
     // Every entry, not just the first. The rule it states — that touching the
     // screen won't move anything until you swipe back — is the one thing about
     // this mode that can't be discovered by trying, and it is worth restating
@@ -80,7 +81,7 @@ fun BoxScope.DisplayOverlay(state: DisplayModeState) {
         enter = fadeIn(Motion.Chrome.restore()),
         exit = fadeOut(Motion.Chrome.dissolve()),
     ) {
-        DisplayHintCard(onAcknowledged = { isHintVisible = false })
+        DisplayHintCard(isListening = isListening, onAcknowledged = { isHintVisible = false })
     }
 }
 
@@ -119,7 +120,11 @@ private fun BatteryPill(battery: BatteryState?, modifier: Modifier = Modifier) {
  * nobody guesses that when the screen has stopped responding to taps.
  */
 @Composable
-private fun DisplayHintCard(onAcknowledged: () -> Unit, modifier: Modifier = Modifier) {
+private fun DisplayHintCard(
+    isListening: Boolean,
+    onAcknowledged: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier = modifier
             .widthIn(max = HintMaxWidth)
@@ -137,6 +142,17 @@ private fun DisplayHintCard(onAcknowledged: () -> Unit, modifier: Modifier = Mod
             typography = AppTheme.typography.Body.B600,
             color = AppTheme.colors.textSecondary,
         )
+
+        // Says so out loud, because a microphone that opened when the scene
+        // started is the one thing here somebody would want told rather than
+        // left to notice from an OS indicator.
+        if (isListening) {
+            Text(
+                text = stringResource(Res.string.display_hint_listening),
+                typography = AppTheme.typography.Body.B600,
+                color = AppTheme.colors.accentPrimary,
+            )
+        }
         Button(
             onClick = onAcknowledged,
             size = ButtonSize.Small,

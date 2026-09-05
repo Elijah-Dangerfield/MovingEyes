@@ -277,8 +277,25 @@ class EditorState(
 
     // ---- Look -----------------------------------------------------------
 
+    /**
+     * Adopts the style's whole look, not just its geometry.
+     *
+     * Picking Demon and getting demon-shaped eyes in the previous style's
+     * colours is not picking Demon. Every style ships with the palette it was
+     * designed against — a cat's yellow, a spider's near-black, a doll's
+     * porcelain — and those are as much the style as its aspect ratio.
+     *
+     * It costs whatever colours were set by hand before the switch. That is the
+     * right trade: recolouring is two taps away and it is a deliberate act,
+     * whereas silently keeping the old palette makes the picker look broken.
+     */
     fun setStyle(style: EyeStyle) = editActive { eye ->
         eye.style = style
+        eye.scleraColor = Color(style.defaultSclera)
+        eye.irisColor = Color(style.defaultIris)
+        eye.pupilColor = Color(style.defaultPupil)
+        eye.glowFraction = style.defaultGlow / 100f
+        eye.veinIntensity = if (style.hasVeins) DefaultVeinIntensity else 0f
     }
 
     fun setScleraColor(color: Color) = editActive { it.scleraColor = color }
@@ -577,6 +594,9 @@ class EditorState(
     }
 
     private companion object {
+        /** What a veined style starts at; a style without veins gets none. */
+        const val DefaultVeinIntensity = 0.5f
+
         const val MaxUndoSteps = 50
 
         const val NewEyeOffset = 0.12f

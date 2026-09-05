@@ -652,7 +652,7 @@ fun EditorScreen(
         }
 
         if (display.isActive) {
-            DisplayOverlay(state = display)
+            DisplayOverlay(state = display, isListening = reactivityWanted)
         }
 
         // Last, so it covers the overlay too.
@@ -1095,12 +1095,18 @@ private fun measurementsFor(
         Measurement(start, end, spanLabel((end - start).getDistance(), screenMetrics))
     }.filterNotNull()
 
+    // Widths hang below their eye rather than crossing it. Drawn on the centre
+    // line they merged with the gap spans either side into one long rule, and a
+    // number sitting on a continuous line does not say which part of it it is
+    // talking about.
+    val drop = with(LocalDensity.current) { WidthMeasurementDrop.toPx() }
     val widths = placed.map { (eye, at) ->
         val half = eye.sizePx / 2f
         Measurement(
             from = Offset(at.x - half, at.y),
             to = Offset(at.x + half, at.y),
             label = spanLabel(eye.sizePx, screenMetrics),
+            leader = eye.sizePx * eye.style.aspectRatio / 2f + drop,
         )
     }
 
@@ -1130,6 +1136,10 @@ private fun spanLabel(distancePx: Float, screenMetrics: ScreenMetrics): String {
         stringResource(Res.string.editor_readout_size, distancePx.roundToInt())
     }
 }
+
+/** How far below an eye its own width is measured, clear of the gap spans that
+ *  run through its centre. */
+private val WidthMeasurementDrop = 18.dp
 
 /** Past this many, chained dimension lines are a thicket rather than a
  *  measurement. Select the ones you care about instead. */
