@@ -26,6 +26,7 @@ import com.dangerfield.movingeyes.libraries.ui.system.LocalContentColor
 import com.dangerfield.movingeyes.libraries.ui.system.color.ColorCard
 import com.dangerfield.movingeyes.libraries.ui.system.color.ColorResource
 import com.dangerfield.movingeyes.libraries.ui.system.color.toHexString
+import com.dangerfield.movingeyes.system.AppTheme
 import com.dangerfield.movingeyes.system.Dimension
 import com.dangerfield.movingeyes.system.Radii
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -563,6 +564,38 @@ fun PreviewColorSwatch(colors: Colors) {
 @Composable
 private fun PreviewSafelightColors() {
     PreviewColorSwatch(safelightColors)
+}
+
+/**
+ * The text colour that belongs on [surface].
+ *
+ * Every `on*` token in this file exists to pair with a specific surface, and
+ * nothing in the type system made anyone use the right one — `Surface` takes
+ * `color` and `contentColor` as two independent required arguments, so each
+ * caller re-decides and any of them can drift. That is not hypothetical: the
+ * dialog was moved from Surface1 to Surface3 and its content colour stayed
+ * behind, which is a change that should not have been possible to make halfway.
+ *
+ * Falls back to [text] for anything unlisted, which is correct for the dark
+ * surfaces this palette is built from and wrong loudly rather than quietly if a
+ * light one is ever added.
+ */
+fun Colors.contentColorFor(surface: ColorResource): ColorResource = when (surface) {
+    surfacePrimary -> onSurfacePrimary
+    surfaceSecondary -> onSurfaceSecondary
+    surfaceTertiary -> onSurfaceTertiary
+    surfaceDisabled -> onSurfaceDisabled
+    accentPrimary -> onAccentPrimary
+    accentSecondary -> onAccentSecondary
+    background -> onBackground
+    else -> text
+}
+
+/** Paints [surface] and provides the content colour that goes with it, so the
+ *  two cannot be changed apart. */
+@Composable
+fun ProvideSurfaceContentColor(surface: ColorResource, content: @Composable () -> Unit) {
+    ProvideContentColor(AppTheme.colors.contentColorFor(surface), content)
 }
 
 @Composable

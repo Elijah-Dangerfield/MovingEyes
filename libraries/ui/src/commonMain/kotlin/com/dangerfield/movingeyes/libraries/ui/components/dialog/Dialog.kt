@@ -17,6 +17,8 @@ import androidx.compose.foundation.border
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.systemBarsPadding
+import com.dangerfield.movingeyes.libraries.ui.system.color.ColorResource
+import com.dangerfield.movingeyes.system.color.ProvideSurfaceContentColor
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -89,7 +91,7 @@ fun Dialog(
                 // percent off black itself, so the panel and the dimmed
                 // background behind it read as one dark shape and the buttons
                 // appear to float on nothing.
-                .background(AppTheme.colors.surfaceTertiary.color, shape = Radii.Card.shape)
+                .background(DialogSurface.color, shape = Radii.Card.shape)
                 .border(
                     width = 1.dp,
                     color = AppTheme.colors.borderSecondary.color,
@@ -97,7 +99,7 @@ fun Dialog(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            content()
+            ProvideSurfaceContentColor(DialogSurface) { content() }
         }
     }
 }
@@ -276,6 +278,12 @@ internal fun DialogOverlay(
         }
     }
 }
+
+@Stable
+/** Surface3 with a lit edge, not Surface1. A dialog is the topmost thing on
+ *  screen and has to separate from a scrim over a canvas that is genuinely
+ *  black; Surface1 is only four percent off black itself. */
+private val DialogSurface = ColorResource.Surface3
 
 @Stable
 data class ModalDialogProperties(

@@ -92,7 +92,6 @@ import com.dangerfield.movingeyes.system.Target
 import movingeyes.libraries.resources.generated.resources.Res
 import movingeyes.libraries.resources.generated.resources.display_enter
 import movingeyes.libraries.resources.generated.resources.editor_eye_count
-import movingeyes.libraries.resources.generated.resources.editor_readout_canvas
 import movingeyes.libraries.resources.generated.resources.editor_readout_ipd
 import movingeyes.libraries.resources.generated.resources.editor_readout_millimeters
 import movingeyes.libraries.resources.generated.resources.editor_readout_rotation
@@ -101,6 +100,7 @@ import movingeyes.libraries.resources.generated.resources.editor_readout_x
 import movingeyes.libraries.resources.generated.resources.editor_readout_y
 import movingeyes.libraries.resources.generated.resources.editor_redo
 import movingeyes.libraries.resources.generated.resources.editor_controls
+import movingeyes.libraries.resources.generated.resources.editor_measure
 import movingeyes.libraries.resources.generated.resources.editor_undo
 import movingeyes.libraries.resources.generated.resources.panel_look
 import movingeyes.libraries.resources.generated.resources.panel_motion
@@ -202,6 +202,7 @@ fun EditorScreen(
         var isManipulating by remember { mutableStateOf(false) }
         var isOverTrash by remember { mutableStateOf(false) }
         var isRenaming by remember { mutableStateOf(false) }
+        var showMeasurements by remember { mutableStateOf(false) }
         var snappingEnabled by remember { mutableStateOf(true) }
         val panel = rememberPanelState()
         var tab by remember { mutableStateOf(PanelTab.Place) }
@@ -485,6 +486,11 @@ fun EditorScreen(
             )
 
             SelectionOverlay(
+                measurements = if (showMeasurements) {
+                    measurementsFor(editor, canvasWidthPx, canvasHeightPx, screenMetrics)
+                } else {
+                    emptyList()
+                },
                 showCanvasEdge = isScaled,
                 showCenterLines = dragSession != null,
                 eyes = editor.eyes,
@@ -532,6 +538,8 @@ fun EditorScreen(
                 onRenameScene = { isRenaming = true },
                 onOpenScenes = { drawerOpen = true },
                 onTogglePanel = { scope.launch { panel.toggle() } },
+                isMeasuring = showMeasurements,
+                onToggleMeasuring = { showMeasurements = !showMeasurements },
                 onAddEye = {
                     editor.addEye()
                     scope.launch { panel.show() }
@@ -748,15 +756,17 @@ fun EditorScreen(
 @Composable
 private fun EditorChrome(
     editor: EditorState,
-    readout: String,
+    readout: String?,
     bottomClearance: Dp,
     endClearance: Dp,
     isPanelOpen: Boolean,
     isRecessed: Boolean,
+    isMeasuring: Boolean,
     sceneName: String,
     onOpenScenes: () -> Unit,
     onRenameScene: () -> Unit,
     onTogglePanel: () -> Unit,
+    onToggleMeasuring: () -> Unit,
     onAddEye: () -> Unit,
     onDuplicate: () -> Unit,
     onEnterDisplay: () -> Unit,
@@ -830,6 +840,12 @@ private fun EditorChrome(
                 onClick = onDuplicate,
             )
             RailButton(
+                icon = Icons.Ruler,
+                contentDescription = stringResource(Res.string.editor_measure),
+                isActive = isMeasuring,
+                onClick = onToggleMeasuring,
+            )
+            RailButton(
                 icon = Icons.Pencil,
                 contentDescription = stringResource(Res.string.editor_controls),
                 isActive = isPanelOpen,
@@ -867,16 +883,20 @@ private fun EditorChrome(
             )
         }
 
-        // Clear of the panel, whatever height it's currently at: this is the
-        // number someone cuts cardboard from.
-        ReadoutPill(
-            text = readout,
-            emphasized = editor.selection.isNotEmpty(),
+        // Only when it has something to say. A permanent chip reporting the
+        // screen's own dimensions is furniture: it never changes, so it stops
+        // being read, and it sits on the canvas the whole time anyway.
+        AnimatedVisibility(
+            visible = readout != null,
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(start = Dimension.D700, end = Dimension.D700, bottom = Dimension.D700)
                 .padding(bottom = bottomClearance),
-        )
+            enter = fadeIn(Motion.Chrome.restore()),
+            exit = fadeOut(Motion.Chrome.dissolve()),
+        ) {
+            ReadoutPill(text = readout.orEmpty(), emphasized = editor.selection.isNotEmpty())
+        }
     }
 }
 
@@ -1003,6 +1023,60 @@ private val RailDividerWidth = 28.dp
  *  finger to make the buttons come back. */
 private const val RecessedAlpha = 0.15f
 
+/**
+ * The spans worth drawing while measuring: each eye to the next one across.
+ *
+ * Chained left to right rather than every pair to every other, because the
+ * question someone actually has in front of a sheet of cardboard is "how far
+ * apart are these two holes", and n-squared lines answer it by burying it.
+ *
+ * Measures the selection when there is one, so a busy scene can be narrowed to
+ * the pair being worked on; otherwise every eye, up to the point where the
+ * lines stop being readable.
+ */
+@Composable
+private fun measurementsFor(
+    editor: EditorState,
+    canvasWidthPx: Float,
+    canvasHeightPx: Float,
+    screenMetrics: ScreenMetrics,
+): List<Measurement> {
+    @Suppress("UNUSED_EXPRESSION")
+    editor.transformRevision
+
+    val indices = editor.selection.takeIf { it.size >= 2 }
+        ?: editor.eyes.indices.toList().takeIf { it.size in 2..MaxUnselectedMeasurements }
+        ?: return emptyList()
+
+    val points = indices
+        .map { editor.eyes[it] }
+        .map { Offset(it.centerX * canvasWidthPx, it.centerY * canvasHeightPx) }
+        .sortedBy { it.x }
+
+    // zipWithNext is inline, so the composable string lookups below are legal
+    // inside it — the same reason the readout can format inside its own loop.
+    return points.zipWithNext { from, to ->
+        val distance = (to - from).getDistance()
+        val millimetres = screenMetrics.millimeters(distance)
+        Measurement(
+            from = from,
+            to = to,
+            label = if (millimetres != null) {
+                stringResource(
+                    Res.string.editor_readout_millimeters,
+                    ((millimetres * 10).roundToInt() / 10f).toString(),
+                )
+            } else {
+                stringResource(Res.string.editor_readout_size, distance.roundToInt())
+            },
+        )
+    }
+}
+
+/** Past this many, chained dimension lines are a thicket rather than a
+ *  measurement. Select the ones you care about instead. */
+private const val MaxUnselectedMeasurements = 8
+
 private val PanelTab.label
     get() = when (this) {
         PanelTab.Place -> Res.string.panel_place
@@ -1110,14 +1184,14 @@ private fun transformSelection(editor: EditorState, zoom: Float, rotation: Float
 }
 
 /**
- * The readout reports, it never instructs.
+ * The readout reports, it never instructs, and it says nothing when it has
+ * nothing to report.
  *
- * With nothing selected there is still something true to measure, so it gives
- * the canvas's physical size — which happens to be the number you hold a ruler
- * against before cutting the cardboard. It used to say "tap to select", which
- * is the interface explaining itself inside its own instrument, welded to a
- * count with the separator that's supposed to mean "another field of the same
- * reading".
+ * Null with no selection: the canvas's own size never changes, so a chip
+ * repeating it forever is furniture that stops being read while still covering
+ * part of the scene. The measurement toggle is where "how big is this" lives
+ * now, and it answers with lines between the actual points rather than one
+ * figure in a corner.
  *
  * Millimetres appear only when the platform actually knows the screen's
  * physical size: a figure the app can't stand behind is worse than none when
@@ -1129,23 +1203,13 @@ private fun readoutText(
     canvasWidthPx: Float,
     canvasHeightPx: Float,
     screenMetrics: ScreenMetrics,
-): String {
+): String? {
     // Read so the readout recomposes as a drag moves non-Compose state.
     @Suppress("UNUSED_EXPRESSION")
     editor.transformRevision
 
     val selection = editor.selection
-    val eyeCount = pluralStringResource(Res.plurals.editor_eye_count, editor.eyes.size, editor.eyes.size)
-    if (selection.isEmpty()) {
-        val wide = screenMetrics.millimeters(canvasWidthPx)
-        val tall = screenMetrics.millimeters(canvasHeightPx)
-        val canvas = if (wide != null && tall != null) {
-            stringResource(Res.string.editor_readout_canvas, wide.roundToInt(), tall.roundToInt())
-        } else {
-            null
-        }
-        return listOfNotNull(eyeCount, canvas).joinToString(" · ")
-    }
+    if (selection.isEmpty()) return null
 
     val parts = mutableListOf(
         pluralStringResource(Res.plurals.editor_eye_count, selection.size, selection.size),

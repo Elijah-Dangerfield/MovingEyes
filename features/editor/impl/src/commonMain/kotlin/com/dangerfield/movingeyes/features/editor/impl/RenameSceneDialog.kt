@@ -10,6 +10,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import com.dangerfield.movingeyes.libraries.ui.components.button.Button
 import com.dangerfield.movingeyes.libraries.ui.components.button.ButtonSize
@@ -51,10 +52,16 @@ fun RenameSceneDialog(
     }
     val trimmed = value.trim()
 
-    // Focus alone puts a cursor in the field and leaves the keyboard down on
-    // Android, which looks like the dialog ignored you. Ask for both.
     val keyboard = LocalSoftwareKeyboardController.current
-    LaunchedEffect(Unit) {
+
+    // Keyed on the field being *placed*, not on entering composition. The
+    // dialog registers its content with a host that renders it a frame or more
+    // later, so asking for focus from this function's body asked before the
+    // field existed and silently did nothing. Focus alone also leaves the
+    // keyboard down on Android, so both are requested here.
+    var isFieldPlaced by remember { mutableStateOf(false) }
+    LaunchedEffect(isFieldPlaced) {
+        if (!isFieldPlaced) return@LaunchedEffect
         focus.requestFocus()
         keyboard?.show()
     }
@@ -76,12 +83,16 @@ fun RenameSceneDialog(
                 placeholder = { Text(placeholderName) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .focusRequester(focus),
+                    .focusRequester(focus)
+                    .onGloballyPositioned { isFieldPlaced = true },
             )
         },
         bottomContent = {
             Button(
-                onClick = { onRename(trimmed) },
+                onClick = {
+                    keyboard?.hide()
+                    onRename(trimmed)
+                },
                 enabled = trimmed.isNotEmpty(),
                 size = ButtonSize.Medium,
                 modifier = Modifier.fillMaxWidth(),

@@ -14,6 +14,11 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.drawText
+import com.dangerfield.movingeyes.system.AppTheme
 import com.dangerfield.movingeyes.libraries.render.RenderedEye
 import kotlin.math.PI
 import kotlin.math.cos
@@ -46,7 +51,20 @@ fun SelectionOverlay(
      *  middle of the canvas is visible *before* you snap to it rather than only
      *  at the moment you arrive. */
     showCenterLines: Boolean = false,
+    /**
+     * Point-to-point dimension lines between the eyes, with the figure that
+     * matters written on each one.
+     *
+     * The job this app is actually for is lining eyes up with holes someone is
+     * about to cut, and for that a single number in a corner is the wrong
+     * shape of answer — you need to know *which* gap is 62mm. Off by default:
+     * the same lines are clutter once the alignment is done.
+     */
+    measurements: List<Measurement> = emptyList(),
 ) {
+    val textMeasurer = rememberTextMeasurer()
+    val labelStyle = AppTheme.typography.Readout.R300.style.copy(color = accent)
+
     Canvas(modifier = modifier) {
         // Read so the overlay redraws while a drag is moving eyes that aren't
         // Compose state.
@@ -64,10 +82,54 @@ fun SelectionOverlay(
 
         guides.forEach { drawGuide(it, accent) }
 
+        measurements.forEach { drawMeasurement(it, accent, textMeasurer, labelStyle) }
+
         if (selection.isEmpty()) return@Canvas
         val bounds = selectionBounds(eyes, selection, size.width, size.height) ?: return@Canvas
         drawSelectionBox(bounds, accent)
     }
+}
+
+/** A span worth showing, in canvas pixels, already labelled. */
+data class Measurement(val from: Offset, val to: Offset, val label: String)
+
+/**
+ * A dimension line: a rule between two points with a tick at each end, drawn
+ * the way a drawing does it rather than as a bare line, so it reads as a
+ * measurement and not as a connection between two eyes.
+ */
+private fun DrawScope.drawMeasurement(
+    measurement: Measurement,
+    accent: Color,
+    textMeasurer: TextMeasurer,
+    labelStyle: TextStyle,
+) {
+    val (from, to) = measurement.from to measurement.to
+    val along = to - from
+    val length = along.getDistance()
+    if (length < 1f) return
+
+    val unit = along / length
+    val across = Offset(-unit.y, unit.x) * MeasurementTickHalf.toPx()
+    val color = accent.copy(alpha = 0.75f)
+    val stroke = MeasurementStroke.toPx()
+
+    drawLine(color = color, start = from, end = to, strokeWidth = stroke)
+    drawLine(color = color, start = from - across, end = from + across, strokeWidth = stroke)
+    drawLine(color = color, start = to - across, end = to + across, strokeWidth = stroke)
+
+    // Above the rule and horizontal whatever angle the rule is at: a rotated
+    // figure is harder to read than a level one, and the point of this is to be
+    // read at arm's length.
+    val label = textMeasurer.measure(measurement.label, labelStyle)
+    val middle = (from + to) / 2f
+    drawText(
+        textLayoutResult = label,
+        topLeft = Offset(
+            x = middle.x - label.size.width / 2f,
+            y = middle.y - label.size.height - MeasurementLabelGap.toPx(),
+        ),
+    )
 }
 
 /**
@@ -243,3 +305,7 @@ fun selectionBounds(
 private val HandleSize: Dp = 14.dp
 private val RotateHandleRadius: Dp = 13.dp
 private val MeasureCapLength: Dp = 14.dp
+
+private val MeasurementStroke: Dp = 1.dp
+private val MeasurementTickHalf: Dp = 5.dp
+private val MeasurementLabelGap: Dp = 6.dp

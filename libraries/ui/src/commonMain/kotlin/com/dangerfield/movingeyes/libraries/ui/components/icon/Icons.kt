@@ -39,6 +39,7 @@ import androidx.compose.material.icons.rounded.ChevronLeft
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.Straighten
 import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Edit
@@ -223,6 +224,8 @@ enum class Icons(
     Menu(androidx.compose.material.icons.Icons.Rounded.Menu),
 
     Copy(androidx.compose.material.icons.Icons.Rounded.ContentCopy),
+
+    Ruler(androidx.compose.material.icons.Icons.Rounded.Straighten),
 
     Play(androidx.compose.material.icons.Icons.Rounded.PlayArrow),
 
