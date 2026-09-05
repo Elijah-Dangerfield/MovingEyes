@@ -21,7 +21,7 @@ import com.dangerfield.movingeyes.system.Dimension
 import movingeyes.libraries.resources.generated.resources.Res
 import movingeyes.libraries.resources.generated.resources.motion_blink_rate
 import movingeyes.libraries.resources.generated.resources.motion_free_caption
-import movingeyes.libraries.resources.generated.resources.motion_mood
+import movingeyes.libraries.resources.generated.resources.motion_presets
 import movingeyes.libraries.resources.generated.resources.motion_reactivity
 import movingeyes.libraries.resources.generated.resources.motion_restlessness
 import movingeyes.libraries.resources.generated.resources.motion_wander
@@ -56,8 +56,31 @@ fun MotionPanel(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(Dimension.D600),
     ) {
+        // First, because it is the one control here that changes what the
+        // scene *does* rather than how it looks doing it — and the whole row
+        // is the target: a switch is a small thing to hit at arm's length when
+        // the label beside it means the same thing.
         PanelRow(
-            label = stringResource(Res.string.motion_mood),
+            label = stringResource(Res.string.motion_reactivity),
+            isLocked = !isUnlocked,
+            onRowClick = {
+                if (isUnlocked) {
+                    onReactivityChange(!editor.canvas.reactivityEnabled)
+                } else {
+                    onLocked(PaywallTrigger.Reactivity)
+                }
+            },
+            trailing = {
+                Switch(
+                    checked = editor.canvas.reactivityEnabled,
+                    onCheckedChange = onReactivityChange,
+                    enabled = isUnlocked,
+                )
+            },
+        ) {}
+
+        PanelRow(
+            label = stringResource(Res.string.motion_presets),
             onLocked = lockedMotion,
         ) {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(Dimension.D300)) {
@@ -102,19 +125,6 @@ fun MotionPanel(
             },
             onLocked = lockedMotion,
         )
-
-        PanelRow(
-            label = stringResource(Res.string.motion_reactivity),
-            isLocked = !isUnlocked,
-            onLocked = { onLocked(PaywallTrigger.Reactivity) },
-            trailing = {
-                Switch(
-                    checked = editor.canvas.reactivityEnabled,
-                    onCheckedChange = onReactivityChange,
-                    enabled = isUnlocked,
-                )
-            },
-        ) {}
 
         if (!isUnlocked) {
             Text(

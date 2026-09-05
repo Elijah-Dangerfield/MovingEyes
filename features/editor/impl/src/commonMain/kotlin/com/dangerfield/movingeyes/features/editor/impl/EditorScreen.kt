@@ -70,6 +70,7 @@ import com.dangerfield.movingeyes.libraries.device.dimLevelsFor
 import com.dangerfield.movingeyes.libraries.device.millimeters
 import com.dangerfield.movingeyes.libraries.render.EyeCanvas
 import com.dangerfield.movingeyes.libraries.render.EyeSceneState
+import com.dangerfield.movingeyes.libraries.render.RenderedEye
 import com.dangerfield.movingeyes.libraries.render.toRenderedEyes
 import com.dangerfield.movingeyes.libraries.scene.Scene
 import com.dangerfield.movingeyes.libraries.scene.ScenePreset
@@ -121,6 +122,7 @@ import kotlinx.coroutines.flow.drop
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.math.roundToInt
+import kotlin.math.sqrt
 
 /**
  * The canvas is the screen at 1:1 — no zoom, no pan, no insets — and the app
@@ -989,9 +991,13 @@ private fun RailButton(
     isActive: Boolean = false,
     isPrimary: Boolean = false,
 ) {
+    // An active toggle goes amber, not one shade of grey darker. The accent
+    // means "live" everywhere else in this app — the snap guides, the readout,
+    // Play — and a raised surface at 12% contrast on a dark rail is a state you
+    // have to go looking for.
     val background = when {
         isPrimary -> AppTheme.colors.accentPrimary
-        isActive -> AppTheme.colors.surfaceTertiary
+        isActive -> AppTheme.colors.accentPrimary
         else -> null
     }
     IconButton(
@@ -1000,7 +1006,7 @@ private fun RailButton(
         enabled = enabled,
         backgroundColor = background,
         iconColor = when {
-            isPrimary -> AppTheme.colors.onAccentPrimary
+            isPrimary || isActive -> AppTheme.colors.onAccentPrimary
             !enabled -> AppTheme.colors.textDisabled
             else -> AppTheme.colors.text
         },
@@ -1024,15 +1030,20 @@ private val RailDividerWidth = 28.dp
 private const val RecessedAlpha = 0.15f
 
 /**
- * The spans worth drawing while measuring: each eye to the next one across.
+ * The spans worth drawing while measuring: the gap between neighbouring eyes,
+ * and how wide each eye is.
  *
- * Chained left to right rather than every pair to every other, because the
- * question someone actually has in front of a sheet of cardboard is "how far
- * apart are these two holes", and n-squared lines answer it by burying it.
+ * Edge to edge, not centre to centre. Centres are what the app snaps by, but
+ * they are not what anyone holds a ruler against — someone marking cardboard
+ * measures the *gap* between two holes and the width of each, because those are
+ * the cuts. A centre-to-centre figure has to be converted before it is usable,
+ * and converting it requires knowing the two radii, which is the thing the
+ * readout wasn't telling you either.
  *
- * Measures the selection when there is one, so a busy scene can be narrowed to
- * the pair being worked on; otherwise every eye, up to the point where the
- * lines stop being readable.
+ * Chained left to right rather than every pair to every other, because
+ * n-squared lines answer "how far apart are these two" by burying it. Follows
+ * the selection when there is one, so a crowded scene narrows to the pair being
+ * worked on.
  */
 @Composable
 private fun measurementsFor(
@@ -1045,31 +1056,65 @@ private fun measurementsFor(
     editor.transformRevision
 
     val indices = editor.selection.takeIf { it.size >= 2 }
-        ?: editor.eyes.indices.toList().takeIf { it.size in 2..MaxUnselectedMeasurements }
+        ?: editor.eyes.indices.toList().takeIf { it.size in 1..MaxUnselectedMeasurements }
         ?: return emptyList()
 
-    val points = indices
+    val placed = indices
         .map { editor.eyes[it] }
-        .map { Offset(it.centerX * canvasWidthPx, it.centerY * canvasHeightPx) }
-        .sortedBy { it.x }
+        .map { eye -> eye to Offset(eye.centerX * canvasWidthPx, eye.centerY * canvasHeightPx) }
+        .sortedBy { it.second.x }
 
-    // zipWithNext is inline, so the composable string lookups below are legal
-    // inside it — the same reason the readout can format inside its own loop.
-    return points.zipWithNext { from, to ->
-        val distance = (to - from).getDistance()
-        val millimetres = screenMetrics.millimeters(distance)
+    // zipWithNext and map are inline, so the composable string lookups inside
+    // them are legal — the same reason the readout can format inside its loop.
+    val gaps = placed.zipWithNext { (fromEye, fromAt), (toEye, toAt) ->
+        val along = toAt - fromAt
+        val length = along.getDistance()
+        if (length < 1f) return@zipWithNext null
+        val unit = along / length
+
+        // From the near edge of each, not from the centres: the gap is what
+        // gets cut away, and the radius along this exact bearing is what the
+        // eye's own ellipse gives at that angle.
+        val start = fromAt + unit * fromEye.radiusAlong(unit)
+        val end = toAt - unit * toEye.radiusAlong(unit)
+        if ((end - start).getDistance() < 1f) return@zipWithNext null
+
+        Measurement(start, end, spanLabel((end - start).getDistance(), screenMetrics))
+    }.filterNotNull()
+
+    val widths = placed.map { (eye, at) ->
+        val half = eye.sizePx / 2f
         Measurement(
-            from = from,
-            to = to,
-            label = if (millimetres != null) {
-                stringResource(
-                    Res.string.editor_readout_millimeters,
-                    ((millimetres * 10).roundToInt() / 10f).toString(),
-                )
-            } else {
-                stringResource(Res.string.editor_readout_size, distance.roundToInt())
-            },
+            from = Offset(at.x - half, at.y),
+            to = Offset(at.x + half, at.y),
+            label = spanLabel(eye.sizePx, screenMetrics),
         )
+    }
+
+    return gaps + widths
+}
+
+/** The eye's radius on a given bearing. An ellipse is not a circle, and a pair
+ *  measured on the horizontal is nowhere near one measured on the diagonal. */
+private fun RenderedEye.radiusAlong(unit: Offset): Float {
+    val semiWidth = sizePx / 2f
+    val semiHeight = sizePx * style.aspectRatio / 2f
+    val denominator = sqrt(
+        (semiHeight * unit.x) * (semiHeight * unit.x) + (semiWidth * unit.y) * (semiWidth * unit.y),
+    )
+    return if (denominator <= 0f) semiWidth else semiWidth * semiHeight / denominator
+}
+
+@Composable
+private fun spanLabel(distancePx: Float, screenMetrics: ScreenMetrics): String {
+    val millimetres = screenMetrics.millimeters(distancePx)
+    return if (millimetres != null) {
+        stringResource(
+            Res.string.editor_readout_millimeters,
+            ((millimetres * 10).roundToInt() / 10f).toString(),
+        )
+    } else {
+        stringResource(Res.string.editor_readout_size, distancePx.roundToInt())
     }
 }
 

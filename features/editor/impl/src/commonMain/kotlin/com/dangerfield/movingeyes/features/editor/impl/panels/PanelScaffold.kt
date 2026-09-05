@@ -1,6 +1,10 @@
 package com.dangerfield.movingeyes.features.editor.impl.panels
 
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import com.dangerfield.movingeyes.system.thenIfNotNull
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Box
@@ -38,12 +42,19 @@ fun PanelRow(
      * need to pay" route on every frame of the drag.
      */
     onLocked: (() -> Unit)? = null,
+    /** Makes the whole row a target for whatever its trailing control does. A
+     *  switch is a small thing to hit at arm's length, and the label beside it
+     *  means the same thing. */
+    onRowClick: (() -> Unit)? = null,
     trailing: @Composable () -> Unit = {},
     content: @Composable () -> Unit,
 ) {
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .thenIfNotNull(onRowClick) {
+                clip(RoundedCornerShape(RowCornerRadius)).clickable(onClick = it)
+            }
             .then(if (onLocked != null) Modifier.sealed(onLocked) else Modifier),
         verticalArrangement = Arrangement.spacedBy(Dimension.D300),
     ) {
@@ -131,3 +142,5 @@ private const val SealedAlpha = 0.55f
 
 /** Keeps a slider's travel clear of the system's edge-swipe zone. */
 private val SliderEdgeInset = 12.dp
+
+private val RowCornerRadius = 10.dp

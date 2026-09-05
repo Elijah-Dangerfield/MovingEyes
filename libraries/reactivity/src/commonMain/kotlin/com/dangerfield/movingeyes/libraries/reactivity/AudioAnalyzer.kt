@@ -35,10 +35,18 @@ import kotlin.random.Random
  * being loud for three minutes. An event needs the level to *rise*, and a
  * refractory period stops one bang becoming six.
  *
- * **A guessed direction is labelled as guessed.** Phone mics sit a few
- * centimetres apart, so the level difference between them is small and easily
- * swamped. Below [MinDirectionConfidence] the direction is random rather than
- * confidently wrong, and [SoundEvent.isDirectionKnown] says which happened.
+ * **Direction comes from arrival time first, loudness second.** Two phone mics
+ * sit centimetres apart, so the *level* difference between them is tiny and a
+ * reverberant room swamps it entirely — which is why the eyes used to pick a
+ * direction that had nothing to do with the sound. The *timing* difference
+ * survives: 10cm is about 13 samples at 44.1kHz, which a cross-correlation
+ * finds readily as long as the peak is sharp enough to trust.
+ *
+ * When neither measure is confident the last trusted direction is held rather
+ * than a new one invented. A held direction is a scene that keeps watching
+ * where it last heard something; a random one is a scene with a twitch, and the
+ * twitch is what reads as broken. [SoundEvent.isDirectionKnown] still says
+ * which happened.
  *
  * Not thread-safe; call [process] from one thread.
  */
@@ -54,6 +62,10 @@ class AudioAnalyzer(private val random: Random = Random.Default) {
     private var swingDb = 0f
 
     private var lastDb = SilenceDb
+
+    /** The last direction worth believing, held so an unclear moment keeps the
+     *  scene looking where it last heard something. */
+    private var heldDirection: Float? = null
     private var buffersSinceEvent = RefractoryBuffers
     private var warmupLeft = WarmupBuffers
 
@@ -102,12 +114,82 @@ class AudioAnalyzer(private val random: Random = Random.Default) {
         if (!isOnset || buffersSinceEvent < RefractoryBuffers) return null
         buffersSinceEvent = 0
 
-        val balance = stereoBalance(channels)
+        val bearing = arrivalDirection(samples, channelCount) ?: stereoBalance(channels)
+        if (bearing != null) heldDirection = bearing
+
         return SoundEvent(
-            direction = balance ?: (random.nextFloat() * 2f - 1f),
+            direction = bearing ?: heldDirection ?: (random.nextFloat() * 2f - 1f),
             intensity = ((db - threshold) / IntensityRangeDb).coerceIn(0f, 1f),
-            isDirectionKnown = balance != null,
+            isDirectionKnown = bearing != null,
         )
+    }
+
+    /**
+     * -1..1 from which microphone the sound reached first.
+     *
+     * Cross-correlates the two channels across the handful of samples a phone's
+     * mic spacing can account for, and takes the lag of the best match. The
+     * result is only returned when that peak is genuinely peaked: a diffuse
+     * room correlates weakly at every lag, and a confident-looking answer read
+     * off a flat curve is worse than admitting there isn't one.
+     *
+     * Sign follows [stereoBalance]: positive is to the right. A source on the
+     * right reaches the right mic first, so the right channel *leads*, so
+     * `left[i] * right[i + lag]` peaks at a negative lag — hence the negation.
+     */
+    private fun arrivalDirection(samples: FloatArray, channelCount: Int): Float? {
+        if (channelCount < 2) return null
+        val frames = samples.size / channelCount
+        if (frames <= MaxLagSamples * 4) return null
+
+        var bestLag = 0
+        var bestScore = -1f
+        var total = 0f
+        var considered = 0
+
+        for (lag in -MaxLagSamples..MaxLagSamples) {
+            var product = 0f
+            var leftEnergy = 0f
+            var rightEnergy = 0f
+
+            val start = maxOf(0, -lag)
+            val end = minOf(frames, frames - lag)
+            for (frame in start until end) {
+                val left = samples[frame * channelCount]
+                val right = samples[(frame + lag) * channelCount + 1]
+                product += left * right
+                leftEnergy += left * left
+                rightEnergy += right * right
+            }
+
+            val energy = sqrt(leftEnergy * rightEnergy)
+            if (energy <= 0f) continue
+            val score = product / energy
+
+            total += score
+            considered++
+            if (score > bestScore) {
+                bestScore = score
+                bestLag = lag
+            }
+        }
+
+        if (considered == 0) return null
+
+        // A zero lag is not "the sound is centred", it is "there is no bearing
+        // here": the set of points equidistant from both mics is a whole plane,
+        // running behind the device as well as in front of it. Level difference
+        // is a better guess than the middle, so hand it on rather than
+        // reporting a confident nothing.
+        if (bestLag == 0) return null
+
+        val average = total / considered
+        // How much the best lag stands out from every other lag. Flat means the
+        // room is reverberant or the sound is everywhere, and neither has a
+        // direction worth reporting.
+        if (bestScore - average < MinCorrelationPeak) return null
+
+        return (-bestLag.toFloat() / MaxLagSamples).coerceIn(-1f, 1f)
     }
 
     private fun blend(current: Float, target: Float, rate: Float) = current + (target - current) * rate
@@ -208,6 +290,16 @@ class AudioAnalyzer(private val random: Random = Random.Default) {
          * mic variation. Phone mics are centimetres apart, so this is generous.
          */
         const val MinDirectionConfidence = 0.06f
+
+        /**
+         * Sample offsets the two mics can plausibly differ by. Roughly 12cm at
+         * 44.1kHz — generous for a phone, and a ceiling rather than a guess:
+         * anything beyond it is not a direction, it is a different sound.
+         */
+        const val MaxLagSamples = 16
+
+        /** How far the best lag must stand out from the average to be believed. */
+        const val MinCorrelationPeak = 0.12f
 
         const val DecibelScale = 20f
         const val MinimumAmplitude = 1e-5f

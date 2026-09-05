@@ -14,7 +14,7 @@ import movingeyes.libraries.resources.generated.resources.mood_sleepy
 import movingeyes.libraries.resources.generated.resources.mood_suspicious
 import movingeyes.libraries.resources.generated.resources.motion_blink_rate
 import movingeyes.libraries.resources.generated.resources.motion_gaze_center
-import movingeyes.libraries.resources.generated.resources.motion_mood
+import movingeyes.libraries.resources.generated.resources.motion_presets
 import movingeyes.libraries.resources.generated.resources.motion_reactivity
 import movingeyes.libraries.resources.generated.resources.motion_restlessness
 import movingeyes.libraries.resources.generated.resources.motion_wander

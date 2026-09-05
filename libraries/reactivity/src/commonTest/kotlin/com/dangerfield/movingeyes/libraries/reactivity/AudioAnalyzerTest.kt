@@ -210,6 +210,57 @@ class AudioAnalyzerTest {
 
     /** Runs quiet room tone through until the floor has settled and the
      *  refractory window has cleared. */
+    /**
+     * Direction from arrival time, which is the only measure that survives two
+     * microphones a few centimetres apart. A source on the right reaches the
+     * right mic first.
+     */
+    @Test
+    fun `a delayed channel puts the sound on the side that heard it first`() {
+        fun bearingFor(rightLeadsBySamples: Int): Float {
+            val analyzer = AudioAnalyzer()
+            repeat(80) { analyzer.process(shifted(0.01f, rightLeadsBySamples), 2) }
+            val event = (0 until 40).firstNotNullOfOrNull {
+                analyzer.process(shifted(0.4f, rightLeadsBySamples), 2)
+            }
+            assertNotNull(event)
+            return event.direction
+        }
+
+        assertTrue(bearingFor(rightLeadsBySamples = 10) > 0.2f, "a right-side sound read left")
+        assertTrue(bearingFor(rightLeadsBySamples = -10) < -0.2f, "a left-side sound read right")
+    }
+
+    /** A room with no direction in it must say so rather than inventing one. */
+    @Test
+    fun `identical channels report no known direction`() {
+        val analyzer = AudioAnalyzer()
+        settle(analyzer, amplitude = 0.01f, channelCount = 2)
+
+        val event = (0 until 40).firstNotNullOfOrNull {
+            analyzer.process(stereo(0.4f, 0.4f), channelCount = 2)
+        }
+
+        assertNotNull(event)
+        assertFalse(event.isDirectionKnown, "a centred sound claimed a direction")
+    }
+
+    /** Noise, so the correlation has something to lock onto — a pure tone
+     *  correlates equally well at every lag a period apart. */
+    private fun shifted(amplitude: Float, rightLeadsBySamples: Int): FloatArray {
+        val noise = Random(11)
+        val source = FloatArray(frames + 64) { (noise.nextFloat() * 2f - 1f) * amplitude }
+        val offset = 32
+        return FloatArray(frames * 2) { index ->
+            val frame = index / 2
+            if (index % 2 == 0) {
+                source[frame + offset]
+            } else {
+                source[frame + offset + rightLeadsBySamples]
+            }
+        }
+    }
+
     private fun settle(
         analyzer: AudioAnalyzer,
         amplitude: Float,

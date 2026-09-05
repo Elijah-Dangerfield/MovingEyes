@@ -12,6 +12,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.dangerfield.movingeyes.libraries.ui.system.LocalContentColor
+import com.dangerfield.movingeyes.system.thenIfNotNull
 import com.dangerfield.movingeyes.system.AppTheme
 import com.dangerfield.movingeyes.system.Dimension
 import com.dangerfield.movingeyes.system.color.ProvideContentColor
@@ -27,15 +29,23 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 @Composable
 fun ModalContent(
     modifier: Modifier = Modifier,
-    backgroundColor: ColorResource = AppTheme.colors.surfacePrimary,
-    contentColor: ColorResource = AppTheme.colors.onSurfacePrimary,
+    /**
+     * Null by default: the dialog or sheet around this already painted a
+     * surface, and painting a second one inside it is how the dialog ended up
+     * a near-black panel inside a grey ring. Pass one only when this is used
+     * somewhere that hasn't got a surface of its own.
+     */
+    backgroundColor: ColorResource? = null,
+    /** Inherits whatever the surrounding surface provided, so the pairing can't
+     *  drift. See `Colors.contentColorFor`. */
+    contentColor: ColorResource = LocalContentColor.current,
     topContent: @Composable () -> Unit = {},
     content: @Composable () -> Unit = {},
     bottomContent: @Composable (() -> Unit)? = null,
 ) {
 
     Column(
-        modifier = modifier.background(backgroundColor.color)
+        modifier = modifier.thenIfNotNull(backgroundColor) { background(it.color) }
     ) {
 
         ProvideContentColor(color = contentColor) {
@@ -63,7 +73,7 @@ fun ModalContent(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(backgroundColor.color),
+                        .thenIfNotNull(backgroundColor) { background(it.color) },
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     ProvideButtonConfig(size = ButtonSize.Small) {

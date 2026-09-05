@@ -5,6 +5,7 @@ package com.dangerfield.movingeyes.features.editor.impl
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
@@ -121,15 +122,25 @@ private fun DrawScope.drawMeasurement(
     // Above the rule and horizontal whatever angle the rule is at: a rotated
     // figure is harder to read than a level one, and the point of this is to be
     // read at arm's length.
+    //
+    // On its own plate, because the thing behind it is an arbitrary scene —
+    // pale sclera, a glowing iris, black canvas — and text with no backing is
+    // legible over exactly one of those.
     val label = textMeasurer.measure(measurement.label, labelStyle)
     val middle = (from + to) / 2f
-    drawText(
-        textLayoutResult = label,
-        topLeft = Offset(
-            x = middle.x - label.size.width / 2f,
-            y = middle.y - label.size.height - MeasurementLabelGap.toPx(),
-        ),
+    val padding = MeasurementLabelPadding.toPx()
+    val topLeft = Offset(
+        x = middle.x - label.size.width / 2f,
+        y = middle.y - label.size.height - MeasurementLabelGap.toPx(),
     )
+
+    drawRoundRect(
+        color = Color.Black.copy(alpha = 0.82f),
+        topLeft = Offset(topLeft.x - padding, topLeft.y - padding / 2f),
+        size = Size(label.size.width + padding * 2f, label.size.height + padding),
+        cornerRadius = CornerRadius(MeasurementLabelRadius.toPx()),
+    )
+    drawText(textLayoutResult = label, topLeft = topLeft)
 }
 
 /**
@@ -309,3 +320,5 @@ private val MeasureCapLength: Dp = 14.dp
 private val MeasurementStroke: Dp = 1.dp
 private val MeasurementTickHalf: Dp = 5.dp
 private val MeasurementLabelGap: Dp = 6.dp
+private val MeasurementLabelPadding: Dp = 5.dp
+private val MeasurementLabelRadius: Dp = 6.dp

@@ -79,7 +79,7 @@
     <string name="look_veins">Veins</string>
 
     <!-- Motion tab. Entirely paid; see the free caption below. -->
-    <string name="motion_mood">Mood</string>
+    <string name="motion_presets">Presets</string>
     <string name="motion_blink_rate">Blink rate</string>
     <string name="motion_wander">Wander</string>
     <string name="motion_restlessness">Restlessness</string>
