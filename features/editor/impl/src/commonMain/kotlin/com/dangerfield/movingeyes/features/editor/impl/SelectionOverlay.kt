@@ -267,6 +267,11 @@ private fun DrawScope.drawGuide(guide: SnapGuide, accent: Color) {
         // Both bars at once. "These two gaps are the same" is not something
         // one line can say, and the pair you matched is as much the point as
         // the pair you're making.
+        is SnapGuide.MatchedSize -> {
+            drawMeasureBar(Offset(guide.fromA.x, guide.fromA.y), Offset(guide.toA.x, guide.toA.y), accent)
+            drawMeasureBar(Offset(guide.fromB.x, guide.fromB.y), Offset(guide.toB.x, guide.toB.y), accent)
+        }
+
         is SnapGuide.MatchedSpacing -> {
             drawMeasureBar(Offset(guide.fromA.x, guide.fromA.y), Offset(guide.toA.x, guide.toA.y), accent)
             drawMeasureBar(Offset(guide.fromB.x, guide.fromB.y), Offset(guide.toB.x, guide.toB.y), accent)

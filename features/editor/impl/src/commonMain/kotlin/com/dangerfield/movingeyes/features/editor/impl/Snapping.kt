@@ -72,6 +72,19 @@ sealed interface SnapGuide {
      * "these two gaps are now the same" is not something a single line can
      * say.
      */
+    /**
+     * Reached the same size as an existing eye. Drawn as **two** width bars,
+     * the same way [MatchedSpacing] draws two measure bars: "these are now the
+     * same size" is a statement about a pair, and a marker on only the one
+     * being dragged would be a statement about one.
+     */
+    data class MatchedSize(
+        val fromA: CanvasPoint,
+        val toA: CanvasPoint,
+        val fromB: CanvasPoint,
+        val toB: CanvasPoint,
+    ) : SnapGuide
+
     data class MatchedSpacing(
         val distancePx: Float,
         val fromA: CanvasPoint,
@@ -383,3 +396,32 @@ fun snapRotation(degrees: Float, thresholdDegrees: Float = 4f): Float {
 }
 
 private const val DetentDegrees = 15f
+
+/** The size a resize should actually land on, and what it matched. */
+data class SizeSnap(val sizePx: Float, val matched: SnapCandidate?)
+
+/**
+ * Pulls a resize onto another eye's size when it gets close.
+ *
+ * Matching sizes by eye is the same problem as matching a distance by eye and
+ * has the same answer: the app knows the number, so it should offer it. Without
+ * this a resize is the one gesture in the editor with no assistance and no
+ * feedback at all — you drag a corner, a figure changes, and nothing ever tells
+ * you that you have arrived anywhere.
+ *
+ * Matches on width, since every eye's height follows from its style's aspect
+ * ratio. Two eyes of the same width and different styles are *not* the same
+ * size, and pretending otherwise would snap them to a lie.
+ */
+fun resolveSizeSnap(
+    sizePx: Float,
+    others: List<SnapCandidate>,
+    thresholdPx: Float,
+): SizeSnap {
+    val match = others
+        .filter { abs(it.halfWidth * 2f - sizePx) <= thresholdPx }
+        .minByOrNull { abs(it.halfWidth * 2f - sizePx) }
+        ?: return SizeSnap(sizePx, null)
+
+    return SizeSnap(match.halfWidth * 2f, match)
+}

@@ -280,6 +280,41 @@ class SnappingTest {
         assertEquals(640f, guide.to)
     }
 
+    /** Resizing gets the same assistance as moving: near an existing size, it
+     *  lands on it exactly. */
+    @Test
+    fun `a resize lands on a neighbour's size`() {
+        val other = SnapCandidate(2, CanvasPoint(300f, 200f), halfWidth = 60f, halfHeight = 40f)
+
+        val snap = resolveSizeSnap(sizePx = 124f, others = listOf(other), thresholdPx = 10f)
+
+        assertEquals(120f, snap.sizePx)
+        assertEquals(other, snap.matched)
+    }
+
+    /** And leaves a deliberate difference alone, or you could never make two
+     *  eyes nearly-but-not-quite the same on purpose. */
+    @Test
+    fun `a resize well clear of any neighbour is untouched`() {
+        val other = SnapCandidate(2, CanvasPoint(300f, 200f), halfWidth = 60f, halfHeight = 40f)
+
+        val snap = resolveSizeSnap(sizePx = 200f, others = listOf(other), thresholdPx = 10f)
+
+        assertEquals(200f, snap.sizePx)
+        assertEquals(null, snap.matched)
+    }
+
+    /** With several to choose from it takes the nearest, not the first. */
+    @Test
+    fun `a resize takes the closest of several neighbours`() {
+        val near = SnapCandidate(2, CanvasPoint(0f, 0f), halfWidth = 61f)
+        val far = SnapCandidate(3, CanvasPoint(0f, 0f), halfWidth = 65f)
+
+        val snap = resolveSizeSnap(sizePx = 124f, others = listOf(far, near), thresholdPx = 20f)
+
+        assertEquals(122f, snap.sizePx)
+    }
+
     @Test
     fun `rotation clicks to fifteen degree detents`() {
         assertEquals(0f, snapRotation(2f))

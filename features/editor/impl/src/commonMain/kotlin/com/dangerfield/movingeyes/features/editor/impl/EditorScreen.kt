@@ -450,12 +450,37 @@ fun EditorScreen(
                         },
                         onHandleDrag = { handle, from, to ->
                             when (handle) {
-                                is SelectionHandle.Corner -> editor.scaleAbout(
-                                    factor = cornerScale(handle.anchor, from, to),
-                                    anchor = CanvasPoint(handle.anchor.x, handle.anchor.y),
-                                    canvasWidthPx = canvasWidthPx,
-                                    canvasHeightPx = canvasHeightPx,
-                                )
+                                is SelectionHandle.Corner -> {
+                                    val anchorPoint =
+                                        CanvasPoint(handle.anchor.x, handle.anchor.y)
+                                    editor.scaleAbout(
+                                        factor = cornerScale(handle.anchor, from, to),
+                                        anchor = anchorPoint,
+                                        canvasWidthPx = canvasWidthPx,
+                                        canvasHeightPx = canvasHeightPx,
+                                    )
+
+                                    val matched = snapSizeToNeighbour(
+                                        editor = editor,
+                                        anchor = anchorPoint,
+                                        canvasWidthPx = canvasWidthPx,
+                                        canvasHeightPx = canvasHeightPx,
+                                        thresholdPx = if (snappingEnabled) {
+                                            snapThresholdPx / canvasScale
+                                        } else {
+                                            0f
+                                        },
+                                        onGuides = { guides = it },
+                                    )
+                                    // Same rule as a positional snap: buzz on
+                                    // arrival only, never on leaving.
+                                    if (matched && !wasSnapped) {
+                                        haptics.performHapticFeedback(
+                                            HapticFeedbackType.TextHandleMove,
+                                        )
+                                    }
+                                    wasSnapped = matched
+                                }
 
                                 is SelectionHandle.Rotate -> editor.rotateSelection(
                                     degrees = rotationBetween(handle.pivot, from, to),
@@ -1048,6 +1073,70 @@ private val RailDividerWidth = 28.dp
 private const val RecessedAlpha = 0.15f
 
 /**
+ * Pulls a resize onto a neighbouring eye's size, and says so.
+ *
+ * A resize was the one gesture in the editor with no assistance and no
+ * feedback: you dragged a corner, a figure changed, and nothing ever told you
+ * that you had arrived anywhere. Matching sizes by eye is the same problem as
+ * matching a distance by eye, and gets the same answer.
+ */
+private fun snapSizeToNeighbour(
+    editor: EditorState,
+    anchor: CanvasPoint,
+    canvasWidthPx: Float,
+    canvasHeightPx: Float,
+    thresholdPx: Float,
+    onGuides: (List<SnapGuide>) -> Unit,
+): Boolean {
+    val active = editor.activeIndices()
+    val leading = active.firstOrNull() ?: return false
+    if (thresholdPx <= 0f) return false
+
+    val others = editor.eyes.indices
+        .filter { it !in active }
+        .map { index ->
+            val eye = editor.eyes[index]
+            SnapCandidate(
+                id = index,
+                center = CanvasPoint(eye.centerX * canvasWidthPx, eye.centerY * canvasHeightPx),
+                halfWidth = eye.sizePx / 2f,
+                halfHeight = eye.sizePx * eye.style.aspectRatio / 2f,
+            )
+        }
+
+    val current = editor.eyes[leading].sizePx
+    val snap = resolveSizeSnap(current, others, thresholdPx)
+    val match = snap.matched ?: run {
+        onGuides(emptyList())
+        return false
+    }
+
+    if (current > 0f && snap.sizePx != current) {
+        editor.scaleAbout(
+            factor = snap.sizePx / current,
+            anchor = anchor,
+            canvasWidthPx = canvasWidthPx,
+            canvasHeightPx = canvasHeightPx,
+        )
+    }
+
+    val resized = editor.eyes[leading]
+    val half = resized.sizePx / 2f
+    val at = CanvasPoint(resized.centerX * canvasWidthPx, resized.centerY * canvasHeightPx)
+    onGuides(
+        listOf(
+            SnapGuide.MatchedSize(
+                fromA = CanvasPoint(at.x - half, at.y),
+                toA = CanvasPoint(at.x + half, at.y),
+                fromB = CanvasPoint(match.center.x - match.halfWidth, match.center.y),
+                toB = CanvasPoint(match.center.x + match.halfWidth, match.center.y),
+            ),
+        ),
+    )
+    return true
+}
+
+/**
  * The spans worth drawing while measuring: the gap between neighbouring eyes,
  * and how wide each eye is.
  *
@@ -1301,6 +1390,15 @@ private fun readoutText(
         parts += stringResource(Res.string.editor_readout_x, (eye.centerX * canvasWidthPx).roundToInt())
         parts += stringResource(Res.string.editor_readout_y, (eye.centerY * canvasHeightPx).roundToInt())
         parts += stringResource(Res.string.editor_readout_size, eye.sizePx.roundToInt())
+        // Millimetres beside the pixels while resizing: the number that matters
+        // when you are sizing an eye to a hole is the physical one, and pixels
+        // only become that after a conversion nobody does in their head.
+        screenMetrics.millimeters(eye.sizePx)?.let { millimetres ->
+            parts += stringResource(
+                Res.string.editor_readout_millimeters,
+                ((millimetres * 10).roundToInt() / 10f).toString(),
+            )
+        }
     } else {
         editor.selectedSpacingPx(canvasWidthPx, canvasHeightPx)?.let { distance ->
             parts += stringResource(Res.string.editor_readout_ipd, distance.roundToInt())
