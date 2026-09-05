@@ -42,10 +42,15 @@ remembered by brand.
 ### Short description (80), filled
 
 ```
-A tablet behind a painting with the eyes cut out. They blink and follow you.
+Bring your Halloween decorations to life with moving eyes!
 ```
 
-76 characters. Not an instruction at all, just what the thing is.
+58 characters. Elijah's, and it does something mine did not: it names the
+category people are actually searching in. "Halloween decorations" is the phrase
+somebody types; "a tablet behind a painting" is the phrase somebody uses after
+they already own the app.
+
+Capitalised Halloween, which was the only edit.
 
 ### Full description, filled
 
