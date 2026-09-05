@@ -8,9 +8,24 @@ remembers why.
 
 You cut the eyes out of a painting and put a screen behind it.
 
-That is the product. Everything else is detail, and the first draft of this
-listing buried it under nine hundred words about snapping and millimetres.
-Somebody scrolling a store gives you one sentence. Spend it on the trick.
+That is the product. Everything else is detail, and the first draft buried it
+under nine hundred words about snapping and millimetres. Somebody scrolling a
+store gives you one sentence.
+
+## Watch for the rule of three
+
+The second draft was short but still read as machine-written, and the reason was
+structural rather than lexical. It kept reaching for triplets: "put a tablet
+behind a painting, cut out the eyes, and watch people notice", "a painting, a
+poster, or a sheet of cardboard", "blink, look around the room, and follow".
+
+Two things give that away. The third item is usually a payoff rather than a
+peer, so it is doing rhythm instead of work. And the rhythm arrives before the
+meaning does, which is how the short description ended up telling people to put
+the tablet in before cutting the holes. The cadence was right and the
+instruction was backwards.
+
+If a sentence has three of anything, check whether the third earns its place.
 
 ## Google Play
 
@@ -27,17 +42,16 @@ remembered by brand.
 ### Short description (80), filled
 
 ```
-Put a tablet behind a painting, cut out the eyes, and watch people notice.
+A tablet behind a painting with the eyes cut out. They blink and follow you.
 ```
 
-74 characters.
+76 characters. Not an instruction at all, just what the thing is.
 
 ### Full description, filled
 
 ```
-Cut two eye holes in a painting, a poster, or a sheet of cardboard. Tape a phone
-or tablet behind it. The eyes blink, look around the room, and follow whoever
-walks past.
+Cut two eye holes in a painting or a sheet of cardboard, and tape a phone or
+tablet behind it. The eyes blink and follow whoever walks past.
 
 That is the whole app.
 
@@ -89,11 +103,11 @@ Cut out the eyes. Add these.
 ### Promotional text (170, editable without review)
 
 ```
-Cut two eye holes in a painting and tape a tablet behind it. The eyes blink,
-look around, and follow whoever walks past.
+Cut two eye holes in a painting and tape a tablet behind it. The eyes blink and
+follow whoever walks past.
 ```
 
-120 characters. Worth swapping for something seasonal on 30 Oct, since this
+103 characters. Worth swapping for something seasonal on 30 Oct, since this
 field does not need a review.
 
 ### Keywords (100, comma separated, no spaces)
