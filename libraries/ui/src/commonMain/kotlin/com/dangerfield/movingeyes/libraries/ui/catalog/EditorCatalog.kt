@@ -127,7 +127,7 @@ internal fun EditorCatalogBody() {
                 StyleSample("Human", selected, Color(0xFF7A5A34), locked = false) { selected = it }
                 StyleSample("Feline", selected, Color(0xFFC8D24A), locked = true) { selected = it }
             }
-            LockLabel(text = "Unlock $4.99")
+            LockLabel(text = "Unlock $0.99")
         }
     }
 

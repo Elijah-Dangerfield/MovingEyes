@@ -111,9 +111,9 @@ class FakeBillingClient(
         val DefaultCatalog: Map<String, BillingProduct> = mapOf(
             MovingEyesProduct.UnlockEverything to BillingProduct(
                 sku = MovingEyesProduct.UnlockEverything,
-                displayPrice = "$4.99",
+                displayPrice = "$0.99",
                 currencyCode = "USD",
-                priceMicros = 4_990_000L,
+                priceMicros = 990_000L,
             ),
         )
     }

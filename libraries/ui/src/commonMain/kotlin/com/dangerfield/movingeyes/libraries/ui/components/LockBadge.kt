@@ -99,7 +99,7 @@ private fun PreviewLockBadge() {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             LockBadge()
-            LockLabel(text = "Unlock $4.99")
+            LockLabel(text = "Unlock $0.99")
         }
     }
 }

@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
  * updated mid-evening, or a shared family tablet was signed into a different
  * store account. That user has a mounted device behind a painting and no
  * appetite for troubleshooting, and they leave a one-star review that costs
- * far more than the $4.99.
+ * far more than the 99 cents.
  *
  * Concretely: a [QueryOwnedResult.Failed] must never be treated as "doesn't
  * own it", and even a clean [QueryOwnedResult.Success] with an empty set does

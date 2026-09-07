@@ -11,7 +11,7 @@ import kotlinx.serialization.Serializable
  * would mean a migration for everyone who already owns this one.
  */
 object MovingEyesProduct {
-    const val UnlockEverything = "moving_eyes_unlock_everything"
+    const val UnlockEverything = "movingeyespro"
 
     val All: Set<String> = setOf(UnlockEverything)
 }
@@ -87,9 +87,9 @@ sealed interface PurchaseResult {
  *
  * There is no server, so nothing here is ever validated server-side and none
  * of it needs to be. The threat model is honest about that: a determined user
- * can unlock a $4.99 Halloween decoration by other means, and building receipt
- * validation infrastructure to stop them would cost more than it saves and
- * would mean standing up the backend this app deliberately doesn't have.
+ * can unlock a 99-cent Halloween decoration by other means, and building
+ * receipt validation infrastructure to stop them would cost more than it saves
+ * and would mean standing up the backend this app deliberately doesn't have.
  *
  * [purchaseToken] is retained for one real reason — Android needs it to
  * [acknowledge][BillingClient.acknowledge] the purchase inside three days or
