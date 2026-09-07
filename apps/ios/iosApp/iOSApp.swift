@@ -18,7 +18,11 @@ struct iOSApp: App {
             permissionManager: permissionManager,
             reviewLauncher: reviewLauncher,
             storeKitCoordinator: storeKitCoordinator,
-            displayHost: displayHost,
+            // `displayHost` is a property wrapper, so reading it by name goes
+            // through a computed accessor on `self`, and Swift forbids that
+            // until every stored property is initialized. The wrapper's own
+            // storage is a plain stored property and is already set here.
+            displayHost: _displayHost.wrappedValue,
             audioCaptureHost: audioCapture
         )
         iOSAppComponent.telemetry.initialize()

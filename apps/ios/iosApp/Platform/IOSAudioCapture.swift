@@ -16,7 +16,10 @@ final class IOSAudioCapture: AudioCaptureHost {
     private let engine = AVAudioEngine()
     private var isRunning = false
 
-    func start(onFrames: @escaping (KotlinFloatArray, Int32) -> Void) -> Bool {
+    // Kotlin's `(FloatArray, Int) -> Unit` exports with the Int *boxed*, so the
+    // parameter is KotlinInt and not Int32. Declaring Int32 compiles as a
+    // perfectly good method that simply does not satisfy the protocol.
+    func start(onFrames: @escaping (KotlinFloatArray, KotlinInt) -> Void) -> Bool {
         guard !isRunning else { return true }
 
         let session = AVAudioSession.sharedInstance()
@@ -53,7 +56,7 @@ final class IOSAudioCapture: AudioCaptureHost {
                     )
                 }
             }
-            onFrames(interleaved, Int32(channelCount))
+            onFrames(interleaved, KotlinInt(int: Int32(channelCount)))
         }
 
         do {

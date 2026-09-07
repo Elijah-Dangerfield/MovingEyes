@@ -15,7 +15,13 @@ import ComposeApp
 /// container controller purely to override two computed properties; SwiftUI's
 /// `.statusBarHidden` and `.persistentSystemOverlays` do the same job from the
 /// outside and stay correct if Compose changes what it returns.
-final class IOSDisplayHost: ObservableObject, DisplayHost {
+///
+/// The protocol is `DeviceDisplayHost`, not `DisplayHost`. Only `:libraries:core`
+/// is `export()`ed into the framework, so Kotlin/Native disambiguates everything
+/// else by module: the header declares `ComposeAppDeviceDisplayHost` and Swift
+/// drops the framework prefix. `BillingStoreKitCoordinator` is the same story.
+/// Check `ComposeApp.h` rather than guessing when one of these will not conform.
+final class IOSDisplayHost: ObservableObject, DeviceDisplayHost {
 
     @Published private(set) var chromeHidden = false
 

@@ -2,10 +2,12 @@
 //  PermissionManager.swift
 //  iosApp
 //
-//  Scaffolding for iOS permission handling. The template only ships a
-//  notifications implementation; add more cases to `Permission`
-//  (commonMain) and handle them below as your project needs them.
+//  iOS permission handling. Every case of `Permission` (commonMain) must be
+//  handled in both switches below; Swift's exhaustiveness check is the only
+//  thing that catches a case added on the Kotlin side, and it only fires when
+//  someone actually builds the iOS app.
 //
+import AVFoundation
 import ComposeApp
 import Foundation
 import UserNotifications
@@ -33,6 +35,8 @@ class IOSPermissionManager: PermissionManager {
         switch onEnum(of: permission) {
         case .notifications:
             return await requestNotificationsPermission()
+        case .microphone:
+            return await requestMicrophonePermission()
         }
     }
 
@@ -40,6 +44,8 @@ class IOSPermissionManager: PermissionManager {
         switch onEnum(of: permission) {
         case .notifications:
             return checkNotificationsStatus()
+        case .microphone:
+            return checkMicrophoneStatus()
         }
     }
 
@@ -82,5 +88,31 @@ class IOSPermissionManager: PermissionManager {
         } catch {
             return PermissionResultDenied(canRequestAgain: true)
         }
+    }
+
+    // MARK: - Microphone
+
+    private func checkMicrophoneStatus() -> PermissionStatus {
+        switch AVAudioApplication.shared.recordPermission {
+        case .undetermined:
+            return .notDetermined
+        case .granted:
+            return .granted
+        case .denied:
+            return .denied
+        @unknown default:
+            return .notDetermined
+        }
+    }
+
+    private func requestMicrophonePermission() async -> PermissionResult {
+        let granted = await AVAudioApplication.requestRecordPermission()
+        if granted {
+            return PermissionResultGranted.shared
+        }
+        // iOS asks once and never again. Unlike notifications there is no
+        // provisional state to recover from, so the only route back is
+        // Settings, which is what canRequestAgain: false tells the caller.
+        return PermissionResultDenied(canRequestAgain: false)
     }
 }

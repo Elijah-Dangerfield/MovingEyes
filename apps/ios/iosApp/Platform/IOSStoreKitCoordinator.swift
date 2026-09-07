@@ -81,7 +81,7 @@ import ComposeApp
 
                 case .userCancelled:
                     onComplete(BillingStoreKitPurchaseResult(
-                        status: .usercancelled,
+                        status: .userCancelled,
                         productId: productId,
                         transactionId: nil,
                         jwsRepresentation: nil,
@@ -114,7 +114,7 @@ import ComposeApp
                 guard case .verified(let transaction) = verification else { continue }
                 self.retain(transaction, jws: verification.jwsRepresentation)
                 results.append(transaction.asKotlin(
-                    status: .alreadypurchased,
+                    status: .alreadyPurchased,
                     jws: verification.jwsRepresentation,
                     displayPrice: nil
                 ))
@@ -142,15 +142,16 @@ import ComposeApp
     /// entitlement lives on the account, so finishing immediately loses nothing.
     func finishTransaction(
         jwsRepresentation: String,
-        onComplete: @escaping (Bool) -> Void
+        // Boxed for the same reason as IOSAudioCapture's KotlinInt.
+        onComplete: @escaping (KotlinBoolean) -> Void
     ) {
         Task {
             guard let transaction = self.take(jws: jwsRepresentation) else {
-                onComplete(false)
+                onComplete(KotlinBoolean(bool: false))
                 return
             }
             await transaction.finish()
-            onComplete(true)
+            onComplete(KotlinBoolean(bool: true))
         }
     }
 
