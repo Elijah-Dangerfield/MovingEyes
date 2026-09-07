@@ -167,7 +167,7 @@
       only produce refunds and one-star reviews.
     -->
     <string name="paywall_title">Unlock every eye</string>
-    <string name="paywall_live_label">This is Frantic. It\'s running right now.</string>
+    <string name="paywall_live_label">This is Frantic. It's running right now.</string>
     <string name="paywall_value_motion">Six moods, from a slow scan to Possessed, and the blink, wander and restlessness behind each one</string>
     <string name="paywall_value_styles">Ten more eyes: bloodshot, feline, reptile, demon, spider, doll and the rest</string>
     <string name="paywall_value_reactivity">Eyes that turn toward a door opening, and look at whoever came in</string>
@@ -259,7 +259,7 @@
     <string name="error_dismiss">Dismiss</string>
     <string name="error_code">Error code: %1$d</string>
     <string name="error_report">Report to developers</string>
-    <string name="error_report_aside">(that goes to me. I\'m one person.)</string>
+    <string name="error_report_aside">(that goes to me. I'm one person.)</string>
 
     <!-- Paywall and entitlement -->
     <string name="paid_feature">Paid feature</string>
