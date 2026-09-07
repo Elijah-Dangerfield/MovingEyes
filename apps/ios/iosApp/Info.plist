@@ -18,6 +18,13 @@
 	<string>Moving Eyes</string>
 	<key>NSUserNotificationsUsageDescription</key>
 	<string>We'd like to send you notifications.</string>
+	<!-- Answers Apple's export compliance question at build time instead of
+	     leaving every upload stuck on "Missing Compliance" in TestFlight until
+	     someone clicks through the dialog. False is accurate: the app ships no
+	     encryption of its own and only reaches HTTPS through the OS, which is
+	     the exemption. Revisit if we ever bundle our own crypto. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>So your eyes can react to sounds in the room. Audio is analysed on your device and never recorded, saved, or sent anywhere.</string>
 	<key>UIBackgroundModes</key>
