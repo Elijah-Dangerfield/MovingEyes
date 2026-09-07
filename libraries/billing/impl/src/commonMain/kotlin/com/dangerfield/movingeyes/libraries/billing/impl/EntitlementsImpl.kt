@@ -17,9 +17,14 @@ import com.dangerfield.movingeyes.libraries.core.logging.KLog
 import com.dangerfield.movingeyes.libraries.core.logging.logEvent
 import com.dangerfield.movingeyes.libraries.flowroutines.AppCoroutineScope
 import com.dangerfield.movingeyes.libraries.movingeyes.AppCache
+import com.dangerfield.movingeyes.libraries.movingeyes.AppEvent
+import com.dangerfield.movingeyes.libraries.movingeyes.AppEvents
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import me.tatarka.inject.annotations.Inject
 import software.amazon.lastmile.kotlin.inject.anvil.AppScope
@@ -45,7 +50,8 @@ class EntitlementsImpl(
     private val billingClient: BillingClient,
     private val appCache: AppCache,
     private val clock: Clock,
-    appScope: AppCoroutineScope,
+    private val appEvents: AppEvents,
+    private val appScope: AppCoroutineScope,
 ) : Entitlements, AutoInit {
 
     private val logger = KLog.withTag("Entitlements")
@@ -66,6 +72,37 @@ class EntitlementsImpl(
                 .getOrDefault(false)
             refresh()
         }
+        observeForegroundForRefresh()
+    }
+
+    /**
+     * Re-ask the store every time the app comes forward.
+     *
+     * Two things go stale between launches and neither is ours to control. The
+     * price is set in the consoles and changes without an app update, so a
+     * session that started before a price change would otherwise show the old
+     * one until the process died. And the grant can appear elsewhere: the same
+     * store account buying on a second device, or a family member's purchase
+     * landing through Family Sharing.
+     *
+     * It also repairs the launched-offline case. [refresh] returns early when
+     * the store is unreachable, so before this the paywall would show "Unlock
+     * everything" with no price for the rest of the session even after the
+     * network came back.
+     *
+     * Unthrottled on purpose, unlike remote config: a foreground is not
+     * frequent, both platforms serve this from their own local cache, and the
+     * cost of being wrong here is showing someone the wrong price or telling a
+     * paying customer they haven't paid.
+     */
+    private fun observeForegroundForRefresh() {
+        appEvents.live()
+            .filterIsInstance<AppEvent.OnForeground>()
+            .onEach { event ->
+                // Cold boot already refreshed in init; don't pay for it twice.
+                if (!event.isColdBoot) refresh()
+            }
+            .launchIn(appScope)
     }
 
     override suspend fun refresh() {
