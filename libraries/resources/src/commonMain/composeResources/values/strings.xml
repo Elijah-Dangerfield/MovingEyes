@@ -162,15 +162,15 @@
     -->
 
     <!--
-      Paywall. No countdown, no scarcity, no "limited time" — this gets bought
+      Paywall. No countdown, no scarcity, no "limited time". This gets bought
       on impulse by someone who already likes the app, and pressure tactics
       only produce refunds and one-star reviews.
     -->
     <string name="paywall_title">Unlock every eye</string>
-    <string name="paywall_live_label">This is Frantic. It's running right now.</string>
+    <string name="paywall_live_label">This is Frantic. It’s running right now.</string>
     <string name="paywall_value_motion">Six moods, from a slow scan to Possessed, and the blink, wander and restlessness behind each one</string>
     <string name="paywall_value_styles">Ten more eyes: bloodshot, feline, reptile, demon, spider, doll and the rest</string>
-    <string name="paywall_value_reactivity">Eyes that turn toward a door opening, and look at whoever came in</string>
+    <string name="paywall_value_reactivity">Eyes that turn toward a door opening and look at whoever came in</string>
     <string name="paywall_once">One payment, forever, on this store account. No subscription, no ads, nothing to cancel.</string>
     <string name="paywall_buy">Unlock for %1$s</string>
     <string name="paywall_buy_no_price">Unlock everything</string>
@@ -191,7 +191,7 @@
     <string name="settings_plan_free">Free</string>
     <string name="settings_plan_free_detail">Three eye styles and the motion they come with. Placing, colouring, saving and display mode are all yours already.</string>
     <string name="settings_plan_unlocked">Everything unlocked</string>
-    <string name="settings_plan_unlocked_detail">You own the full version. Every eye style, every mood and sound reactivity, on this store account — nothing expires and there is nothing to renew.</string>
+    <string name="settings_plan_unlocked_detail">You own the full version. Every eye style, every mood and sound reactivity, on this store account. Nothing expires and there is nothing to renew.</string>
     <string name="settings_unlock">Unlock everything</string>
     <string name="settings_restore">Restore purchase</string>
     <string name="settings_reduce_flashing">Reduce flashing</string>
@@ -233,7 +233,7 @@
 
     <!--
       Sound reactivity. The explanation is shown BEFORE the OS dialog, because
-      the system prompt gives one line and no way back — someone who taps Deny
+      the system prompt gives one line and no way back. Someone who taps Deny
       there has to go to Settings to change their mind.
     -->
     <string name="reactivity_title">Eyes that react to sound</string>
@@ -258,8 +258,8 @@
     <string name="error_dialog_body">Try again in a moment.</string>
     <string name="error_dismiss">Dismiss</string>
     <string name="error_code">Error code: %1$d</string>
-    <string name="error_report">Report to developers</string>
-    <string name="error_report_aside">(that goes to me. I'm one person.)</string>
+    <string name="error_report">Send me the details</string>
+    <string name="error_report_aside">(that goes to me. I’m one person.)</string>
 
     <!-- Paywall and entitlement -->
     <string name="paid_feature">Paid feature</string>
