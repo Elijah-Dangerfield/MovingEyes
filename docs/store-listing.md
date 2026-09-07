@@ -32,12 +32,13 @@ If a sentence has three of anything, check whether the third earns its place.
 ### App name (30), filled
 
 ```
-Halloween Eyes Decoration
+Moving Eyes Painting
 ```
 
-25 characters. Keyword-rich on purpose, and different from the in-app name,
-which stays "Moving Eyes". The listing gets found by search; the app gets
-remembered by brand.
+Elijah renamed it from my "Halloween Eyes Decoration" on 2026-09-07. Fewer
+keywords, but it survives November, and the App Store name he picked separately
+is "Moving Eyes for Paintings". Two names for one app is fine; the stores don't
+compare them.
 
 ### Short description (80), filled
 
@@ -67,16 +68,12 @@ Elijah's, written and chosen by him. Two short paragraphs, 57 words. Everything 
 drafted before this was longer and more explanatory, and none of it was better:
 the product is one physical trick and it takes one sentence to describe.
 
-Note the opening names Moving Eyes while the store name is Halloween Eyes
-Decoration. The listing gets found by the store name and the app gets remembered
-by the brand.
-
 ## App Store
 
-### Name (30)
+### Name (30), filled
 
 ```
-Halloween Eyes Decoration
+Moving Eyes for Paintings
 ```
 
 ### Subtitle (30), filled
@@ -135,62 +132,77 @@ device for loudness and direction only. It is never recorded, stored, or
 transmitted, and everything else in the app works if the permission is denied.
 ```
 
-The video link is deliberately not in there yet, because a review-notes field
-with a dead placeholder in it is worse than one without the sentence. Add this
-line before submitting:
+The live version also names the attached video and the IAP by id, and closes
+with "There is no account and no sign-in anywhere in the app." Sign-in required
+is unchecked, which is true and saves a round trip.
 
-```
-A short video of the finished effect is here: <url>
-```
-
-**Record that video.** It is the highest-value item in this document. A reviewer
-looking at a tablet on a desk cannot see what this is.
-
-Sign-in required is unchecked, which is true and saves a round trip: there is no
-account in this app.
+`IMG_0050.mov` is attached to the review, which is better than a link: it can't
+rot, and a reviewer who never leaves App Store Connect still sees it. That video
+was the highest-risk gap in this document and it is now closed.
 
 ## Data safety and privacy labels
 
 Both must match `pages/privacy.html`, published at
 https://elijah-dangerfield.github.io/MovingEyes/privacy.html
 
-### Google Play Data Safety
+The first draft of this section was wrong, and so was the privacy policy it was
+written against. Both said crash logs and nothing else. The app also ships app
+events and Warn+ logs to Grafana Cloud, with an `install_id` and a `session_id`
+on every record (`GrafanaLogTree.kt`), and the policy went as far as claiming no
+analytics SDKs at all. A Data safety form that contradicts the linked policy is
+its own policy violation, so the policy was rewritten first and both labels
+follow it.
+
+### Google Play Data Safety, filed
 
 | Question | Answer |
 |---|---|
-| Collects or shares user data? | Yes, crash logs and diagnostics only |
-| Data types | App activity: crash logs, diagnostics |
+| Collects or shares user data? | Yes |
+| Data types | App interactions; Crash logs; Diagnostics; Device or other IDs |
+| Purpose, all four | Analytics |
 | Shared with third parties? | No |
-| Optional? | No, but no personal data is included |
+| Optional? | No, required. There is no analytics opt-out in Settings |
+| Processed ephemerally? | No. It is stored by Sentry and Grafana |
 | Encrypted in transit? | Yes |
-| Deletion requests? | Yes, via Report a bug and Send feedback in the app |
+| Deletion requests? | Yes, https://elijah-dangerfield.github.io/MovingEyes/privacy.html#delete-data |
 | Microphone / audio | **Not collected.** Processed on device and discarded. Play's guidance is that on-device-only processing is not collection. |
 
-### Apple privacy labels
+`install_id` is a random per-install UUID, not the advertising ID, but Play's
+"Device or other IDs" covers app-generated identifiers that persist across
+sessions, so it is declared. Over-declaring costs nothing; under-declaring is
+the violation.
 
-Everything is **Data Not Collected** except **Diagnostics: Crash Data**, not
-linked to identity, not used for tracking. Audio is not collected. Tracking: no,
-there is no advertising identifier and no third-party SDK that would use one.
+### Apple privacy labels, filed
+
+Four types, each **Used for Analytics**, **not linked to the user's identity**,
+and **not used for tracking**: Device ID, Product Interaction, Crash Data,
+Performance Data. Everything else is Data Not Collected, audio included. The
+product page preview reads "Data Not Linked to You".
+
+**Not published yet.** The labels are complete and the Publish button is live,
+but publishing them is Elijah's click, not mine.
 
 ## Console state
 
-Play, saved as draft on 2026-09-05: name, both descriptions exactly as they
-appear above, category (Entertainment, App not Game), contact email, website.
-The listing page still reports errors because the graphics are missing, but
-"Save as draft" goes through regardless, so the copy is safe.
+**Play: App content is fully declared.** As of 2026-09-07 the dashboard shows no
+outstanding setup tasks. Privacy policy URL, Sign in details, Ads, Government
+apps, Financial features, Health apps, Advertising ID and Data safety were filed
+in this pass; Elijah did Content ratings and Target audience alongside, and the
+store listing with its graphics is saved.
 
-Still to do, all of them developer declarations rather than copy:
+One answer worth remembering, because it is a judgment call rather than a fact:
+**Sign in details is "No"**. Google's Yes branch lists "payments... or access
+tiers", which the Pro unlock is, but choosing Yes forces a checkbox attesting
+that the details you supply "provide full access to all the features and
+content, including premium or paid content". With no credentials and no bypass
+build, that attestation would be false. The declaration is fundamentally about
+login credentials, there are none, and Play's reviewers test in-app products
+through their own test-purchase flow. If you would rather take the strict
+reading, add the review account as a licence tester first and then switch it.
 
-- [ ] Content rating questionnaire
-- [ ] Data safety form, answers above
-- [ ] Target audience and content
-- [ ] Privacy policy URL under App content
-- [ ] Icon, feature graphic, screenshots
-
-App Store Connect, also 2026-09-05. The blank New App page was exactly what it
-looked like: no registered App ID, so the bundle-ID dropdown had nothing to
-offer and the form never rendered. Registering the identifier fixed it in one
-step.
+**App Store Connect.** The blank New App page was exactly what it looked like:
+no registered App ID, so the bundle-ID dropdown had nothing to offer and the
+form never rendered. Registering the identifier fixed it in one step.
 
 - App ID `com.dangerfield.movingeyes.MovingEyes`, description "Moving Eyes", no
   extra capabilities. Note this is the *iOS* bundle ID, from
@@ -202,28 +214,38 @@ step.
 - Saved: name, subtitle, promotional text, description, keywords, support and
   marketing URLs (both the Pages site), version 1.0, copyright
   "2026 Nightjar Labs LLC", category Entertainment, content rights declared as
-  no third-party content, and the review notes above.
+  no third-party content, review notes, review contact, and 7 screenshots.
+- **Age rating 4+**, in 172 countries. Every question answered None or No,
+  including horror and fear themes: the app renders animated eyes on black with
+  no gore and no jump scares. "Infrequent/Mild" would have been the cautious
+  read and would have cost a 9+ rating for nothing.
+- **Pricing: free, all 175 territories.** The app is free; the Pro unlock is the
+  in-app product.
 
 Still to do on the Apple side:
 
-- [ ] Age rating questionnaire. The one real judgment call is horror and fear
-      themes: the app is animated eyes on black with no gore and no jump scares,
-      so "None" is defensible and "Infrequent/Mild" is the cautious read. The
-      cautious read costs a 9+ rating.
-- [ ] App Privacy: Diagnostics / Crash Data, not linked, not tracking.
-      Everything else Data Not Collected.
-- [ ] Pricing and Availability: free, all territories.
-- [ ] App Review contact name, phone and email.
-- [ ] Screenshots, 6.5-inch iPhone at minimum.
+- [ ] Publish the App Privacy labels. One button, and it's yours.
+- [ ] The IAP needs a review screenshot before it can be submitted.
 - [ ] A build. Nothing here can be submitted until iOS has been run once.
 
-## Assets still needed
+## The in-app purchase
 
-- [ ] The demo video, for review notes and probably the listing too
-- [ ] Screenshots. The first should be a photo of the tablet behind a painting,
-      not a screenshot of the editor. Both stores allow a framed marketing image
-      in the first slot, and the trick is the thing worth showing.
-- [ ] Feature graphic for Play, 1024x500
-- [ ] App icon, confirmed as yours rather than the template's
-- [ ] IAP in both consoles: `moving_eyes_unlock_everything`, non-consumable,
-      $4.99
+One non-consumable, in both stores, and the id has to match the code exactly or
+the store returns no product and the paywall has nothing to sell.
+
+```
+Product ID    movingeyespro
+Display name  Moving Eyes Pro
+Description   Unlock every feature including sound reactivity!
+Price         $0.99
+Type          Non-consumable, all countries
+```
+
+`MovingEyesProduct.UnlockEverything` in
+[BillingModels.kt](../libraries/billing/src/commonMain/kotlin/com/dangerfield/movingeyes/libraries/billing/BillingModels.kt)
+was `moving_eyes_unlock_everything` and is now `movingeyespro`. That mismatch
+would have shipped as a paywall with no price and a dead buy button, and it
+would not have shown up until a real device hit a real store.
+
+Apple's copy exists; Play's still needs creating with the same id and price.
+Apple also wants a review screenshot on the IAP itself before it will submit.
