@@ -3,7 +3,7 @@
     --surface: #1a1b1e;
     --text: #f5f5f5;
     --text-muted: #a0a0a0;
-    --accent: #EC407A;
+    --accent: #F2A24B;
     --border: #2a2b2e;
 }
 
@@ -43,6 +43,9 @@ header {
     width: 96px;
     height: 96px;
     margin-bottom: 16px;
+    /* The icon is nearly black at its edges and the page is too, so without a
+       rounded corner it reads as a dark smudge rather than an app icon. */
+    border-radius: 22px;
 }
 
 h1 {
