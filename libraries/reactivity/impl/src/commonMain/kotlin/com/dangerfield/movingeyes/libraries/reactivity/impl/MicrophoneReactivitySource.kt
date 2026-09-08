@@ -6,6 +6,7 @@ import com.dangerfield.movingeyes.libraries.movingeyes.PermissionManager
 import com.dangerfield.movingeyes.libraries.movingeyes.PermissionResult
 import com.dangerfield.movingeyes.libraries.reactivity.AudioAnalyzer
 import com.dangerfield.movingeyes.libraries.reactivity.AudioCapture
+import com.dangerfield.movingeyes.libraries.reactivity.FrameChunker
 import com.dangerfield.movingeyes.libraries.reactivity.ReactivitySource
 import com.dangerfield.movingeyes.libraries.reactivity.SoundEvent
 import kotlinx.coroutines.channels.BufferOverflow
@@ -38,6 +39,10 @@ class MicrophoneReactivitySource(
     private val logger = KLog.withTag("Reactivity")
     private val analyzer = AudioAnalyzer()
 
+    // The analyser is tuned per buffer, and iOS does not deliver the buffer
+    // size its tap asks for. See [FrameChunker].
+    private val chunker = FrameChunker()
+
     private val _events = MutableSharedFlow<SoundEvent>(
         extraBufferCapacity = 1,
         // A missed startle is better than a queue of stale ones firing at once
@@ -54,8 +59,11 @@ class MicrophoneReactivitySource(
         }
 
         analyzer.reset()
+        chunker.reset()
         val started = capture.start { samples, channelCount ->
-            analyzer.process(samples, channelCount)?.let(_events::tryEmit)
+            chunker.accept(samples, channelCount) { chunk, channels ->
+                analyzer.process(chunk, channels)?.let(_events::tryEmit)
+            }
         }
         logger.d { "Reactivity ${if (started) "listening" else "could not open the microphone"}" }
         return started
@@ -64,5 +72,6 @@ class MicrophoneReactivitySource(
     override fun stop() {
         capture.stop()
         analyzer.reset()
+        chunker.reset()
     }
 }
