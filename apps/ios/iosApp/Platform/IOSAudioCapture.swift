@@ -39,14 +39,13 @@ final class IOSAudioCapture: AudioCaptureHost {
 
         configureStereoIfAvailable(session)
 
-        // prepare() before reading the format, not after. The input node
-        // reports a 0 Hz, 0 channel format until the engine has allocated its
-        // render resources, so reading first and trusting the guard below
-        // aborts every start on a perfectly good microphone, while the session
-        // stays active. That combination is why the OS mic indicator could be
-        // lit with no audio flowing anywhere.
-        engine.prepare()
-
+        // inputNode is a lazy property, and reading it is what attaches the
+        // node to the graph. Nothing may call prepare() before this line:
+        // prepare() initialises the graph and hard-asserts that something is
+        // attached to it, so an empty graph terminates the process with
+        // "required condition is false: inputNode != nullptr || outputNode !=
+        // nullptr". prepare() therefore stays down beside start(), where it
+        // always was.
         let input = engine.inputNode
         let format = input.inputFormat(forBus: 0)
         guard format.sampleRate > 0, format.channelCount > 0 else {
@@ -100,6 +99,7 @@ final class IOSAudioCapture: AudioCaptureHost {
         }
 
         do {
+            engine.prepare()
             try engine.start()
             isRunning = true
             return true
