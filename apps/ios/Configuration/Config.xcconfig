@@ -4,8 +4,11 @@ PRODUCT_NAME=MovingEyes
 PRODUCT_BUNDLE_IDENTIFIER=com.dangerfield.movingeyes.MovingEyes$(TEAM_ID)
 
 CURRENT_PROJECT_VERSION=1
-// Rewritten by release-please on release, and read straight back out by
-// release.yml to set the App Store version. The annotation is what makes that
-// happen; extra-files alone updates nothing.
-// x-release-please-version
-MARKETING_VERSION=1.0
+// Rewritten by release-please on release, then read straight back out by
+// release.yml to set both the App Store version and the Kotlin BuildInfo.
+//
+// Three parts, not two: release-please only replaces a full major.minor.patch,
+// so a bare "1.0" here is silently left alone at every release.
+// x-release-please-start-version
+MARKETING_VERSION=1.0.0
+// x-release-please-end
