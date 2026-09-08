@@ -4,4 +4,8 @@ PRODUCT_NAME=MovingEyes
 PRODUCT_BUNDLE_IDENTIFIER=com.dangerfield.movingeyes.MovingEyes$(TEAM_ID)
 
 CURRENT_PROJECT_VERSION=1
+// Rewritten by release-please on release, and read straight back out by
+// release.yml to set the App Store version. The annotation is what makes that
+// happen; extra-files alone updates nothing.
+// x-release-please-version
 MARKETING_VERSION=1.0
