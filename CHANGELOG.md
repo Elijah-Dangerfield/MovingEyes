@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.1.0](https://github.com/Elijah-Dangerfield/MovingEyes/compare/v1.0.0...v1.1.0) (2026-09-11)
+
+
+### Features
+
+* a failed purchase says so, and says the right thing ([39d1758](https://github.com/Elijah-Dangerfield/MovingEyes/commit/39d17588373beaeb86fc809bd1fdd7468ebca647))
+* a StoreKit configuration file, and a guide to testing purchases ([f2341d5](https://github.com/Elijah-Dangerfield/MovingEyes/commit/f2341d5285a8dabd9799dc0b8e28238fae39d89a))
+* an unlock button in the drawer, and QA tools on beta builds ([98bc657](https://github.com/Elijah-Dangerfield/MovingEyes/commit/98bc657f68b986aec6caeb4c721e615d90729e47))
+
+
+### Bug Fixes
+
+* make Clear entitlement actually clear the entitlement ([9d28359](https://github.com/Elijah-Dangerfield/MovingEyes/commit/9d283591ce21343827aa118454cb4bec9ec770ca))
+* report an unsellable build, and let QA reach the paywall while owning it ([d4e8cc9](https://github.com/Elijah-Dangerfield/MovingEyes/commit/d4e8cc9b6d3153b60b6485638349f480cc82d643))
+* Sentry reports from dev builds, not just CI ([4735114](https://github.com/Elijah-Dangerfield/MovingEyes/commit/473511478b7c19db38a6c74e8c082ce1b030d099))
+* shake worked exactly once per process ([97d776c](https://github.com/Elijah-Dangerfield/MovingEyes/commit/97d776c3450fcec204036e577e74a143c9946084))
+* stop CIO winning the Ktor engine race on iOS ([6f65f88](https://github.com/Elijah-Dangerfield/MovingEyes/commit/6f65f88716d6f54a28697089e415afce1d939c60))
+
 ## [1.0.0](https://github.com/Elijah-Dangerfield/MovingEyes/compare/v0.1.0...v1.0.0) (2026-09-08)
 
 
