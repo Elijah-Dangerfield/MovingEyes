@@ -5,9 +5,11 @@ import com.dangerfield.movingeyes.libraries.core.ShakeDetector
 import com.dangerfield.movingeyes.libraries.core.isQaBuild
 import com.dangerfield.movingeyes.libraries.core.ShakeEvent
 import com.dangerfield.movingeyes.features.settings.BugReportRoute
+import com.dangerfield.movingeyes.libraries.navigation.NavigationOptions
 import com.dangerfield.movingeyes.libraries.navigation.Router
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import me.tatarka.inject.annotations.Inject
@@ -15,8 +17,8 @@ import software.amazon.lastmile.kotlin.inject.anvil.AppScope
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
 /**
- * Shake files a bug report, and only in debug builds. Release keeps the
- * accelerometer idle: this device spends Halloween night taped behind a
+ * Shake files a bug report, and only on a QA build (debug or the beta
+ * channel). Store builds keep the accelerometer idle: this device spends Halloween night taped behind a
  * painting, and the one thing worse than a dialog over a mounted scene is a
  * dialog that appeared because someone bumped the wall.
  */
@@ -27,23 +29,26 @@ class ShakeHandler(
     private val router: Router,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    private var isShowingDialog = false
+
+    /** Held so [stop] can cancel it. Without this every foreground cycle
+     *  launched another collector onto the same stream and none of them ever
+     *  went away. */
+    private var collection: Job? = null
 
     fun start() {
         if (!BuildInfo.isQaBuild) return
         shakeDetector.start()
-        scope.launch {
+        collection?.cancel()
+        collection = scope.launch {
             shakeDetector.shakeEvents.collect { handleShake() }
         }
     }
 
     fun stop() {
         if (!BuildInfo.isQaBuild) return
+        collection?.cancel()
+        collection = null
         shakeDetector.stop()
-    }
-
-    fun onDialogDismissed() {
-        isShowingDialog = false
     }
 
     /**
@@ -52,10 +57,14 @@ class ShakeHandler(
      * a decision to make, and funny. The debug screens it listed are all
      * reachable by deep link anyway — `movingeyes://design-system`,
      * `movingeyes://eyes`, `movingeyes://qa-config`.
+     *
+     * The duplicate is refused by the navigator rather than by a flag here.
+     * The flag this replaces was set on the first shake and cleared only by an
+     * `onDialogDismissed()` that nothing ever called, so shaking worked once
+     * per process and then silently stopped for good — which reads as a broken
+     * sensor rather than a stuck boolean.
      */
     private fun handleShake() {
-        if (isShowingDialog) return
-        isShowingDialog = true
-        router.navigate(BugReportRoute())
+        router.navigate(BugReportRoute(), NavigationOptions(launchSingleTop = true))
     }
 }

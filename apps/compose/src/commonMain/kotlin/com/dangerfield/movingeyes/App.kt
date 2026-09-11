@@ -4,12 +4,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -72,9 +72,15 @@ fun App(appComponent: AppComponent) {
     // before the first Activity; resolving twice is a no-op.)
     remember { appComponent.autoInits }
 
-    DisposableEffect(shakeHandler) {
+    // Lifecycle, not composition. A DisposableEffect only tears down when the
+    // composition goes away, which backgrounding does not do, so the
+    // accelerometer stayed live in a pocket while DelegatingRouter held its
+    // queue under repeatOnLifecycle(STARTED). A jostle queued a navigation
+    // that fired the moment the app came back, which looks like a bug report
+    // opening itself on resume.
+    LifecycleStartEffect(shakeHandler) {
         shakeHandler.start()
-        onDispose {
+        onStopOrDispose {
             shakeHandler.stop()
         }
     }
