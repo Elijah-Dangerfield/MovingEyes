@@ -133,6 +133,24 @@ data class TelemetryMetadata(
  * DSN → `SentryRuntimeConfig.isEnabled` is false and crash reporting no-ops.
  * The app builds and runs either way, so a fresh clone works with zero setup.
  */
+/**
+ * Falls back to this when no env var and no `local.properties` entry supply one,
+ * which is every checkout that has not been hand-configured.
+ *
+ * A DSN is not a secret. It is a write-only ingest endpoint, it ships inside
+ * every binary on both stores, and anyone can read it out of the App Store
+ * build in a few minutes. Treating it as one bought nothing and cost the thing
+ * that matters: a developer build reported nothing at all, silently, and
+ * SETUP.md promised that shaking a debug build would put an event in Sentry
+ * within a minute. It did not, and nobody noticed until a crash went
+ * unreported.
+ *
+ * Both overrides still win, so CI or a single developer can point a build at a
+ * different project without touching this.
+ */
+private const val DEFAULT_SENTRY_DSN =
+    "https://eece5dd75fd5308e4cdafbbb528ff63b@o327796.ingest.us.sentry.io/4512046645182464"
+
 fun Project.loadTelemetryMetadata(): TelemetryMetadata {
     val properties = Properties()
     val localProperties = rootProject.file("local.properties")
@@ -140,17 +158,17 @@ fun Project.loadTelemetryMetadata(): TelemetryMetadata {
         FileInputStream(localProperties).use(properties::load)
     }
 
-    fun resolve(env: String, key: String): String =
+    fun resolve(env: String, key: String, default: String = ""): String =
         System.getenv(env)?.takeIf { it.isNotBlank() }
             ?: properties.stringOrNull(key)
             ?: (findProperty(key) as? String)?.takeIf { it.isNotBlank() }
-            ?: ""
+            ?: default
 
     return TelemetryMetadata(
         grafanaOtlpBaseUrl = resolve("GRAFANA_OTLP_BASE_URL", "grafana.otlpBaseUrl"),
         grafanaOtlpInstanceId = resolve("GRAFANA_OTLP_INSTANCE_ID", "grafana.otlpInstanceId"),
         grafanaLogsWriteToken = resolve("GRAFANA_LOGS_WRITE_TOKEN", "grafana.logsWriteToken"),
-        sentryDsn = resolve("SENTRY_DSN", "sentry.dsn"),
+        sentryDsn = resolve("SENTRY_DSN", "sentry.dsn", default = DEFAULT_SENTRY_DSN),
     )
 }
 
