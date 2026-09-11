@@ -23,10 +23,13 @@ import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
 /**
- * The debug menu. `ShakeHandler` only arms the accelerometer in debug builds,
- * so nothing here can surface in a store binary — but the actions are still
- * gated on [BuildInfo.isDebug] so a release build can't route to a screen that
- * exists purely for development.
+ * The QA menu. `ShakeHandler` only arms the accelerometer on a
+ * [BuildInfo.isQaBuild], which is debug plus the `beta` channel, so nothing
+ * here can surface in a store binary.
+ *
+ * Beta is included because Clear entitlement is the only route back to a
+ * locked state, grants being permanent by design, and a TestFlight tester who
+ * has already unlocked otherwise cannot reach the paywall again.
  */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class, multibinding = true)

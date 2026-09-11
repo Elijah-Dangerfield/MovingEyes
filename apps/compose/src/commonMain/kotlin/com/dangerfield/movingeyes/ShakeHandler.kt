@@ -2,6 +2,7 @@ package com.dangerfield.movingeyes
 
 import com.dangerfield.movingeyes.libraries.core.BuildInfo
 import com.dangerfield.movingeyes.libraries.core.ShakeDetector
+import com.dangerfield.movingeyes.libraries.core.isQaBuild
 import com.dangerfield.movingeyes.libraries.core.ShakeEvent
 import com.dangerfield.movingeyes.features.settings.BugReportRoute
 import com.dangerfield.movingeyes.libraries.navigation.Router
@@ -29,7 +30,7 @@ class ShakeHandler(
     private var isShowingDialog = false
 
     fun start() {
-        if (!BuildInfo.isDebug) return
+        if (!BuildInfo.isQaBuild) return
         shakeDetector.start()
         scope.launch {
             shakeDetector.shakeEvents.collect { handleShake() }
@@ -37,7 +38,7 @@ class ShakeHandler(
     }
 
     fun stop() {
-        if (!BuildInfo.isDebug) return
+        if (!BuildInfo.isQaBuild) return
         shakeDetector.stop()
     }
 

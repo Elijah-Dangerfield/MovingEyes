@@ -774,6 +774,10 @@ fun EditorScreen(
                     drawerOpen = false
                     router.navigate(SettingsRoute())
                 },
+                onUnlock = {
+                    drawerOpen = false
+                    router.navigate(PaywallRoute(PaywallTrigger.Settings))
+                },
                 onDismiss = { drawerOpen = false },
                 isUnlocked = isUnlocked,
             )

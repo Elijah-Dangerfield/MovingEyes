@@ -49,6 +49,7 @@ import movingeyes.libraries.resources.generated.resources.scenes_none_saved
 import movingeyes.libraries.resources.generated.resources.scenes_presets
 import movingeyes.libraries.resources.generated.resources.scenes_title
 import movingeyes.libraries.resources.generated.resources.settings_open
+import movingeyes.libraries.resources.generated.resources.settings_unlock
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -67,6 +68,7 @@ fun ScenesDrawer(
     onDeleteScene: (Scene) -> Unit,
     onNewBlank: () -> Unit,
     onOpenSettings: () -> Unit,
+    onUnlock: () -> Unit,
     onDismiss: () -> Unit,
     isUnlocked: Boolean,
     modifier: Modifier = Modifier,
@@ -106,6 +108,23 @@ fun ScenesDrawer(
                     icon = Icons.Settings(stringResource(Res.string.settings_open)),
                     onClick = onOpenSettings,
                 )
+            }
+
+            // The only accent-filled control in the drawer, and only for
+            // someone who hasn't paid. Everything else that leads to the
+            // paywall is a locked control someone has to go looking for, which
+            // means a free user can use the app for a week without ever being
+            // told plainly that there is a paid version. Once bought it
+            // disappears rather than turning into a receipt.
+            if (!isUnlocked) {
+                Button(
+                    onClick = onUnlock,
+                    size = ButtonSize.Small,
+                    type = ButtonType.Primary,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(Res.string.settings_unlock))
+                }
             }
 
             Button(
