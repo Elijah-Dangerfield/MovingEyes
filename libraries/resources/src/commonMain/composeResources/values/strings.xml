@@ -181,6 +181,15 @@
     <string name="paywall_done_close">Back to the scene</string>
     <string name="paywall_close">Not now</string>
     <string name="paywall_store_unavailable">Couldn’t reach the store. Try again in a moment.</string>
+    <!--
+      A failure the store did answer, as opposed to one where we could not ask.
+      Kept apart from the line above on purpose: "couldn't reach the store" sends
+      someone to check their wifi, which is no help at all when the store replied
+      and said no.
+    -->
+    <string name="paywall_failed_title">That didn’t go through</string>
+    <string name="paywall_failed_body">Nothing was charged. Try again, and if it keeps happening, Report a bug from Settings so I can see what the store said.</string>
+    <string name="paywall_unavailable_title">Couldn’t reach the store</string>
     <string name="paywall_nothing_to_restore">No purchase found on this store account.</string>
     <string name="paywall_restored">Restored. Everything is unlocked.</string>
 

@@ -37,6 +37,10 @@ class PaywallViewModel(
                 }
             }
 
+            PaywallAction.DismissOutcome -> {
+                action.updateState { it.copy(outcome = null, restoreOutcome = null) }
+            }
+
             PaywallAction.Restore -> {
                 action.updateState { it.copy(isWorking = true, message = null) }
                 val outcome = entitlements.restore()
@@ -73,4 +77,7 @@ sealed interface PaywallAction {
     data object Observe : PaywallAction
     data object Purchase : PaywallAction
     data object Restore : PaywallAction
+
+    /** Clears a failure so the dialog closes and the paywall stays put. */
+    data object DismissOutcome : PaywallAction
 }
