@@ -4,6 +4,7 @@ import com.dangerfield.movingeyes.libraries.billing.BillingClient
 import com.dangerfield.movingeyes.libraries.billing.BillingProduct
 import com.dangerfield.movingeyes.libraries.billing.ConnectionState
 import com.dangerfield.movingeyes.libraries.billing.Entitlements
+import com.dangerfield.movingeyes.libraries.billing.IgnoreStoreGrants
 import com.dangerfield.movingeyes.libraries.billing.MovingEyesProduct
 import com.dangerfield.movingeyes.libraries.billing.PurchaseOutcome
 import com.dangerfield.movingeyes.libraries.billing.PurchaseRecord
@@ -51,6 +52,7 @@ class EntitlementsImpl(
     private val appCache: AppCache,
     private val clock: Clock,
     private val appEvents: AppEvents,
+    private val ignoreStoreGrants: IgnoreStoreGrants,
     private val appScope: AppCoroutineScope,
 ) : Entitlements, AutoInit {
 
@@ -112,10 +114,17 @@ class EntitlementsImpl(
         }
 
         when (val products = billingClient.queryProducts(MovingEyesProduct.All)) {
-            is QueryProductsResult.Success ->
-                _product.value = products.products[MovingEyesProduct.UnlockEverything]
+            is QueryProductsResult.Success -> {
+                val product = products.products[MovingEyesProduct.UnlockEverything]
+                _product.value = product
+                if (product == null) reportUnsellable("store returned no matching product")
+            }
 
-            is QueryProductsResult.Failed -> logger.d { "Product query failed: ${products.message}" }
+            // Error, not debug. Both of these mean nobody on this build can buy
+            // anything, and the old debug level meant Sentry never saw it: an
+            // App Store reviewer hit exactly this, we shipped it, and the first
+            // we knew was the rejection email.
+            is QueryProductsResult.Failed -> reportUnsellable(products.message)
             QueryProductsResult.NotConnected -> Unit
         }
 
@@ -130,7 +139,11 @@ class EntitlementsImpl(
                     owned.purchases
                         .firstOrNull { it.sku == MovingEyesProduct.UnlockEverything }
                         ?.let { acknowledgeIfNeeded(it) }
-                    grant(source = "restore")
+                    if (ignoreStoreGrants()) {
+                        logger.d { "Store says owned; ignoring it because the QA flag is on" }
+                    } else {
+                        grant(source = "restore")
+                    }
                 }
             }
 
@@ -138,6 +151,24 @@ class EntitlementsImpl(
             QueryOwnedResult.NotConnected -> Unit
         }
     }
+
+    /**
+     * The paywall is up and the buy button cannot work. Reported at error level
+     * so it becomes a Sentry event, and as an analytics event so the rate is
+     * visible on a board rather than one issue at a time.
+     *
+     * Once per process. [refresh] runs on every foreground, and a store that is
+     * unhappy stays unhappy, so reporting each time would turn one broken build
+     * into thousands of identical events and teach everyone to ignore them.
+     */
+    private fun reportUnsellable(reason: String?) {
+        if (hasReportedUnsellable) return
+        hasReportedUnsellable = true
+        logger.e { "Nothing to sell: ${reason ?: "unknown"}. The paywall cannot complete a purchase." }
+        logger.logEvent("purchase_unavailable", "reason" to (reason ?: "unknown"))
+    }
+
+    private var hasReportedUnsellable = false
 
     override suspend fun purchase(): PurchaseOutcome {
         if (billingClient.connect() != ConnectionState.Connected) {
@@ -162,7 +193,14 @@ class EntitlementsImpl(
 
             PurchaseResult.UserCancelled -> PurchaseOutcome.Cancelled
             PurchaseResult.NotConnected -> PurchaseOutcome.StoreUnavailable
-            is PurchaseResult.Failed -> PurchaseOutcome.Failed(result.reason)
+
+            // Someone tapped buy, meant it, and did not get the thing. That is
+            // the most expensive failure in the app and it gets an event.
+            is PurchaseResult.Failed -> {
+                logger.e { "Purchase failed: ${result.reason}" }
+                logger.logEvent("purchase_failed", "reason" to result.reason)
+                PurchaseOutcome.Failed(result.reason)
+            }
         }
     }
 
