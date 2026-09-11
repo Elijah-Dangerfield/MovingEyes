@@ -28,36 +28,6 @@ import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
  * debug build — after the app is on a track, that's how you test an actual
  * sandbox purchase locally.
  */
-/**
- * Stops [Entitlements] granting from the store, so a tester can reach the
- * paywall on an account that already owns the unlock.
- *
- * This exists because of a real dead end. A grant is never revoked, and on
- * TestFlight a sandbox purchase belongs to a real Apple Account with no way to
- * clear it, so Clear entitlement appears to do nothing: the next launch reads
- * `currentEntitlements`, still sees the purchase, and grants it straight back.
- * Without this flag the only way back to a locked state is a second Apple
- * Account.
- *
- * Deliberately does not touch the product query. The point is to see the
- * paywall exactly as someone who has not paid sees it, price and all, which is
- * the only way to tell "the catalog is broken" from "I already own this".
- *
- * No `debugOverride`: leaving it off by default everywhere means a forgotten
- * override cannot lock out a paying customer.
- */
-@Inject
-@SingleIn(AppScope::class)
-@ContributesBinding(AppScope::class, boundType = QaConfigValue::class, multibinding = true)
-open class IgnoreStoreGrants(appConfigMap: AppConfigMap) : FlagConfigValue(appConfigMap) {
-    override val name = "Ignore store grants (QA)"
-    override val description = "Stops the store re-granting the unlock, so the paywall is " +
-        "reachable on an account that already owns it. Clear the entitlement after turning this on."
-    override val path = "billing.ignoreStoreGrants"
-    override val default = false
-    override val debugOverride: Boolean? = null
-}
-
 @Inject
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class, boundType = QaConfigValue::class, multibinding = true)

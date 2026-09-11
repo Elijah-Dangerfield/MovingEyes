@@ -1,8 +1,6 @@
 package com.dangerfield.movingeyes.libraries.billing.impl
 
 import com.dangerfield.movingeyes.libraries.billing.BillingClient
-import com.dangerfield.movingeyes.libraries.billing.IgnoreStoreGrants
-import com.dangerfield.movingeyes.libraries.config.AppConfigMap
 import com.dangerfield.movingeyes.libraries.billing.ConnectionState
 import com.dangerfield.movingeyes.libraries.billing.MovingEyesProduct
 import com.dangerfield.movingeyes.libraries.billing.PurchaseOutcome
@@ -64,9 +62,10 @@ class EntitlementsImplTest : CoroutineTest() {
     }
 
     @Test
-    fun `the QA flag stops a store-owned product granting`() = runUnitTest {
+    fun `clearing the entitlement stops the store re-granting it`() = runUnitTest {
         val client = FakeStore(owned = QueryOwnedResult.Success(MovingEyesProduct.All, listOf(record())))
-        val entitlements = entitlements(client, ignoreStoreGrants = true)
+        val cache = FakeAppCache(AppData(ignoreStoreGrants = true))
+        val entitlements = entitlements(client, cache = cache)
 
         entitlements.refresh()
 
@@ -78,9 +77,24 @@ class EntitlementsImplTest : CoroutineTest() {
     }
 
     @Test
-    fun `the QA flag leaves the price alone`() = runUnitTest {
+    fun `buying lifts the suppression`() = runUnitTest {
+        val client = FakeStore(purchase = PurchaseResult.Success(record()))
+        val cache = FakeAppCache(AppData(ignoreStoreGrants = true))
+        val entitlements = entitlements(client, cache = cache)
+
+        entitlements.purchase()
+
+        // Otherwise a tester who cleared, then bought, would be locked out of
+        // the thing they just paid for on the next launch.
+        assertTrue(entitlements.isUnlocked.value)
+        assertFalse(cache.get().ignoreStoreGrants)
+    }
+
+    @Test
+    fun `suppressing the grant leaves the price alone`() = runUnitTest {
         val client = FakeStore(owned = QueryOwnedResult.Success(MovingEyesProduct.All, listOf(record())))
-        val entitlements = entitlements(client, ignoreStoreGrants = true)
+        val cache = FakeAppCache(AppData(ignoreStoreGrants = true))
+        val entitlements = entitlements(client, cache = cache)
 
         entitlements.refresh()
 
@@ -219,26 +233,14 @@ class EntitlementsImplTest : CoroutineTest() {
         cached: Boolean = false,
         cache: FakeAppCache = FakeAppCache(AppData(isUnlocked = cached)),
         events: FakeAppEvents = FakeAppEvents(),
-        ignoreStoreGrants: Boolean = false,
     ) = EntitlementsImpl(
         billingClient = client,
         appCache = cache,
         clock = FixedClock,
         appEvents = events.appEvents,
-        ignoreStoreGrants = FakeIgnoreStoreGrants(ignoreStoreGrants),
         appScope = AppCoroutineScope(dispatchers),
     )
 
-    private object EmptyConfigMap : AppConfigMap() {
-        override val map: Map<String, *> = emptyMap<String, Any>()
-    }
-
-    /** Overrides the resolved value rather than seeding a config map, so the
-     *  test says what it means without depending on the config pipeline. */
-    private class FakeIgnoreStoreGrants(private val enabled: Boolean) :
-        IgnoreStoreGrants(EmptyConfigMap) {
-        override fun resolveValue(): Boolean = enabled
-    }
 
     /** Drives [AppEvent.OnForeground] through the replay-free `live()` stream. */
     private class FakeAppEvents {

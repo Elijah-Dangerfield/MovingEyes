@@ -86,8 +86,13 @@ class QaConfigViewModel(
      */
     fun clearEntitlement() {
         viewModelScope.launch {
-            appCache.update { it.copy(isUnlocked = false, unlockedAtEpochMs = 0L) }
-            _lastBillingResult.value = "Cleared — relaunch to see it take effect"
+            // ignoreStoreGrants at the same time, or this button does nothing
+            // it claims to: the store still reports the account owns it, and
+            // the next refresh grants it straight back.
+            appCache.update {
+                it.copy(isUnlocked = false, unlockedAtEpochMs = 0L, ignoreStoreGrants = true)
+            }
+            _lastBillingResult.value = "Cleared. The store can no longer re-grant it; buy to undo."
         }
     }
 

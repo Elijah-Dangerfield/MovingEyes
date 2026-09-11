@@ -38,6 +38,23 @@ data class AppData(
      */
     val isUnlocked: Boolean = false,
 
+    /**
+     * QA escape hatch: stop the store re-granting the unlock.
+     *
+     * A non-consumable belongs to a store account for good, and Apple offers
+     * no way to un-own one for a real Apple Account. So on TestFlight the
+     * first sandbox purchase made the paywall permanently unreachable:
+     * clearing [isUnlocked] worked, and the next launch asked the store,
+     * heard "owned", and granted it back. Clear entitlement sets this at the
+     * same time so the clear actually sticks.
+     *
+     * Local rather than a remote config flag, because remote config is the
+     * other thing that can fail, and a QA tool that needs a working network
+     * is a QA tool that fails exactly when you need it. Cleared automatically
+     * by a real purchase.
+     */
+    val ignoreStoreGrants: Boolean = false,
+
     /** Epoch-ms of the purchase or first successful restore. 0 = never. */
     val unlockedAtEpochMs: Long = 0L,
 

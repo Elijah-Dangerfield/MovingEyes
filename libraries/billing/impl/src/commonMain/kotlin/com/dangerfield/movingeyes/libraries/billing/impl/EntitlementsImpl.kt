@@ -4,7 +4,6 @@ import com.dangerfield.movingeyes.libraries.billing.BillingClient
 import com.dangerfield.movingeyes.libraries.billing.BillingProduct
 import com.dangerfield.movingeyes.libraries.billing.ConnectionState
 import com.dangerfield.movingeyes.libraries.billing.Entitlements
-import com.dangerfield.movingeyes.libraries.billing.IgnoreStoreGrants
 import com.dangerfield.movingeyes.libraries.billing.MovingEyesProduct
 import com.dangerfield.movingeyes.libraries.billing.PurchaseOutcome
 import com.dangerfield.movingeyes.libraries.billing.PurchaseRecord
@@ -24,7 +23,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import me.tatarka.inject.annotations.Inject
@@ -52,7 +53,6 @@ class EntitlementsImpl(
     private val appCache: AppCache,
     private val clock: Clock,
     private val appEvents: AppEvents,
-    private val ignoreStoreGrants: IgnoreStoreGrants,
     private val appScope: AppCoroutineScope,
 ) : Entitlements, AutoInit {
 
@@ -75,6 +75,24 @@ class EntitlementsImpl(
             refresh()
         }
         observeForegroundForRefresh()
+        observeCacheForRevocation()
+    }
+
+    /**
+     * Mirror the cache, so clearing the grant takes effect on the spot.
+     *
+     * This does not weaken the never-revoke rule. The store still cannot take
+     * an unlock away: [refresh] only ever grants. The cache is the grant, and
+     * the only thing that writes false to it is the QA menu, which is a human
+     * deliberately asking. Before this the QA screen had to say "relaunch to
+     * see it take effect", which read as the button not working.
+     */
+    private fun observeCacheForRevocation() {
+        appCache.updates
+            .map { it.isUnlocked }
+            .distinctUntilChanged()
+            .onEach { _isUnlocked.value = it }
+            .launchIn(appScope)
     }
 
     /**
@@ -128,6 +146,8 @@ class EntitlementsImpl(
             QueryProductsResult.NotConnected -> Unit
         }
 
+        val suppressed = Catching { appCache.get().ignoreStoreGrants }.getOrDefault(false)
+
         when (val owned = billingClient.queryOwnedSkus()) {
             is QueryOwnedResult.Success -> {
                 // Grant only. An empty result is a legitimate "this account
@@ -139,8 +159,8 @@ class EntitlementsImpl(
                     owned.purchases
                         .firstOrNull { it.sku == MovingEyesProduct.UnlockEverything }
                         ?.let { acknowledgeIfNeeded(it) }
-                    if (ignoreStoreGrants()) {
-                        logger.d { "Store says owned; ignoring it because the QA flag is on" }
+                    if (suppressed) {
+                        logger.d { "Store says owned; QA asked us to ignore that" }
                     } else {
                         grant(source = "restore")
                     }
@@ -249,7 +269,14 @@ class EntitlementsImpl(
         _isUnlocked.value = true
         Catching {
             appCache.update {
-                it.copy(isUnlocked = true, unlockedAtEpochMs = clock.now().toEpochMilliseconds())
+                // Lifts the QA suppression too: someone who just bought it
+                // means it, and leaving the flag set would hide the thing they
+                // paid for on the next launch.
+                it.copy(
+                    isUnlocked = true,
+                    unlockedAtEpochMs = clock.now().toEpochMilliseconds(),
+                    ignoreStoreGrants = false,
+                )
             }
         }.onFailure { error ->
             // The in-memory flag still stands for this run, so the user gets
