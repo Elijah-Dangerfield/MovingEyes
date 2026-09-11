@@ -11,6 +11,17 @@ android {
     namespace = "com.dangerfield.movingeyes.libraries.telemetry.impl"
 }
 
+// The OTel exporters bring in ktor-client-cio, and CIO on Native throws
+// "TLS sessions are not supported on Native platform" for any https request.
+// We never ask for CIO, but Ktor resolves an engine off the classpath whenever
+// HttpClient is built without an explicit one, and CIO was winning that race
+// for every request the iOS app made. That is why remote config silently
+// stopped updating on iOS and the OTLP export never left the device. Darwin is
+// declared per-platform below and should be the only engine resolvable there.
+configurations.configureEach {
+    exclude(group = "io.ktor", module = "ktor-client-cio")
+}
+
 kotlin {
     sourceSets {
         commonMain.dependencies {
