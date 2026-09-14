@@ -34,3 +34,6 @@ apps/ios/fastlane/.env.local
 *.jks
 *.keystore
 *.p12
+
+# Scratch explanation docs written by the `explain` skill. Not repo content.
+explain-*.md
