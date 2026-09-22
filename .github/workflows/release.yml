@@ -522,15 +522,30 @@ jobs:
           PY
           )
           rm -f "$KEY_PATH"
-          RESP=$(curl -fsS -H "Authorization: Bearer $TOKEN" "https://api.appstoreconnect.apple.com/v1/apps?filter[bundleId]=$BUNDLE_ID&limit=1" || echo '{"data":[]}')
-          APP_COUNT=$(echo "$RESP" | python3 -c 'import json,sys;print(len(json.load(sys.stdin).get("data",[])))' 2>/dev/null || echo "0")
+          # -g is load-bearing. curl treats [ and ] in a URL as glob syntax, so
+          # without it this request never leaves the machine: it aborts with
+          # "bad range in URL", the || fallback substitutes an empty result set,
+          # and an app that plainly exists reads as "no app record, first
+          # release". Every release before 2026-09-22 skipped the App Store
+          # submission for that reason and reported success while doing it.
+          if ! RESP=$(curl -g -fsS -H "Authorization: Bearer $TOKEN" "https://api.appstoreconnect.apple.com/v1/apps?filter[bundleId]=$BUNDLE_ID&limit=1"); then
+            echo "::error::Could not ask App Store Connect whether $BUNDLE_ID exists."
+            echo "A failed query is not evidence of a first release. Refusing to"
+            echo "guess, because guessing wrong silently downgrades a production"
+            echo "release to a TestFlight upload."
+            exit 1
+          fi
+          APP_COUNT=$(echo "$RESP" | python3 -c 'import json,sys;print(len(json.load(sys.stdin).get("data",[])))')
           if [ "$APP_COUNT" = "0" ]; then
             echo "::warning::No app record found on App Store Connect for $BUNDLE_ID — first release. TestFlight internal only; skipping App Store submission."
             echo "is_first_release=true" >> "$GITHUB_OUTPUT"
           else
             APP_ID=$(echo "$RESP" | python3 -c 'import json,sys;print(json.load(sys.stdin)["data"][0]["id"])')
-            BUILDS=$(curl -fsS -H "Authorization: Bearer $TOKEN" "https://api.appstoreconnect.apple.com/v1/apps/$APP_ID/builds?limit=1" || echo '{"data":[]}')
-            BUILD_COUNT=$(echo "$BUILDS" | python3 -c 'import json,sys;print(len(json.load(sys.stdin).get("data",[])))' 2>/dev/null || echo "0")
+            if ! BUILDS=$(curl -g -fsS -H "Authorization: Bearer $TOKEN" "https://api.appstoreconnect.apple.com/v1/apps/$APP_ID/builds?limit=1"); then
+              echo "::error::Could not list builds for $APP_ID on App Store Connect."
+              exit 1
+            fi
+            BUILD_COUNT=$(echo "$BUILDS" | python3 -c 'import json,sys;print(len(json.load(sys.stdin).get("data",[])))')
             if [ "$BUILD_COUNT" = "0" ]; then
               echo "::warning::App exists on ASC but has zero builds — first release. TestFlight internal only; skipping App Store submission."
               echo "is_first_release=true" >> "$GITHUB_OUTPUT"
