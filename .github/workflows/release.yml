@@ -458,7 +458,11 @@ jobs:
       - name: Set up Ruby / Bundler
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: "3.2"
+          # Matches the Ruby developers run locally. apps/ios/Gemfile.lock is
+          # committed and resolves excon 1.7.1, which needs >= 3.3, so a
+          # runner on 3.2 cannot install the lock at all and the job dies in
+          # bundler before fastlane starts. Bump both together or not at all.
+          ruby-version: "3.4"
           bundler-cache: true
           working-directory: apps/ios
 
