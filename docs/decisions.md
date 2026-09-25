@@ -6,6 +6,35 @@ the decision, alternatives considered, and *why*. Newest first.
 
 ---
 
+## 2026-09-25 — Show the install id, but no in-app "delete local data"
+
+**Decision:** Settings shows the install id so a request to
+`nightjarlabs.llc/delete-data` can name something. It does not offer an action
+that wipes local state and mints a fresh id.
+
+**Alternative considered:** the companion action Doublestack ships
+(`PlayerDataEraser.kt`), which the queued task recommended doing at the same
+time on the grounds that "either alone is half an answer."
+
+**Why not.** For this app that action is a reset button wearing a privacy
+label. There are no accounts and no backend, so everything local already dies
+with the app, and uninstalling is a gesture people know without discovering a
+settings row. What uninstalling cannot reach is the events already sent to
+Sentry, and the only key on those is the install id, which is the half that
+shipped.
+
+It would also destroy saved scenes, which nothing recovers, to solve a problem
+the user has a better tool for.
+
+No compliance pressure either way: Play's deletion requirement keys off account
+creation and this app has none.
+
+**Revisit if** the app grows accounts, a backend, or local state a player would
+plausibly want reset without reinstalling. Doublestack's version is not wrong
+there, it just answers a question this app does not have.
+
+---
+
 ## 2026-09-01 — No accounts, no backend, no sync
 
 **Decision:** deleted `:apps:server`, `:apps:admin`, `:apps:integration`,
