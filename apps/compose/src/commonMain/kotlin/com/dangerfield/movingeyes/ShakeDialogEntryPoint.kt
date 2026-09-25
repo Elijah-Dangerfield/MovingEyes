@@ -10,6 +10,8 @@ import com.dangerfield.movingeyes.libraries.navigation.DesignSystemRoute
 import com.dangerfield.movingeyes.libraries.navigation.FeatureEntryPoint
 import com.dangerfield.movingeyes.libraries.navigation.Router
 import com.dangerfield.movingeyes.libraries.navigation.EyeGalleryRoute
+import com.dangerfield.movingeyes.libraries.core.BuildInfo
+import com.dangerfield.movingeyes.libraries.core.isQaBuild
 import com.dangerfield.movingeyes.libraries.navigation.QaConfigRoute
 import com.dangerfield.movingeyes.libraries.navigation.dialog
 import com.dangerfield.movingeyes.libraries.navigation.routeDeepLink
@@ -23,13 +25,22 @@ import software.amazon.lastmile.kotlin.inject.anvil.ContributesBinding
 import software.amazon.lastmile.kotlin.inject.anvil.SingleIn
 
 /**
- * The QA menu. `ShakeHandler` only arms the accelerometer on a
- * [BuildInfo.isQaBuild], which is debug plus the `beta` channel, so nothing
- * here can surface in a store binary.
+ * The QA menu, registered only on a [BuildInfo.isQaBuild].
  *
- * Beta is included because Clear entitlement is the only route back to a
- * locked state, grants being permanent by design, and a TestFlight tester who
- * has already unlocked otherwise cannot reach the paywall again.
+ * The gate is on the routes themselves and has to be. It used to say that
+ * `ShakeHandler` not arming the accelerometer kept this out of a store binary,
+ * which was wrong in a way that shipped: these screens are reached by deep
+ * link, the shake only files a bug report, and the links were registered
+ * unconditionally. `movingeyes://qa-config` opened the config menu in
+ * production on both stores, and that menu can switch the app to the fake
+ * billing client, where the unlock is free. The URL is in `docs/` in a public
+ * repo.
+ *
+ * Beta is included so a TestFlight tester can reach Clear entitlement, which
+ * is the only route back to a locked state. See [BuildInfo.isQaBuild] for why
+ * that is not enough on its own: a TestFlight build promoted to the App Store
+ * keeps `beta`, so the money path is defended in `RealPurchasesEnabled`
+ * instead of here.
  */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class, multibinding = true)
@@ -39,6 +50,8 @@ class ShakeDialogEntryPoint(
 ) : FeatureEntryPoint {
 
     override fun NavGraphBuilder.buildNavGraph(router: Router) {
+        if (!BuildInfo.isQaBuild) return
+
         // Reached by deep link only, now that shake files a bug report instead
         // of opening a menu. Which is also what makes them usable from a
         // script and on a device with no accelerometer:

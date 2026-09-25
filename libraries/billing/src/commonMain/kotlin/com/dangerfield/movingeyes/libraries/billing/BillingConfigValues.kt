@@ -1,6 +1,7 @@
 package com.dangerfield.movingeyes.libraries.billing
 
 import com.dangerfield.movingeyes.libraries.config.AppConfigMap
+import com.dangerfield.movingeyes.libraries.core.BuildInfo
 import com.dangerfield.movingeyes.libraries.config.FlagConfigValue
 import com.dangerfield.movingeyes.libraries.config.QaConfigValue
 import me.tatarka.inject.annotations.Inject
@@ -38,4 +39,21 @@ open class RealPurchasesEnabled(appConfigMap: AppConfigMap) : FlagConfigValue(ap
     override val path = "billing.realPurchasesEnabled"
     override val default = true
     override val debugOverride: Boolean? = false
+
+    /**
+     * Nothing outside a debug build can turn this off.
+     *
+     * The QA menu can override any config value, and this is the one whose
+     * override is worth money: false swaps in [FakeBillingClient], whose
+     * catalog grants the unlock for nothing. The menu itself is gated on
+     * [BuildInfo.isQaBuild], which includes the `beta` channel, and a
+     * TestFlight build promoted to the App Store keeps that channel. So the
+     * gate alone would have left the live store build one toggle away from
+     * free.
+     *
+     * A store build therefore ignores the override entirely rather than
+     * trusting the gate above it.
+     */
+    override fun resolveValue(): Boolean =
+        if (BuildInfo.isDebug) super.resolveValue() else true
 }
