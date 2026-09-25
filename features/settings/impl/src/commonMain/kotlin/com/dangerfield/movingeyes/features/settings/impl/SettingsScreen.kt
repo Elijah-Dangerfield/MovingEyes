@@ -39,12 +39,27 @@ import movingeyes.libraries.resources.generated.resources.settings_title
 import movingeyes.libraries.resources.generated.resources.settings_unlock
 import movingeyes.libraries.resources.generated.resources.settings_version
 import org.jetbrains.compose.resources.stringResource
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
+import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.seconds
+import movingeyes.libraries.resources.generated.resources.settings_install_id
+import movingeyes.libraries.resources.generated.resources.settings_install_id_copied
+import movingeyes.libraries.resources.generated.resources.settings_install_id_copy
+import movingeyes.libraries.resources.generated.resources.settings_install_id_detail
 
 @Composable
 fun SettingsScreen(
     isUnlocked: Boolean,
     reduceFlashing: Boolean,
     versionName: String,
+    installId: String?,
     onReduceFlashingChange: (Boolean) -> Unit,
     onUnlock: () -> Unit,
     onRestore: () -> Unit,
@@ -135,6 +150,13 @@ fun SettingsScreen(
         LinkRow(stringResource(Res.string.settings_privacy), onOpenPrivacy)
         LinkRow(stringResource(Res.string.settings_support), onOpenSupport)
 
+        // Hidden until the provider has hydrated, which is a few milliseconds
+        // at cold boot. A support form is the one place a half-rendered
+        // identifier does real harm.
+        if (installId != null) {
+            InstallIdRow(installId)
+        }
+
         Text(
             text = stringResource(Res.string.settings_version, versionName),
             typography = AppTheme.typography.Caption.C300,
@@ -183,3 +205,68 @@ private fun LinkRow(title: String, onClick: () -> Unit) {
             .padding(vertical = Dimension.D300),
     )
 }
+
+/**
+ * The install id, so a deletion request can name something.
+ *
+ * `nightjarlabs.llc/delete-data` asks for this id, and it is the only key on
+ * anything we hold: events carry no name, email or account, because there is
+ * none to carry. A player who cannot read it off their own phone sends a
+ * request nobody can action.
+ *
+ * Monospaced and selectable as well as copyable. Copy fails silently often
+ * enough (a locked clipboard, a restricted profile) that being able to read
+ * the characters aloud has to work too.
+ */
+@Composable
+private fun InstallIdRow(installId: String) {
+    val clipboard = LocalClipboardManager.current
+    var copied by remember { mutableStateOf(false) }
+    val copiedLabel = stringResource(Res.string.settings_install_id_copied)
+    val copyLabel = stringResource(Res.string.settings_install_id_copy)
+
+    LaunchedEffect(copied) {
+        if (copied) {
+            delay(CopiedLabelDuration)
+            copied = false
+        }
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(Dimension.D200)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(Res.string.settings_install_id),
+                typography = AppTheme.typography.Body.B700,
+            )
+            Text(
+                text = if (copied) copiedLabel else copyLabel,
+                typography = AppTheme.typography.Label.L500,
+                color = AppTheme.colors.accentPrimary,
+                modifier = Modifier
+                    .clickable {
+                        clipboard.setText(AnnotatedString(installId))
+                        copied = true
+                    }
+                    .padding(vertical = Dimension.D200),
+            )
+        }
+        SelectionContainer {
+            Text(
+                text = installId,
+                typography = AppTheme.typography.Readout.R300,
+                color = AppTheme.colors.textSecondary,
+            )
+        }
+        Text(
+            text = stringResource(Res.string.settings_install_id_detail),
+            typography = AppTheme.typography.Caption.C300,
+            color = AppTheme.colors.textTertiary,
+        )
+    }
+}
+
+private val CopiedLabelDuration = 2.seconds

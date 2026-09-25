@@ -229,6 +229,21 @@
     <string name="settings_send_feedback">Send feedback</string>
     <string name="settings_privacy">Privacy policy</string>
     <string name="settings_support">Support</string>
+    <!--
+      The install ID, shown so a data-deletion request can name something.
+      nightjarlabs.llc/delete-data asks for it, and it is the only key on
+      anything sent to Sentry: there is no account, no email and no name behind
+      any of it.
+
+      Worded as a reference number rather than an account number, because this
+      app has no accounts and calling it one would imply something is stored
+      that is not. The body says what it is for so nobody wonders whether it
+      identifies them personally.
+    -->
+    <string name="settings_install_id">Reference ID</string>
+    <string name="settings_install_id_detail">Quote this if you ask me to delete your data. It is a random number for this install, not an account.</string>
+    <string name="settings_install_id_copy">Copy</string>
+    <string name="settings_install_id_copied">Copied</string>
     <string name="settings_version">Version %1$s</string>
 
     <!--

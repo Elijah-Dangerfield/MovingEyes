@@ -19,7 +19,7 @@ class SettingsViewModel(
 
     init {
         appCache.updates
-            .onEach { takeAction(SettingsAction.Loaded(it.reduceFlashing)) }
+            .onEach { takeAction(SettingsAction.Loaded(it.reduceFlashing, it.installId)) }
             .launchIn(viewModelScope)
 
         entitlements.isUnlocked
@@ -30,7 +30,7 @@ class SettingsViewModel(
     override suspend fun handleAction(action: SettingsAction) {
         when (action) {
             is SettingsAction.Loaded -> action.updateState {
-                it.copy(reduceFlashing = action.reduceFlashing)
+                it.copy(reduceFlashing = action.reduceFlashing, installId = action.installId)
             }
 
             is SettingsAction.UnlockChanged -> action.updateState {
@@ -53,10 +53,18 @@ data class SettingsViewState(
     val isUnlocked: Boolean = false,
     val reduceFlashing: Boolean = false,
     val versionName: String = BuildInfo.versionName,
+
+    /**
+     * Null until `CachedInstallIdProvider` finishes its one-shot hydrate, which
+     * is a few milliseconds at cold boot. The row is hidden until then rather
+     * than showing an empty box, because a support form is the one place a
+     * half-rendered identifier does real harm.
+     */
+    val installId: String? = null,
 )
 
 sealed interface SettingsAction {
-    data class Loaded(val reduceFlashing: Boolean) : SettingsAction
+    data class Loaded(val reduceFlashing: Boolean, val installId: String?) : SettingsAction
     data class UnlockChanged(val isUnlocked: Boolean) : SettingsAction
     data class SetReduceFlashing(val enabled: Boolean) : SettingsAction
     data object Restore : SettingsAction

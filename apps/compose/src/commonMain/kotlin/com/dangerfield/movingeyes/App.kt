@@ -94,18 +94,27 @@ fun App(appComponent: AppComponent) {
         }
     }
 
+    // 20 in 5 seconds, not 6 in 60. The old numbers called 0.1 recompositions
+    // per second "rapid", which is not a rate any renderer would notice, and
+    // the alarm reports at error level so every trip opened a Sentry issue. It
+    // fired on a real customer at 18 in a minute and cost an afternoon to chase
+    // something that turned out to be unreproducible on either platform, in
+    // every scenario including the one it was measured in.
+    //
+    // The component's own default is 40 in 2 seconds. That is too lax for a
+    // root composable, which should re-run approximately never, so this sits
+    // between the two: 4 per second sustained across 5 seconds is a real
+    // symptom, and nothing healthy reaches it.
     RecompositionCounter(
         tag = "App",
         logEvery = 1,
-        rapidRecompositionThreshold = 6,
-        rapidRecompositionWindow = 60.seconds,
+        rapidRecompositionThreshold = 20,
+        rapidRecompositionWindow = 5.seconds,
         onRecompose = { count ->
-            val message = if (count == 1L) {
-                "App recomposed (this should be rare)"
-            } else {
-                "App recomposed $count times"
-            }
-            appRecomposeLogger.w { message }
+            // The first pass is the initial composition, not a recomposition.
+            // Warning about it meant every launch logged "this should be rare"
+            // about the one thing that always happens.
+            if (count > 1L) appRecomposeLogger.w { "App recomposed $count times" }
         },
         onRapidRecomposition = { info ->
             appRecomposeLogger.e {

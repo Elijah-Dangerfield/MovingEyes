@@ -43,6 +43,7 @@ class SettingsFeatureEntryPoint(
                 onReduceFlashingChange = {
                     settingsViewModel.takeAction(SettingsAction.SetReduceFlashing(it))
                 },
+                installId = state.installId,
                 onUnlock = { router.navigate(PaywallRoute(PaywallTrigger.Settings)) },
                 onRestore = { settingsViewModel.takeAction(SettingsAction.Restore) },
                 onOpenPrivacy = { router.openWebLink(PrivacyUrl) },
