@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0](https://github.com/Elijah-Dangerfield/MovingEyes/compare/v1.1.0...v1.2.0) (2026-09-25)
+
+
+### Features
+
+* show the install id in Settings, and stop crying wolf about recomposition ([ac9d804](https://github.com/Elijah-Dangerfield/MovingEyes/commit/ac9d8043f0da36be6bd40500e5cddc25c20b67e9))
+
+
+### Bug Fixes
+
+* the QA menu was reachable in production, one toggle from a free unlock ([04349c9](https://github.com/Elijah-Dangerfield/MovingEyes/commit/04349c96744be5e7dbda448a05ddeaa8ebc79f47))
+
 ## [1.1.0](https://github.com/Elijah-Dangerfield/MovingEyes/compare/v1.0.0...v1.1.0) (2026-09-22)
 
 
