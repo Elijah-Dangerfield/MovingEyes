@@ -1,3 +1,1 @@
-Settings now shows a reference ID, so you can quote it if you ask me to delete your data.
-
-Plus a handful of fixes.
+Settings now shows a reference ID. It is how I find your data if you ever ask me to delete it.

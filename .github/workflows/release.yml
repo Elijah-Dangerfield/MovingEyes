@@ -267,7 +267,7 @@ jobs:
           if [ -f "$NOTES_FILE" ]; then
             head -c 500 "$NOTES_FILE" > apps/compose/build/play-release-notes/en-US/default.txt
           else
-            echo "Bug fixes and improvements." > apps/compose/build/play-release-notes/en-US/default.txt
+            echo "Small fixes." > apps/compose/build/play-release-notes/en-US/default.txt
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -586,7 +586,7 @@ jobs:
           if [ -f "$NOTES_FILE" ]; then
             BODY=$(cat "$NOTES_FILE")
           else
-            BODY="Bug fixes and improvements."
+            BODY="Small fixes."
           fi
           {
             echo "notes<<EOF"
