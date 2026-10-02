@@ -8,7 +8,7 @@
 # Jobs (in order):
 #   resolve-tag           — normalizes tag + version from trigger input.
 #   android               — signs AAB, renders release notes, uploads to
-#                           Play Console production track (10% staged),
+#                           Play Console production track (full rollout),
 #                           creates Sentry release + uploads mappings.
 #                           Uploads AAB/APK artifacts to the GitHub Release.
 #   ios                   — builds IPA, uploads to TestFlight external group
@@ -18,12 +18,12 @@
 #   attach-artifacts      — attaches all platform binaries to the GH Release.
 #
 # Side effects: HUGE. Real builds go to TestFlight external testers and into
-#               the App Store review queue; Android goes to Play production
-#               (staged). Only trigger this with intention.
+#               the App Store review queue; Android goes to every Play
+#               production user at once. Only trigger this with intention.
 # Escape hatches: `skip_app_store` and `skip_play_store` inputs on
 #                 workflow_dispatch if one platform needs re-running.
 # Edit to change: apps/ios/fastlane/Fastfile (iOS submission details),
-#                 this file's Play upload step (track, userFraction).
+#                 this file's Play upload step (track, status).
 # See: docs/release-automation.md → "Cutting a release"
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -236,10 +236,10 @@ jobs:
           curl -fsS -X DELETE -H "Authorization: Bearer $TOKEN" "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$PKG/edits/$EDIT_ID" || true
           rm -f "$SA_JSON"
           if [ "$HAS_RELEASE" = "yes" ]; then
-            echo "Existing production track found — using production (staged 10%)"
+            echo "Existing production track found — using production (full rollout)"
             {
               echo "track=production"
-              echo "status=inProgress"
+              echo "status=completed"
               echo "is_first_release=false"
             } >> "$GITHUB_OUTPUT"
           else
@@ -291,8 +291,15 @@ jobs:
       - name: Submit to Play Console
         # Track + status are resolved above: `internal` + `completed` on the
         # very first release (Play won't accept an automated production upload
-        # without a pre-existing draft); `production` + `inProgress` (10% staged)
-        # on subsequent releases.
+        # without a pre-existing draft); `production` + `completed` on every
+        # release after that.
+        #
+        # No userFraction. A staged rollout only pays off if someone is
+        # watching the crash rate and willing to halt it, and nobody here is
+        # doing that between a merge and going to bed. What it bought instead
+        # was a fix sitting at 10% while the other 90% stayed on the build it
+        # fixed, and a rollout that silently restarted at 10% every time a
+        # follow-up release went out.
         if: ${{ !inputs.skip_play_store && env.PLAY_SERVICE_ACCOUNT_JSON != '' }}
         uses: r0adkll/upload-google-play@v1
         env:
@@ -303,7 +310,6 @@ jobs:
           releaseFiles: ${{ steps.aab.outputs.path }}
           track: ${{ steps.play_track.outputs.track || 'internal' }}
           status: ${{ steps.play_track.outputs.status || 'completed' }}
-          userFraction: ${{ steps.play_track.outputs.track == 'production' && '0.10' || '' }}
           whatsNewDirectory: apps/compose/build/play-release-notes
           mappingFile: ${{ steps.mapping.outputs.path }}
           # debugSymbols omitted — no native (.so) libraries are shipped.

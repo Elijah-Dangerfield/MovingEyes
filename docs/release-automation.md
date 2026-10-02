@@ -11,7 +11,7 @@ This template ships to the App Store and Play Store with no human clicks after o
 1. There is always (well — whenever there are new `fix:`/`feat:`/`perf:` commits on main) an open PR titled **`chore(main): release vX.Y.Z`**, opened automatically by the release-please bot. It contains the version bump + changelog.
 2. **Merge that PR.** release-please creates the `vX.Y.Z` tag + GitHub Release.
 3. release-please.yml then dispatches [release.yml](../.github/workflows/release.yml) for that tag (it can't rely on the tag-push trigger — GitHub's default `GITHUB_TOKEN` deliberately doesn't cascade workflow triggers). release.yml:
-   - Android → Play Console production track, 10% staged rollout
+   - Android → Play Console production track, full rollout
    - iOS → TestFlight external group "main" → submitted to App Store review with Apple's built-in phased release
 4. Apple review (1–3 days) and Play review (few hours) approve. Builds roll out automatically.
 
@@ -56,7 +56,11 @@ Each run:
 
 ### Post-release monitoring
 
-There's no automated rollout guard. Apple's built-in phased release (7-day gradual rollout from 1% → 100%) and Play's staged rollout (10% initial) give you a safety window. For detection, configure Sentry's native alerting (Sentry → Alerts → create a rule on *crash-free sessions* below 99% for the relevant project) and halt manually in App Store Connect / Play Console when needed.
+There's no automated rollout guard, and on Android there is no longer a manual one either: Play goes straight to 100%. Apple's built-in phased release still ramps 1% → 100% over 7 days and can be halted in App Store Connect.
+
+Play's staged rollout was dropped on 2026-10-02. It only pays off if someone is watching the crash rate and willing to halt it, and in practice nobody was. What it cost was real: a security fix sat at 10% while the other 90% stayed on the build it fixed, and every follow-up release silently restarted the rollout at 10%.
+
+For detection, configure Sentry's native alerting (Sentry → Alerts → create a rule on *crash-free sessions* below 99% for the relevant project). On Android a bad release is rolled back by shipping another one, so keep the release pipeline fast rather than the rollout slow.
 
 ---
 
@@ -79,7 +83,7 @@ main ─── push ──► release-please (bot) maintains open "release vX.Y.
                         │ release-please.yml dispatches release.yml
                         │ (GITHUB_TOKEN doesn't cascade tag triggers)
                         ▼
-                 release.yml ── Android AAB ──► Play production (10% staged)
+                 release.yml ── Android AAB ──► Play production (full rollout)
                              ── iOS IPA ─────► TestFlight "main" external
                              ── App Store ──► submit + phased rollout
                              ── Sentry ─────► create release + upload mappings
