@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/Elijah-Dangerfield/MovingEyes/compare/v1.2.0...v1.2.1) (2026-10-02)
+
+
+### Bug Fixes
+
+* give the store a release note a person can read ([73b323f](https://github.com/Elijah-Dangerfield/MovingEyes/commit/73b323f0f49e6e388c85a54312c9d42cb53b3b4c))
+
 ## [1.2.0](https://github.com/Elijah-Dangerfield/MovingEyes/compare/v1.1.0...v1.2.0) (2026-09-25)
 
 
