@@ -253,12 +253,22 @@ jobs:
 
       - name: Render release notes for Play
         run: |
+          # Never the GitHub release body. That is release-please's changelog:
+          # markdown headings, bullet syntax, commit shas and repo links, and
+          # commit subjects written for other developers. Shipped verbatim it
+          # renders as literal "##" on the store page, which is what happened
+          # on the App Store for 1.2.0.
+          #
+          # release-notes/<version>.txt is the override, written by a human for
+          # the releases that deserve real notes. Keyed by version so it cannot
+          # go stale and ship the previous release's text.
           mkdir -p apps/compose/build/play-release-notes/en-US
-          {
-            echo "v${{ needs.resolve-tag.outputs.version }}"
-            echo ""
-            gh release view "${{ needs.resolve-tag.outputs.tag }}" --json body -q .body 2>/dev/null || echo "See CHANGELOG.md for details."
-          } | head -c 500 > apps/compose/build/play-release-notes/en-US/default.txt
+          NOTES_FILE="release-notes/${{ needs.resolve-tag.outputs.version }}.txt"
+          if [ -f "$NOTES_FILE" ]; then
+            head -c 500 "$NOTES_FILE" > apps/compose/build/play-release-notes/en-US/default.txt
+          else
+            echo "Bug fixes and improvements." > apps/compose/build/play-release-notes/en-US/default.txt
+          fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -569,9 +579,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          BODY=$(gh release view "${{ needs.resolve-tag.outputs.tag }}" --json body -q .body 2>/dev/null || true)
-          if [ -z "$BODY" ]; then
-            BODY="v${{ needs.resolve-tag.outputs.version }}"
+          # Same rule as the Play step above: the release body is developer
+          # changelog markdown and goes nowhere near a store listing. This
+          # feeds both the TestFlight changelog and the App Store "What's New".
+          NOTES_FILE="release-notes/${{ needs.resolve-tag.outputs.version }}.txt"
+          if [ -f "$NOTES_FILE" ]; then
+            BODY=$(cat "$NOTES_FILE")
+          else
+            BODY="Bug fixes and improvements."
           fi
           {
             echo "notes<<EOF"
