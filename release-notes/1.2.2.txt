@@ -1,0 +1,1 @@
+Slow payment methods no longer look like a failed purchase. If you pay by cash or bank transfer, or a parent has to approve it, everything unlocks once the payment lands.
