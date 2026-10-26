@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/Elijah-Dangerfield/MovingEyes/compare/v1.2.1...v1.2.2) (2026-10-26)
+
+
+### Bug Fixes
+
+* a pending payment is not a failed purchase ([b22d676](https://github.com/Elijah-Dangerfield/MovingEyes/commit/b22d676b5f54cd0a9c5f98796c3a0a578aa11a1a))
+
 ## [1.2.1](https://github.com/Elijah-Dangerfield/MovingEyes/compare/v1.2.0...v1.2.1) (2026-10-02)
 
 
