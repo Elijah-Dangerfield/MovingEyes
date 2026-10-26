@@ -77,6 +77,31 @@ class EntitlementsImplTest : CoroutineTest() {
     }
 
     @Test
+    fun `a pending purchase is not a failure`() = runUnitTest {
+        val client = FakeStore(purchase = PurchaseResult.Pending)
+        val entitlements = entitlements(client)
+
+        val outcome = entitlements.purchase()
+
+        // Play returns this for cash and bank transfers, StoreKit for Ask to
+        // Buy. Reporting it as Failed told a customer mid-payment that it had
+        // not worked, and the unlock then arrived on its own.
+        assertEquals(PurchaseOutcome.Pending, outcome)
+    }
+
+    @Test
+    fun `a pending purchase grants nothing yet`() = runUnitTest {
+        val client = FakeStore(purchase = PurchaseResult.Pending)
+        val entitlements = entitlements(client)
+
+        entitlements.purchase()
+
+        // The money has not arrived. The grant comes from the refresh after it
+        // does, not from the order being placed.
+        assertFalse(entitlements.isUnlocked.value)
+    }
+
+    @Test
     fun `buying lifts the suppression`() = runUnitTest {
         val client = FakeStore(purchase = PurchaseResult.Success(record()))
         val cache = FakeAppCache(AppData(ignoreStoreGrants = true))

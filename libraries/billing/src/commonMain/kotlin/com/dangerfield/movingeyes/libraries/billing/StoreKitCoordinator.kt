@@ -140,9 +140,11 @@ fun StoreKitPurchaseResult.toPurchaseResult(): PurchaseResult = when (status) {
     // Ask-to-Buy and similar. Not a failure and not a grant: the transaction
     // arrives later through currentEntitlements, so the next silent refresh
     // picks it up.
-    StoreKitPurchaseStatus.Pending -> PurchaseResult.Failed(
-        errorMessage ?: "Purchase is pending approval",
-    )
+    // Ask to Buy: a child has asked and a parent has not answered. Reporting
+    // it as a failure told the child it broke, and the grant then appeared on
+    // its own once the parent approved, which reads as the app being wrong
+    // twice.
+    StoreKitPurchaseStatus.Pending -> PurchaseResult.Pending
 
     StoreKitPurchaseStatus.Failed -> PurchaseResult.Failed(errorMessage ?: "StoreKit purchase failed")
 }

@@ -19,6 +19,8 @@ import movingeyes.libraries.resources.generated.resources.paywall_nothing_to_res
 import movingeyes.libraries.resources.generated.resources.paywall_restored
 import movingeyes.libraries.resources.generated.resources.paywall_store_unavailable
 import movingeyes.libraries.resources.generated.resources.paywall_failed_title
+import movingeyes.libraries.resources.generated.resources.paywall_pending_title
+import movingeyes.libraries.resources.generated.resources.paywall_pending_body
 import movingeyes.libraries.resources.generated.resources.paywall_failed_body
 import movingeyes.libraries.resources.generated.resources.paywall_unavailable_title
 import movingeyes.libraries.resources.generated.resources.error_dismiss
@@ -118,6 +120,14 @@ private fun PurchaseOutcome?.asError(): PurchaseError? = when (this) {
     is PurchaseOutcome.Failed -> PurchaseError(
         title = Res.string.paywall_failed_title,
         body = Res.string.paywall_failed_body,
+    )
+
+    // Same dialog, opposite message. A deferred payment is not an error and
+    // must not tell anyone to try again: trying again is how someone ends up
+    // paying twice.
+    is PurchaseOutcome.Pending -> PurchaseError(
+        title = Res.string.paywall_pending_title,
+        body = Res.string.paywall_pending_body,
     )
 
     else -> null

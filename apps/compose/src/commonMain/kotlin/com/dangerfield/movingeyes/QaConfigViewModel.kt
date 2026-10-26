@@ -63,6 +63,7 @@ class QaConfigViewModel(
                 PurchaseOutcome.Unlocked -> "Unlocked"
                 PurchaseOutcome.Cancelled -> "Cancelled"
                 PurchaseOutcome.StoreUnavailable -> "Store unavailable"
+                PurchaseOutcome.Pending -> "Pending: waiting on payment"
                 is PurchaseOutcome.Failed -> "Failed: ${outcome.reason}"
             }
         }

@@ -218,13 +218,38 @@ internal class RealPlayBillingClient(
     private fun BillingResult.toPurchaseResult(purchases: List<Purchase>?): PurchaseResult =
         when (responseCode) {
             PlayBilling.BillingResponseCode.OK -> {
-                val purchase = purchases?.firstOrNull { it.purchaseState == Purchase.PurchaseState.PURCHASED }
-                val record = purchase?.toRecords()?.firstOrNull()
-                if (record == null) {
-                    logger.w { "Purchase OK but no PURCHASED item in the update" }
-                    PurchaseResult.Failed("No completed purchase in store response")
-                } else {
-                    PurchaseResult.Success(record)
+                val record = purchases
+                    ?.firstOrNull { it.purchaseState == Purchase.PurchaseState.PURCHASED }
+                    ?.toRecords()?.firstOrNull()
+                when {
+                    record != null -> PurchaseResult.Success(record)
+
+                    // OK with a PENDING item is a deferred payment method:
+                    // cash at a shop, a bank transfer, a carrier bill. The
+                    // order is real and the money has not arrived. This used
+                    // to fall into the branch below and tell a customer in
+                    // Barcelona, mid-payment, that their purchase failed.
+                    //
+                    // The client opts into these at construction with
+                    // enablePendingPurchases, so receiving one is a state we
+                    // asked for rather than a surprise.
+                    purchases?.any { it.purchaseState == Purchase.PurchaseState.PENDING } == true -> {
+                        logger.i { "Purchase pending: the store is waiting on payment" }
+                        PurchaseResult.Pending
+                    }
+
+                    else -> {
+                        // Say what did arrive. The first report of this, from
+                        // a customer in Barcelona on 2026-10-25, could not be
+                        // diagnosed from the event: the old line said only
+                        // that nothing was PURCHASED, so whether the list held
+                        // a PENDING item or was empty stayed unknown.
+                        val states = purchases?.map { it.purchaseState }
+                        logger.w { "Purchase OK but nothing usable. states=$states, count=${purchases?.size ?: 0}" }
+                        PurchaseResult.Failed(
+                            "No completed purchase in store response (states=$states)",
+                        )
+                    }
                 }
             }
 

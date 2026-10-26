@@ -77,6 +77,14 @@ sealed interface PurchaseOutcome {
     /** Store couldn't be reached. Worth a retry. */
     data object StoreUnavailable : PurchaseOutcome
 
+    /**
+     * Ordered, not yet paid for. See [PurchaseResult.Pending].
+     *
+     * Distinct from [Failed] because the two need opposite words. One tells
+     * someone to try again, the other tells them not to.
+     */
+    data object Pending : PurchaseOutcome
+
     /** Anything else, with the store's own words for the log. */
     data class Failed(val reason: String) : PurchaseOutcome
 }

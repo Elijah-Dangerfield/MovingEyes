@@ -79,6 +79,23 @@ sealed interface PurchaseResult {
 
     data class Failed(val reason: String) : PurchaseResult
 
+    /**
+     * The store took the order and the money has not arrived yet.
+     *
+     * Not a failure, and reporting it as one is how a customer who just paid
+     * gets told it did not work. Play returns this for the deferred payment
+     * methods it offers in much of the world: cash at a shop, a bank transfer,
+     * a carrier bill. StoreKit returns it for Ask to Buy, where a child has
+     * asked and a parent has not answered yet.
+     *
+     * Carries no record on purpose. Play forbids acknowledging a purchase
+     * until it settles, and StoreKit hands over no transaction at all, so
+     * there is nothing here worth keeping. The grant arrives on its own: the
+     * silent refresh on the next foreground sees it as owned once the payment
+     * clears.
+     */
+    data object Pending : PurchaseResult
+
     data object NotConnected : PurchaseResult
 }
 

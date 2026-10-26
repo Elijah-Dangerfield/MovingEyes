@@ -190,6 +190,17 @@
     <string name="paywall_failed_title">That didn’t go through</string>
     <string name="paywall_failed_body">Nothing was charged. Try again, and if it keeps happening, Report a bug from Settings so I can see what the store said.</string>
     <string name="paywall_unavailable_title">Couldn’t reach the store</string>
+    <!--
+      A deferred payment, which is an ordinary thing to choose: cash at a shop
+      or a bank transfer on Play, a parent's approval on the App Store. The
+      order is placed and the money has not arrived.
+
+      Deliberately not phrased as an error. Before this it reused the failure
+      copy, so someone halfway through paying was told it had not worked, and
+      then the unlock turned up by itself later.
+    -->
+    <string name="paywall_pending_title">Waiting on your payment</string>
+    <string name="paywall_pending_body">The store has your order. Everything unlocks by itself once the payment goes through, so there is nothing else for you to do.</string>
     <string name="paywall_nothing_to_restore">No purchase found on this store account.</string>
     <string name="paywall_restored">Restored. Everything is unlocked.</string>
 

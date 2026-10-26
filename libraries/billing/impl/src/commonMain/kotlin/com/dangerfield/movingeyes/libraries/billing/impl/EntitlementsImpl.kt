@@ -214,6 +214,16 @@ class EntitlementsImpl(
             PurchaseResult.UserCancelled -> PurchaseOutcome.Cancelled
             PurchaseResult.NotConnected -> PurchaseOutcome.StoreUnavailable
 
+            // Ordered, not yet paid for. Tracked as its own event rather than
+            // a failure: a deferred payment is a normal thing to choose, and
+            // counting it as a loss hides the one number that matters, which
+            // is how often someone meant to pay and could not.
+            PurchaseResult.Pending -> {
+                logger.i { "Purchase pending; the grant lands on a later refresh" }
+                logger.logEvent("purchase_pending")
+                PurchaseOutcome.Pending
+            }
+
             // Someone tapped buy, meant it, and did not get the thing. That is
             // the most expensive failure in the app and it gets an event.
             is PurchaseResult.Failed -> {
