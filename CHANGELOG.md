@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.3](https://github.com/Elijah-Dangerfield/MovingEyes/compare/v1.2.2...v1.2.3) (2026-10-29)
+
+
+### Bug Fixes
+
+* hitting play no longer changes your screen brightness ([a97ab02](https://github.com/Elijah-Dangerfield/MovingEyes/commit/a97ab025c330a0fa75e03a813f2c032b369fc251))
+* the eyes stay exactly where you put them when you press play ([8d23310](https://github.com/Elijah-Dangerfield/MovingEyes/commit/8d2331094ee8021125cf4117addd911a38629c64))
+
 ## [1.2.2](https://github.com/Elijah-Dangerfield/MovingEyes/compare/v1.2.1...v1.2.2) (2026-10-26)
 
 
