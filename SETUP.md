@@ -152,7 +152,7 @@ Before shipping, on both platforms:
 > 1. **Play Console** → Internal testing → Promote release → Production. Fill out the production rollout form manually.
 > 2. **App Store Connect** → TestFlight build → Submit for review manually.
 >
-> From release #2 onward, the pipeline uploads straight to Play production (10% staged rollout) and submits to the App Store with phased release.
+> From release #2 onward, the pipeline uploads straight to Play production at full rollout and submits to the App Store with phased release.
 
 The release-please PR shows a `!!! FIRST RELEASE !!!` banner the first time around so this is hard to miss.
 
