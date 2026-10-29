@@ -11,7 +11,6 @@ import com.dangerfield.movingeyes.libraries.device.BatteryNotice
 import com.dangerfield.movingeyes.libraries.device.BatteryState
 import com.dangerfield.movingeyes.libraries.device.BatteryStatus
 import com.dangerfield.movingeyes.libraries.device.DisplayController
-import com.dangerfield.movingeyes.libraries.device.dimLevelsFor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlin.time.Duration
@@ -22,7 +21,8 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * A state of the editor, not a screen: a separate destination would remount
  * the canvas and re-run layout, and any reflow silently invalidates an
- * alignment someone measured with a ruler. Only the chrome animates.
+ * alignment someone measured with a ruler. Only the chrome animates, and
+ * nothing about the canvas or the device changes on the way in.
  */
 class DisplayModeState(sleepTimer: Duration?) {
 
@@ -53,13 +53,12 @@ class DisplayModeState(sleepTimer: Duration?) {
 
 /**
  * Drives the platform while [state] is active and puts everything back when it
- * isn't. The restore is a `DisposableEffect` so every exit path — including a
- * teardown mid-session — releases keep-awake and the brightness override.
+ * isn't. The restore is a `DisposableEffect` so every exit path, including a
+ * teardown mid-session, releases keep-awake and the orientation lock.
  */
 @Composable
 fun DisplayModeEffects(
     state: DisplayModeState,
-    brightness: Float,
     displayController: DisplayController,
     batteryStatus: BatteryStatus,
     onSessionEnded: (Duration) -> Unit,
@@ -84,16 +83,7 @@ fun DisplayModeEffects(
             displayController.setKeepAwake(false)
             displayController.setImmersive(false)
             displayController.setOrientationLocked(false)
-            displayController.setBrightness(null)
         }
-    }
-
-    // Split so a brightness drag doesn't re-run the whole entry sequence.
-    DisposableEffect(active, brightness) {
-        displayController.setBrightness(
-            if (active) dimLevelsFor(brightness).osBrightness else null,
-        )
-        onDispose { }
     }
 
     BatteryNoticeEffect(state, batteryStatus)

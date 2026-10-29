@@ -8,10 +8,10 @@ Android and iOS from one Kotlin Multiplatform codebase.
 
 This is a **display appliance**, not a drawing app. The user configures it once, mounts the device, and leaves. Everything follows from that:
 
-- It runs unattended, so it needs keep-awake, immersive fullscreen, and a brightness override that can go below the OS minimum.
+- It runs unattended, so it needs keep-awake and immersive fullscreen. Dimming is a black overlay drawn over the scene, never the device's backlight: it reaches below the OS minimum, it shows in the editor as well as in display mode, and leaving display mode leaves the device exactly as it was found.
 - A kid will poke the screen, so the canvas is lockable.
 - A tablet at full brightness animating for five hours dies by 9pm, so battery is a first-class concern.
-- The screen sits behind cardboard, so aligning eyes to physical holes is the single most important interaction. The canvas is the screen at 1:1 — no zoom, no pan — because a pixel here is a millimetre of cardboard.
+- The screen sits behind cardboard, so aligning eyes to physical holes is the single most important interaction. The canvas is the screen at 1:1, no zoom and no pan, because a pixel here is a millimetre of cardboard. Chrome floats over it and never lays it out, so pressing play hides the controls and changes nothing else.
 - Pure black is the default canvas. On OLED those pixels are off, and the illusion becomes eyes floating in a void rather than a glowing rectangle behind a painting.
 
 There are **no accounts and no backend**. The only outbound traffic is crash reporting, anonymous product events, a static remote-config file, and one in-app purchase.

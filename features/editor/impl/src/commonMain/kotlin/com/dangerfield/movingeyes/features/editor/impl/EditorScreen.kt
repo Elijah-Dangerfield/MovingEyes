@@ -66,7 +66,6 @@ import com.dangerfield.movingeyes.libraries.eyes.Moods
 import com.dangerfield.movingeyes.libraries.eyes.isStrobing
 import com.dangerfield.movingeyes.libraries.navigation.Router
 import com.dangerfield.movingeyes.libraries.device.ScreenMetrics
-import com.dangerfield.movingeyes.libraries.device.dimLevelsFor
 import com.dangerfield.movingeyes.libraries.device.millimeters
 import com.dangerfield.movingeyes.libraries.render.EyeCanvas
 import com.dangerfield.movingeyes.libraries.render.EyeSceneState
@@ -217,7 +216,6 @@ fun EditorScreen(
 
         DisplayModeEffects(
             state = display,
-            brightness = editor.canvas.brightness,
             displayController = viewModel.displayController,
             batteryStatus = viewModel.batteryStatus,
             onSessionEnded = { viewModel.takeAction(EditorAction.DisplaySessionEnded(it)) },
@@ -533,9 +531,10 @@ fun EditorScreen(
             )
         }
 
-        // Under the chrome, over the canvas: the backlight handles the top of
-        // the range and this the bottom, letting the scene go below the OS floor.
-        val overlayAlpha = dimLevelsFor(editor.canvas.brightness).overlayAlpha
+        // Under the chrome, over the canvas, and present while editing exactly
+        // as it is in display mode. This is the whole of the brightness
+        // control now: nothing reaches the device's own backlight.
+        val overlayAlpha = dimOverlayAlpha(editor.canvas.brightness)
         if (overlayAlpha > 0f) {
             Box(
                 modifier = Modifier

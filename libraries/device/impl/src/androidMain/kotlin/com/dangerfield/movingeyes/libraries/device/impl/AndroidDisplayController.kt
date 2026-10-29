@@ -44,13 +44,6 @@ class AndroidDisplayController(
         }
     }
 
-    override fun setBrightness(brightness: Float?) = onActivity { activity ->
-        activity.window.attributes = activity.window.attributes.apply {
-            screenBrightness = brightness?.coerceIn(0f, 1f)
-                ?: WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
-        }
-    }
-
     override fun setOrientationLocked(locked: Boolean) = onActivity { activity ->
         activity.requestedOrientation = if (locked) {
             // LOCKED freezes what's on screen; naming an orientation would spin

@@ -29,8 +29,9 @@ import kotlin.math.roundToInt
 import kotlin.time.Duration
 
 /**
- * Scene-wide settings. Brightness is here rather than left to the OS because
- * the app needs to go *below* the system minimum — see `dimLevelsFor`.
+ * Scene-wide settings. Brightness is saved with the scene and drawn as an
+ * overlay rather than handed to the OS, so it goes below the system minimum
+ * and leaves the device's own backlight alone — see `dimOverlayAlpha`.
  */
 @Composable
 fun ScenePanel(

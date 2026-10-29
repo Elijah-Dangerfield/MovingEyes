@@ -5,7 +5,7 @@ package com.dangerfield.movingeyes.libraries.device
  *
  * On iOS the status bar, home indicator and orientation are view-controller
  * overrides with no imperative UIKit equivalent, so Kotlin/Native can't reach
- * them. Keep-awake and brightness are plain properties and are set directly by
+ * them. Keep-awake is a plain property and is set directly by
  * `IosDisplayController`.
  *
  * Plain callbacks, no suspend: a Kotlin suspend function reaches Swift as a
