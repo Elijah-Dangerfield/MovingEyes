@@ -223,31 +223,15 @@ fun EditorScreen(
 
         BackHandler(enabled = display.isActive) { display.exit() }
 
-        // The scene shrinks into whatever the panel leaves rather than hiding
-        // behind it, driven by the panel's own live position so the two move
-        // together frame for frame. Normalised coordinates are untouched — this
-        // is a preview scale, not a change to the composition — and sliding the
-        // panel away returns it to true 1:1, which is what the mm readout
-        // describes.
-        val occupied = if (display.isActive) 0f else panel.occupiedPx
+        // How much of an edge the panel is sitting on. Chrome dodges it; the
+        // canvas does not. The canvas used to shrink into whatever the panel
+        // left, which made the editor a preview at some fraction of scale and
+        // display mode the same scene at 1:1, so pressing play grew the eyes
+        // and slid them off marks that had been lined up by eye. An eye behind
+        // the panel is a panel you close; an eye that moves when you press
+        // play is an alignment you cannot trust.
+        val occupied = panel.occupiedPx
         val isRail = maxWidth >= RailBreakpointDp
-        // No inset while the panel is away: the resting editor is the scene at
-        // full size, edge to edge, with nothing charging rent on it.
-        val insetPx = if (panel.isVisible) with(density) { CanvasInset.toPx() } * 2f else 0f
-        // Display mode is exactly 1:1 with no inset and no edge. A percent of
-        // scale there would make every millimetre on screen a lie.
-        val canvasScale = if (display.isActive) {
-            1f
-        } else {
-            minOf(
-                1f,
-                (displayWidthPx - (if (isRail) occupied else 0f) - insetPx) / displayWidthPx,
-                (displayHeightPx - (if (isRail) 0f else occupied) - insetPx) / displayHeightPx,
-            ).coerceAtLeast(MinCanvasScale)
-        }
-        val isScaled = !display.isActive && canvasScale < 0.999f
-        val shiftX = if (isRail) -occupied / 2f else 0f
-        val shiftY = if (isRail) 0f else -occupied / 2f
 
         // Read here rather than in the save handler: a string resource can only
         // be read from a composable, and the handler isn't one.
@@ -359,13 +343,9 @@ fun EditorScreen(
                     width = if (turned) maxHeight else maxWidth,
                     height = if (turned) maxWidth else maxHeight,
                 )
-                .graphicsLayer {
-                    rotationZ = editor.canvas.rotation.degrees.toFloat()
-                    scaleX = canvasScale
-                    scaleY = canvasScale
-                    translationX = shiftX
-                    translationY = shiftY
-                },
+                // Rotation only. No scale, no translation: what is on screen
+                // while editing is what display mode shows, pixel for pixel.
+                .graphicsLayer { rotationZ = editor.canvas.rotation.degrees.toFloat() },
         ) {
             EyeCanvas(
                 state = sceneState,
@@ -420,11 +400,7 @@ fun EditorScreen(
                                 pan = pan,
                                 canvasWidthPx = canvasWidthPx,
                                 canvasHeightPx = canvasHeightPx,
-                                snapThresholdPx = if (snappingEnabled) {
-                                    snapThresholdPx / canvasScale
-                                } else {
-                                    0f
-                                },
+                                snapThresholdPx = if (snappingEnabled) snapThresholdPx else 0f,
                                 onGuides = { guides = it },
                             )
                             val overTrashNow = isOverTrash(
@@ -463,11 +439,7 @@ fun EditorScreen(
                                         anchor = anchorPoint,
                                         canvasWidthPx = canvasWidthPx,
                                         canvasHeightPx = canvasHeightPx,
-                                        thresholdPx = if (snappingEnabled) {
-                                            snapThresholdPx / canvasScale
-                                        } else {
-                                            0f
-                                        },
+                                        thresholdPx = if (snappingEnabled) snapThresholdPx else 0f,
                                         onGuides = { guides = it },
                                     )
                                     // Same rule as a positional snap: buzz on
@@ -520,7 +492,6 @@ fun EditorScreen(
                 } else {
                     emptyList()
                 },
-                showCanvasEdge = isScaled,
                 showCenterLines = dragSession != null,
                 eyes = editor.eyes,
                 selection = editor.selection,
@@ -1424,18 +1395,9 @@ private fun readoutText(
     return parts.joinToString(" · ")
 }
 
-private val ToolbarClearance = 88.dp
-
-/** Breathing room around the scaled canvas, so its edge reads as an edge. */
-private val CanvasInset = 12.dp
-
 /** Matches AdaptivePanel's own breakpoint; the editor needs to know which
  *  dimension the panel is eating. */
 private val RailBreakpointDp = 720.dp
-
-/** Below this the scene is too small to work with; better to let the panel
- *  cover a little than to shrink to a postage stamp. */
-private const val MinCanvasScale = 0.35f
 
 /** Long enough that a slider drag writes once, short enough that a kill a
  *  second later still keeps the edit. */

@@ -45,9 +45,6 @@ fun SelectionOverlay(
     accent: Color,
     modifier: Modifier = Modifier,
     revision: Int = 0,
-    /** Draws the device edge while the canvas is scaled down, so the scene has
-     *  a boundary to read against instead of floating in black. */
-    showCanvasEdge: Boolean = false,
     /** Faint centre crosshairs, shown while something is being dragged so the
      *  middle of the canvas is visible *before* you snap to it rather than only
      *  at the moment you arrive. */
@@ -71,13 +68,6 @@ fun SelectionOverlay(
         // Compose state.
         @Suppress("UNUSED_EXPRESSION")
         revision
-
-        if (showCanvasEdge) {
-            drawRect(
-                color = accent.copy(alpha = 0.25f),
-                style = Stroke(width = 1.dp.toPx()),
-            )
-        }
 
         if (showCenterLines) drawCenterLines(accent)
 

@@ -1,0 +1,3 @@
+Pressing play now hides the controls and changes nothing else. The eyes stay exactly where you put them, at exactly the size you made them, so what you line up in the editor is what ends up behind the painting.
+
+The app also no longer touches your screen brightness. The brightness slider dims the scene itself, and your device is left set how you had it.
